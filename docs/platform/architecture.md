@@ -27,13 +27,17 @@
 ### IAM
 
 - User registration with email verification
-- Login / logout, JWT access + refresh tokens
-- Password reset via signed email token
-- Organization management (create, suspend, delete)
-- Member invitations, role assignment (owner / admin / member / viewer)
-- Multi-org membership
+- Login / logout, JWT RS256 access (15 min) + refresh (7 day) tokens
+- Password reset via signed email token, brute-force lockout
+- Tenant lifecycle (create, suspend, delete, retry provisioning)
+- Member invitations, role assignment (`TENANT_OWNER` / `ADMIN` / `MEMBER`)
+- Multi-tenant membership — one user, multiple tenants
+- Token revocation: JTI denylist + global signout timestamp
+- JWKS endpoint (`/.well-known/jwks.json`) for downstream token validation
 
 Publishes: `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`
+
+Stack: Java 21, Spring Boot 3.4, MyBatis (no JPA), PostgreSQL, Liquibase, RabbitMQ, JJWT, ShedLock
 
 ---
 
@@ -92,13 +96,13 @@ Within `iqscaffold_iam`, each tenant gets a dedicated PostgreSQL schema:
 
 ```
 iqscaffold_iam/
-├── public/          # platform registry (orgs, plans)
-├── tenant_acme/
+├── public/          # platform registry (users, tenants, token_denylist, failed_logins, shedlock)
+├── tenant_acme/     # per-tenant: members, authorities, tenant-scoped data
 ├── tenant_globex/
 └── tenant_initech/
 ```
 
-API Gateway sets `search_path` per request based on resolved tenant context. Cross-tenant queries are not possible in normal application flow.
+The `MyBatisSchemaInterceptor` rewrites `search_path` per request based on the resolved tenant context from the JWT claim. Cross-tenant queries are not possible in normal application flow.
 
 To migrate a tenant to a dedicated database instance: dump schema → restore → update connection string in registry. No code changes.
 
@@ -115,48 +119,56 @@ To migrate a tenant to a dedicated database instance: dump schema → restore �
 ## Tenant Provisioning Flow
 
 ```
-1. POST /register
+1. POST /api/v1/iam/auth/signup
        │
-2. IAM creates user + org  (status: PENDING)
+2. IAM creates user + tenant  (status: PROVISIONING)
        │
-3. Publishes tenant.provisioned → RabbitMQ
+3. Publishes tenant.provisioned → RabbitMQ (platform exchange)
        │
-4. Returns HTTP 202
+4. Returns HTTP 202  { tenantKey, status: "PROVISIONING" }
        │
-       ├── Provisioning worker
-       │     create schema
-       │     run migrations
+       ├── Schema provisioning worker
+       │     create tenant schema
+       │     run Liquibase migrations
        │     seed defaults
-       │     set org status: ACTIVE
+       │     set tenant status: ACTIVE
        │
        └── Billing worker
              create Stripe customer
+             store customer ID
 ```
 
-Workers retry with exponential backoff on failure.
+Workers retry with exponential backoff on failure. A ShedLock-guarded reaper job cleans up tenants stuck in `PROVISIONING` beyond a configurable timeout. Owners can manually trigger `POST /tenants/{tenantKey}/retry-provisioning` for `PROVISIONING_FAILED` tenants.
 
 ---
 
 ## Infrastructure as Code
 
+Each service has a dedicated Helm chart. Shared infrastructure (PostgreSQL, RabbitMQ) is managed separately via `KnowHowDevOps/helm-charts/KnowHowDevOps/iqscaffold-infra`.
+
 ```
-helm/
-├── iam/           # standalone — includes PostgreSQL sub-chart
-├── api-gateway/   # standalone — no stateful dependencies
-├── billing/       # standalone — includes Stripe webhook config
-└── ui/            # standalone — Nginx serving static React build
+KnowHowDevOps/helm-charts/IQKV/
+├── iqscaffold-iam-service/
+├── iqscaffold-gateway-service/
+├── iqscaffold-billing-service/
+├── iqscaffold-user-service/
+├── iqscaffold-ui-mantine-app-portal/
+└── iqscaffold-ui-mantine-auth-portal/
 ```
 
-Deploy individually:
+Each chart ships environment-specific value files: `values.yaml` (defaults), `values-local.yaml`, `values-dev.yaml`, `values-staging.yaml`, `values-test.yaml`, `values-production.yaml`.
+
+Deploy individually — point each service at existing infrastructure instances via connection string values:
 
 ```bash
-helm install iqscaffold-iam-service ./helm/iam -f iam-values.yaml
-helm install iqscaffold-gateway-service ./helm/api-gateway -f gateway-values.yaml
-helm install iqscaffold-billing-service ./helm/billing -f billing-values.yaml
-helm install iqscaffold-ui-service ./helm/ui -f ui-values.yaml
+helm upgrade --install iqscaffold-iam-service ./iqscaffold-iam-service \
+  --values ./values.yaml --values ./values-production.yaml \
+  --set infraServices.postgresql.password=$PG_PASSWORD \
+  --set infraServices.rabbitmq.password=$RMQ_PASSWORD \
+  --namespace iqscaffold-production-env --atomic --wait
 ```
 
-Shared dependencies (PostgreSQL, RabbitMQ) are managed separately. Point each service at existing instances via connection string values.
+CI/CD pipelines (Drone) handle deployments automatically. See `KnowHowDevOps/homelab-operations-pipeline/IQKV/` for pipeline definitions per service.
 
 ---
 

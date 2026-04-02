@@ -6,7 +6,7 @@ Goal: all four components running on a public demo host with enough UI to evalua
 
 **Services**
 
-- [ ] IAM — registration, login, JWT, org management, RBAC, invitations, account recovery
+- [ ] IAM — registration, login, JWT RS256, tenant lifecycle, RBAC, email verification, password reset, brute-force lockout, token revocation, JWKS endpoint
 - [ ] API Gateway — JWT validation, tenant resolution, routing
 - [ ] Billing — Stripe Connect integration, webhook handling, lifecycle events
 - [ ] UI — React + Mantine, deployed as static build behind the Gateway
@@ -21,8 +21,9 @@ Goal: all four components running on a public demo host with enough UI to evalua
 
 **Infrastructure**
 
-- [ ] Helm chart per service (iam, api-gateway, billing, ui)
-- [ ] Docker Compose for local dev
+- [ ] Helm chart per service with env-specific value files (local / dev / test / staging / production)
+- [ ] Docker Compose for local dev (PostgreSQL, RabbitMQ, MailHog)
+- [ ] Drone CI/CD pipelines per service (verify → publish → deploy → promote)
 - [ ] Demo environment deployed and publicly accessible
 
 ---

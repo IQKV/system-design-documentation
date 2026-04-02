@@ -11,13 +11,15 @@ The platform is designed to scale horizontally at every layer. No component is a
 Each microservice is stateless and scales independently via Kubernetes HorizontalPodAutoscaler.
 
 ```yaml
-# Example: IAM service HPA
-minReplicas: 2
-maxReplicas: 20
-targetCPUUtilizationPercentage: 70
+# IAM service HPA (values-production.yaml)
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
 ```
 
-Services do not share in-process state. Session state is stored in the database or cache layer, not in memory.
+Services do not share in-process state. Session state is stored in the database (token denylist, global signout timestamp), not in memory — any replica can handle any request.
 
 ---
 
@@ -85,10 +87,12 @@ These are reference figures for planning purposes, not guarantees. Actual perfor
 
 ## Production Sizing (Minimum)
 
-| Component   | Minimum                         | Recommended                    |
-| ----------- | ------------------------------- | ------------------------------ |
-| IAM         | 2 replicas, 256Mi/0.25 CPU each | 3 replicas, 512Mi/0.5 CPU each |
-| API Gateway | 2 replicas, 256Mi/0.25 CPU each | 3 replicas, 512Mi/0.5 CPU each |
-| Billing     | 2 replicas, 256Mi/0.25 CPU each | 2 replicas, 512Mi/0.5 CPU each |
-| PostgreSQL  | 4 CPU, 8Gi RAM, 100Gi SSD       | 8 CPU, 16Gi RAM, 500Gi SSD     |
-| RabbitMQ    | 3-node cluster, 2Gi RAM each    | 3-node cluster, 4Gi RAM each   |
+Derived from `values-production.yaml` defaults across services.
+
+| Component   | Minimum                              | Recommended                         |
+| ----------- | ------------------------------------ | ----------------------------------- |
+| IAM         | 2 replicas, 512Mi/0.5 CPU each       | 3 replicas, 1Gi/1 CPU each          |
+| API Gateway | 2 replicas, 256Mi/0.25 CPU each      | 3 replicas, 512Mi/0.5 CPU each      |
+| Billing     | 2 replicas, 256Mi/0.25 CPU each      | 2 replicas, 512Mi/0.5 CPU each      |
+| PostgreSQL  | 4 CPU, 8Gi RAM, 100Gi SSD            | 8 CPU, 16Gi RAM, 500Gi SSD          |
+| RabbitMQ    | 3-node cluster, 2Gi RAM each         | 3-node cluster, 4Gi RAM each        |

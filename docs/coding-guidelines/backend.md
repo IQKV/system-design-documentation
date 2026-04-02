@@ -46,17 +46,25 @@
 
 ### Parent POM
 
-All services inherit from the shared parent:
+Services may inherit from either the shared IQKV parent or directly from Spring Boot parent:
 
 ```xml
+<!-- Option A: IQKV shared parent (preferred for platform services) -->
 <parent>
   <groupId>com.iqkv</groupId>
   <artifactId>boot-parent-pom</artifactId>
   <version>0.25.0-SNAPSHOT</version>
 </parent>
+
+<!-- Option B: Spring Boot parent (used by iqscaffold-iam-service) -->
+<parent>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-parent</artifactId>
+  <version>3.4.x</version>
+</parent>
 ```
 
-Never override dependency versions managed by the parent. If a version override is genuinely required, it must be documented with a comment explaining why and tracked as technical debt.
+Never override dependency versions managed by the parent without a documented reason tracked as technical debt.
 
 ### Maven Properties
 
@@ -90,9 +98,9 @@ Every service `pom.xml` must declare:
 
 Minimum thresholds enforced at build time:
 
-- Bundle instruction coverage: **50%**
-- Per-class line coverage: **40%**
-- Per-class branch coverage: **40%**
+- Bundle instruction coverage: **60%**
+- Per-class line coverage: **60%**
+- Per-class branch coverage: **60%**
 
 Excluded from coverage (do not add coverage for these):
 
