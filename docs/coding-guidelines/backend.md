@@ -686,7 +686,7 @@ This is the canonical token structure. Every service that issues or consumes tok
   "lastName": "Doe",
   "preferred_locale": "en",
 
-  "tenant_id": "tenant-acme",
+  "tenant_id": "a3f7k2m9",
   "organizationId": 7,
 
   "authorities": ["USER", "CRM_ACCESS"],
@@ -705,7 +705,7 @@ This is the canonical token structure. Every service that issues or consumes tok
   "jti": "660e9500-f30c-52e5-b827-557766551111",
   "type": "refresh",
   "username": "john.doe",
-  "tenant_id": "tenant-acme"
+  "tenant_id": "a3f7k2m9"
 }
 ```
 
@@ -731,7 +731,7 @@ All claim names are defined in `JwtClaimNames` (one copy per service in `securit
 | `FIRST_NAME`       | `firstName`        | `String`       | ✅     | ❌      | camelCase                        |
 | `LAST_NAME`        | `lastName`         | `String`       | ✅     | ❌      | camelCase                        |
 | `PREFERRED_LOCALE` | `preferred_locale` | `String`       | ✅     | ❌      | snake_case (i18n convention)     |
-| `TENANT_ID`        | `tenant_id`        | `String`       | ✅     | ✅      | snake_case (multi-tenancy)       |
+| `TENANT_ID`        | `tenant_id`        | `String`       | ✅     | ✅      | nanoid, 8 chars `[a-z0-9]` — the `tenant_key` from the IAM service |
 | `ORGANIZATION_ID`  | `organizationId`   | `Long`         | ✅     | ❌      | camelCase                        |
 | `AUTHORITIES`      | `authorities`      | `List<String>` | ✅     | ❌      | No `ROLE_` prefix                |
 | `PERMISSIONS`      | `permissions`      | `List<String>` | ✅     | ❌      | Fine-grained permissions         |
@@ -741,7 +741,7 @@ All claim names are defined in `JwtClaimNames` (one copy per service in `securit
 Mixed casing is intentional and must not be "fixed":
 
 - `sub`, `iss`, `iat`, `exp`, `jti` — RFC 7519 standard names, always lowercase.
-- `tenant_id`, `preferred_locale` — snake_case, matching database column names and i18n conventions.
+- `tenant_id`, `preferred_locale` — snake_case, matching database column names and i18n conventions. `tenant_id` carries the `tenant_key` nanoid value (8-char `[a-z0-9]`), not the internal UUID.
 - `userId`, `firstName`, `lastName`, `organizationId` — camelCase, matching Java field names and frontend JSON conventions.
 
 ---
@@ -1092,7 +1092,20 @@ The following `ROLE_` references are legacy artifacts and must be removed:
 
 ### Architecture
 
-Schema-per-tenant strategy: each tenant gets its own PostgreSQL schema (`tenant_{id}`). The `public` schema holds system-level data (tenant registry, etc.).
+Schema-per-tenant strategy: each tenant gets its own PostgreSQL schema (`tenant_{tenant_key}`). The `public` schema holds system-level data (tenant registry, users, memberships, etc.).
+
+### Tenant Identity
+
+The IAM service distinguishes two tenant identifiers:
+
+| Field        | Type         | Format                              | Purpose                                      |
+| ------------ | ------------ | ----------------------------------- | -------------------------------------------- |
+| `id`         | `UUID`       | Standard UUID v4                    | Internal primary key — never exposed in APIs |
+| `tenant_key` | `VARCHAR(12)`| 8-char nanoid, alphabet `[a-z0-9]`  | Public identifier — used in JWT, headers, schema names |
+
+`tenant_key` is generated at tenant creation time using `NanoIdUtils.randomNanoId(generator, alphabet, 8)` with alphabet `abcdefghijklmnopqrstuvwxyz0123456789`. It is immutable after creation.
+
+The JWT claim `tenant_id` carries the `tenant_key` value — never the UUID.
 
 ### TenantContext
 
@@ -1120,6 +1133,7 @@ try {
 - Liquibase migrations are split: `db/changelog/system/` for public schema, `db/changelog/tenant/` for tenant schemas.
 - The `TenantLiquibaseRunner` applies tenant migrations to every tenant schema on startup.
 - Cross-tenant data access is a security violation — `TenantContextMismatchException` is thrown automatically on `@PreUpdate`.
+- `tenant_key` is the only tenant identifier that crosses service boundaries (JWT, HTTP headers, schema names). Never pass the internal UUID across services.
 
 ---
 
