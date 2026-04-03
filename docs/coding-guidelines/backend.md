@@ -46,25 +46,17 @@
 
 ### Parent POM
 
-Services may inherit from either the shared IQKV parent or directly from Spring Boot parent:
+All services inherit from the shared parent:
 
 ```xml
-<!-- Option A: IQKV shared parent (preferred for platform services) -->
 <parent>
   <groupId>com.iqkv</groupId>
   <artifactId>boot-parent-pom</artifactId>
   <version>0.25.0-SNAPSHOT</version>
 </parent>
-
-<!-- Option B: Spring Boot parent (used by iqscaffold-iam-service) -->
-<parent>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-starter-parent</artifactId>
-  <version>3.4.x</version>
-</parent>
 ```
 
-Never override dependency versions managed by the parent without a documented reason tracked as technical debt.
+Never override dependency versions managed by the parent. If a version override is genuinely required, it must be documented with a comment explaining why and tracked as technical debt.
 
 ### Maven Properties
 
@@ -98,9 +90,9 @@ Every service `pom.xml` must declare:
 
 Minimum thresholds enforced at build time:
 
-- Bundle instruction coverage: **60%**
-- Per-class line coverage: **60%**
-- Per-class branch coverage: **60%**
+- Bundle instruction coverage: **50%**
+- Per-class line coverage: **40%**
+- Per-class branch coverage: **40%**
 
 Excluded from coverage (do not add coverage for these):
 
@@ -681,7 +673,7 @@ This is the canonical token structure. Every service that issues or consumes tok
 ```json
 {
   "sub": "42",
-  "iss": "iqscaffold-user-service",
+  "iss": "iqscaffold-iam-service",
   "iat": 1700000000,
   "exp": 1700000900,
   "jti": "550e8400-e29b-41d4-a716-446655440000",
@@ -707,7 +699,7 @@ This is the canonical token structure. Every service that issues or consumes tok
 ```json
 {
   "sub": "42",
-  "iss": "iqscaffold-user-service",
+  "iss": "iqscaffold-iam-service",
   "iat": 1700000000,
   "exp": 1700604800,
   "jti": "660e9500-f30c-52e5-b827-557766551111",
@@ -728,7 +720,7 @@ All claim names are defined in `JwtClaimNames` (one copy per service in `securit
 | Constant           | Wire Key           | Type           | Access | Refresh | Notes                            |
 | ------------------ | ------------------ | -------------- | ------ | ------- | -------------------------------- |
 | `SUBJECT`          | `sub`              | `String`       | ✅     | ✅      | User ID as string (RFC 7519)     |
-| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqscaffold-user-service` |
+| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqscaffold-iam-service`  |
 | `ISSUED_AT`        | `iat`              | `Instant`      | ✅     | ✅      | RFC 7519                         |
 | `EXPIRATION`       | `exp`              | `Instant`      | ✅     | ✅      | RFC 7519                         |
 | `JWT_ID`           | `jti`              | `String`       | ✅     | ✅      | UUID, required for revocation    |
@@ -778,7 +770,7 @@ iqscaffold:
   auth:
     jwt:
       algorithm: RS256
-      issuer: iqscaffold-user-service
+      issuer: iqscaffold-iam-service
       # Path to RSA private key (PEM). Use a mounted secret in k8s, a local file in dev.
       private-key-path: ${JWT_PRIVATE_KEY_PATH}
 ```
