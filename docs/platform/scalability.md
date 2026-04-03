@@ -89,10 +89,10 @@ These are reference figures for planning purposes, not guarantees. Actual perfor
 
 Derived from `values-production.yaml` defaults across services.
 
-| Component   | Minimum                              | Recommended                         |
-| ----------- | ------------------------------------ | ----------------------------------- |
-| IAM         | 2 replicas, 512Mi/0.5 CPU each       | 3 replicas, 1Gi/1 CPU each          |
-| API Gateway | 2 replicas, 256Mi/0.25 CPU each      | 3 replicas, 512Mi/0.5 CPU each      |
-| Billing     | 2 replicas, 256Mi/0.25 CPU each      | 2 replicas, 512Mi/0.5 CPU each      |
-| PostgreSQL  | 4 CPU, 8Gi RAM, 100Gi SSD            | 8 CPU, 16Gi RAM, 500Gi SSD          |
-| RabbitMQ    | 3-node cluster, 2Gi RAM each         | 3-node cluster, 4Gi RAM each        |
+| Component   | Minimum                         | Recommended                    |
+| ----------- | ------------------------------- | ------------------------------ |
+| IAM         | 2 replicas, 512Mi/0.5 CPU each  | 3 replicas, 1Gi/1 CPU each     |
+| API Gateway | 2 replicas, 256Mi/0.25 CPU each | 3 replicas, 512Mi/0.5 CPU each |
+| Billing     | 2 replicas, 256Mi/0.25 CPU each | 2 replicas, 512Mi/0.5 CPU each |
+| PostgreSQL  | 4 CPU, 8Gi RAM, 100Gi SSD       | 8 CPU, 16Gi RAM, 500Gi SSD     |
+| RabbitMQ    | 3-node cluster, 2Gi RAM each    | 3-node cluster, 4Gi RAM each   |
