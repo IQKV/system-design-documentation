@@ -35,3 +35,35 @@
 ## Gap
 
 No open-source, infrastructure-first, language-agnostic option exists between indie boilerplates and Entando. All indie-tier tools ship application code only — K8s, schema isolation, async provisioning, and a real IAM/Gateway/Billing split are left to the team.
+
+---
+
+## Why Build This Anyway
+
+**The simple version:** imagine you want to open a restaurant. You could buy a recipe book (that's ShipFast or MakerKit). But a recipe book doesn't give you the kitchen, the plumbing, the health permits, or the cash register. You still have to figure all of that out yourself. This project is the kitchen — the part every restaurant needs before they can cook anything.
+
+Every team building a B2B product has to solve the same four problems before they can write a single line of their actual product:
+
+1. **Who are you?** — login, accounts, password reset
+2. **Which company do you belong to?** — organizations, teams, roles
+3. **Are you paying?** — subscriptions, invoices, billing
+4. **Can you talk to the system?** — a front door that checks all of the above on every request
+
+Most boilerplates give you a rough sketch of these things baked into one big app. That works fine if you're a solo founder building a simple tool. But the moment a real company wants to use your product — a company with 50 employees, a security team, and a procurement process — that sketch falls apart. They'll ask: can each customer's data be kept completely separate? Can we self-host this? Can we plug in our own login system? The answer with most boilerplates is "not really."
+
+This project answers yes to all of those questions, out of the box, for free.
+
+**Why free and open source?** Because the infrastructure layer is not the product — it's the foundation. Giving it away builds trust, invites contributions, and creates a community. The money comes from what sits on top.
+
+**What sits on top:**
+
+- **Extensions** — things like single sign-on (SSO/SAML), usage tracking, automation workflows, and analytics. These are paid add-ons that plug into the platform without touching the core. Any developer in the community can build and sell one.
+- **Managed hosting** — some teams don't want to run Kubernetes themselves. A hosted version of the platform, fully managed, is a natural paid offering.
+- **Enterprise support** — larger companies will pay for guaranteed response times, custom integrations, and hands-on help getting set up.
+- **Expertise** — consulting and implementation services for teams that want the platform tailored to their specific setup.
+
+**Why does this make sense when there are already so many competitors?**
+
+Because none of them are playing the same game. The indie boilerplates (ShipFast, MakerKit, Pegasus) are selling to solo founders who want to ship fast and don't care about data isolation or Kubernetes. Entando is selling to large enterprises with six-figure budgets and a Java team. There is nothing in between that is open, self-hostable, infrastructure-complete, and language-agnostic.
+
+The teams who need this — small engineering teams (3–15 people) building real B2B products for real business customers — currently have two options: spend 4–6 months building this themselves, or pay Entando-level prices. This project is the third option.
