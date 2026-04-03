@@ -30,6 +30,14 @@
 
 **[Entando](https://entando.com)** — Enterprise micro-frontend platform on K8s. Solves composable portal composition, not SaaS tenant provisioning. Java-based, vendor-managed, high TCO.
 
+**This platform wins when:**
+
+- The team needs real data isolation — every customer's data lives in its own PostgreSQL schema, not mixed in a shared table with a `tenant_id` column
+- Self-hosting is a requirement — full Kubernetes deployment, no dependency on Vercel, Supabase, AWS, or any vendor
+- The product needs to grow beyond a monolith — IAM, Gateway, and Billing are separate services; add your own without touching the core
+- The team wants to avoid paying for infrastructure they'll outgrow — Apache-2.0, free forever, extend via the event bus
+- Enterprise customers are in the picture — schema isolation, RBAC, and async provisioning are table stakes for B2B sales; most boilerplates can't offer them at all
+
 ---
 
 ## Gap
