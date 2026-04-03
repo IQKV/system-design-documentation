@@ -717,24 +717,24 @@ Refresh tokens carry only the minimum claims needed to issue a new access token.
 
 All claim names are defined in `JwtClaimNames` (one copy per service in `security/JwtClaimNames.java`). Never use raw string literals to read or write claims.
 
-| Constant           | Wire Key           | Type           | Access | Refresh | Notes                            |
-| ------------------ | ------------------ | -------------- | ------ | ------- | -------------------------------- |
-| `SUBJECT`          | `sub`              | `String`       | ✅     | ✅      | User ID as string (RFC 7519)     |
-| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqscaffold-iam-service`  |
-| `ISSUED_AT`        | `iat`              | `Instant`      | ✅     | ✅      | RFC 7519                         |
-| `EXPIRATION`       | `exp`              | `Instant`      | ✅     | ✅      | RFC 7519                         |
-| `JWT_ID`           | `jti`              | `String`       | ✅     | ✅      | UUID, required for revocation    |
-| `TYPE`             | `type`             | `String`       | ✅     | ✅      | `"access"` or `"refresh"`        |
-| `USER_ID`          | `userId`           | `Long`         | ✅     | ❌      | Explicit numeric ID for frontend |
-| `USERNAME`         | `username`         | `String`       | ✅     | ✅      |                                  |
-| `EMAIL`            | `email`            | `String`       | ✅     | ❌      |                                  |
-| `FIRST_NAME`       | `firstName`        | `String`       | ✅     | ❌      | camelCase                        |
-| `LAST_NAME`        | `lastName`         | `String`       | ✅     | ❌      | camelCase                        |
-| `PREFERRED_LOCALE` | `preferred_locale` | `String`       | ✅     | ❌      | snake_case (i18n convention)     |
+| Constant           | Wire Key           | Type           | Access | Refresh | Notes                                                              |
+| ------------------ | ------------------ | -------------- | ------ | ------- | ------------------------------------------------------------------ |
+| `SUBJECT`          | `sub`              | `String`       | ✅     | ✅      | User ID as string (RFC 7519)                                       |
+| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqscaffold-iam-service`                                    |
+| `ISSUED_AT`        | `iat`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
+| `EXPIRATION`       | `exp`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
+| `JWT_ID`           | `jti`              | `String`       | ✅     | ✅      | UUID, required for revocation                                      |
+| `TYPE`             | `type`             | `String`       | ✅     | ✅      | `"access"` or `"refresh"`                                          |
+| `USER_ID`          | `userId`           | `Long`         | ✅     | ❌      | Explicit numeric ID for frontend                                   |
+| `USERNAME`         | `username`         | `String`       | ✅     | ✅      |                                                                    |
+| `EMAIL`            | `email`            | `String`       | ✅     | ❌      |                                                                    |
+| `FIRST_NAME`       | `firstName`        | `String`       | ✅     | ❌      | camelCase                                                          |
+| `LAST_NAME`        | `lastName`         | `String`       | ✅     | ❌      | camelCase                                                          |
+| `PREFERRED_LOCALE` | `preferred_locale` | `String`       | ✅     | ❌      | snake_case (i18n convention)                                       |
 | `TENANT_ID`        | `tenant_id`        | `String`       | ✅     | ✅      | nanoid, 8 chars `[a-z0-9]` — the `tenant_key` from the IAM service |
-| `ORGANIZATION_ID`  | `organizationId`   | `Long`         | ✅     | ❌      | camelCase                        |
-| `AUTHORITIES`      | `authorities`      | `List<String>` | ✅     | ❌      | No `ROLE_` prefix                |
-| `PERMISSIONS`      | `permissions`      | `List<String>` | ✅     | ❌      | Fine-grained permissions         |
+| `ORGANIZATION_ID`  | `organizationId`   | `Long`         | ✅     | ❌      | camelCase                                                          |
+| `AUTHORITIES`      | `authorities`      | `List<String>` | ✅     | ❌      | No `ROLE_` prefix                                                  |
+| `PERMISSIONS`      | `permissions`      | `List<String>` | ✅     | ❌      | Fine-grained permissions                                           |
 
 #### Naming convention rationale
 
@@ -1098,10 +1098,10 @@ Schema-per-tenant strategy: each tenant gets its own PostgreSQL schema (`tenant_
 
 The IAM service distinguishes two tenant identifiers:
 
-| Field        | Type         | Format                              | Purpose                                      |
-| ------------ | ------------ | ----------------------------------- | -------------------------------------------- |
-| `id`         | `UUID`       | Standard UUID v4                    | Internal primary key — never exposed in APIs |
-| `tenant_key` | `VARCHAR(12)`| 8-char nanoid, alphabet `[a-z0-9]`  | Public identifier — used in JWT, headers, schema names |
+| Field        | Type          | Format                             | Purpose                                                |
+| ------------ | ------------- | ---------------------------------- | ------------------------------------------------------ |
+| `id`         | `UUID`        | Standard UUID v4                   | Internal primary key — never exposed in APIs           |
+| `tenant_key` | `VARCHAR(12)` | 8-char nanoid, alphabet `[a-z0-9]` | Public identifier — used in JWT, headers, schema names |
 
 `tenant_key` is generated at tenant creation time using `NanoIdUtils.randomNanoId(generator, alphabet, 8)` with alphabet `abcdefghijklmnopqrstuvwxyz0123456789`. It is immutable after creation.
 
