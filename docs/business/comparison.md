@@ -2,19 +2,60 @@
 
 ## Feature Matrix
 
-| Capability         | [ShipFast](https://shipfa.st) | [MakerKit](https://makerkit.dev) | [Laravel Spark](https://spark.laravel.com) | [SaaS Pegasus](https://saaspegasus.com) | [Django SaaS BP](https://github.com/apptension/saas-boilerplate) | [Entando](https://entando.com) | This platform           |
-| ------------------ | ----------------------------- | -------------------------------- | ------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------- | ------------------------------ | ----------------------- |
-| Price              | $199–299                      | $299                             | $99/yr                                     | $249                                    | Free/paid                                                        | Enterprise                     | Free / OSS              |
-| License            | Proprietary                   | Proprietary                      | Proprietary                                | Proprietary                             | MIT                                                              | Proprietary                    | Apache-2.0              |
-| Multi-tenancy      | None                          | Basic org                        | Basic                                      | Teams                                   | None                                                             | Yes                            | Schema-per-tenant       |
-| Data isolation     | Shared DB                     | Shared DB                        | Shared DB                                  | Shared DB                               | Shared DB                                                        | Logical                        | Schema-level            |
-| Infrastructure     | None                          | None                             | None                                       | None                                    | None                                                             | K8s (opinionated)              | K8s + Helm              |
-| Microservices      | No                            | No                               | No                                         | No                                      | No                                                               | Micro-frontend                 | IAM + Gateway + Billing |
-| Async provisioning | No                            | No                               | No                                         | No                                      | No                                                               | No                             | RabbitMQ                |
-| API Gateway        | No                            | No                               | No                                         | No                                      | No                                                               | No                             | Yes                     |
-| Billing            | Stripe wrapper                | Stripe wrapper                   | Stripe wrapper                             | Stripe wrapper                          | Stripe wrapper                                                   | No                             | Stripe Connect          |
-| Self-hosted        | Partial                       | Partial                          | Partial                                    | Yes                                     | Yes                                                              | Partial                        | Yes                     |
-| Vendor lock-in     | Vercel/Supabase               | Supabase                         | Laravel Cloud                              | Heroku/DO                               | AWS                                                              | Entando Cloud                  | None                    |
+The original six competitors plus notable additions discovered since the initial analysis. Grouped by tier for readability.
+
+### Indie / Solo-founder tier
+
+| Capability         | [ShipFast](https://shipfa.st) | [MakerKit](https://makerkit.dev) | [Supastarter](https://supastarter.dev) | [Next.js SaaS BP](https://github.com/ixartz/SaaS-Boilerplate) | [BoxyHQ](https://github.com/boxyhq/saas-starter-kit) | This platform           |
+| ------------------ | ----------------------------- | -------------------------------- | -------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------- | ----------------------- |
+| Price              | $199–299                      | $299                             | ~$349                                  | Free / OSS                                                    | Free / OSS                                           | Free / OSS              |
+| License            | Proprietary                   | Proprietary                      | Proprietary                            | MIT                                                           | Apache-2.0                                           | Apache-2.0              |
+| Stack              | Next.js                       | Next.js / Remix                  | Next.js / Nuxt                         | Next.js                                                       | Next.js                                              | Java 21 + React         |
+| Multi-tenancy      | None                          | Basic org                        | Organizations                          | Organizations                                                 | Teams                                                | Schema-per-tenant       |
+| Data isolation     | Shared DB                     | Shared DB                        | Shared DB                              | Shared DB                                                     | Shared DB                                            | Schema-level            |
+| Infrastructure     | None                          | None                             | None                                   | None                                                          | None                                                 | K8s + Helm              |
+| Microservices      | No                            | No                               | No                                     | No                                                            | No                                                   | IAM + Gateway + Billing |
+| Async provisioning | No                            | No                               | No                                     | No                                                            | No                                                   | RabbitMQ                |
+| API Gateway        | No                            | No                               | No                                     | No                                                            | No                                                   | Yes                     |
+| Billing            | Stripe wrapper                | Stripe wrapper                   | Stripe wrapper                         | Stripe wrapper                                                | Stripe wrapper                                       | Stripe Connect          |
+| SSO / SAML         | No                            | No                               | No                                     | No                                                            | Yes (Jackson)                                        | Planned (extension)     |
+| Audit logs         | No                            | No                               | No                                     | No                                                            | Yes                                                  | Via event bus           |
+| Self-hosted        | Partial                       | Partial                          | Partial                                | Yes                                                           | Yes                                                  | Yes                     |
+| Vendor lock-in     | Vercel/Supabase               | Supabase                         | Supabase                               | None                                                          | None                                                 | None                    |
+
+### Framework-specific tier
+
+| Capability         | [Laravel Spark](https://spark.laravel.com) | [SaaSykit Tenancy](https://saasykit.com/multi-tenancy) | [SaaS Pegasus](https://saaspegasus.com) | [Django SaaS BP](https://github.com/apptension/saas-boilerplate) | [BlazorPlate](https://blazorplate.net) | This platform           |
+| ------------------ | ------------------------------------------ | ------------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------- | -------------------------------------- | ----------------------- |
+| Price              | $99/yr                                     | ~$299                                                  | $249                                    | Free/paid                                                        | ~$499                                  | Free / OSS              |
+| License            | Proprietary                                | Proprietary                                            | Proprietary                             | MIT                                                              | Proprietary                            | Apache-2.0              |
+| Stack              | Laravel / PHP                              | Laravel / PHP                                          | Django / Python                         | Django / Python                                                  | .NET 10 / Blazor WASM                  | Java 21 + React         |
+| Multi-tenancy      | Basic                                      | Schema or DB per tenant                                | Teams                                   | None                                                             | Dedicated DB or shared                 | Schema-per-tenant       |
+| Data isolation     | Shared DB                                  | Schema-level or DB-level                               | Shared DB                               | Shared DB                                                        | DB-level or shared                     | Schema-level            |
+| Infrastructure     | None                                       | None                                                   | None                                    | None                                                             | None                                   | K8s + Helm              |
+| Microservices      | No                                         | No                                                     | No                                      | No                                                               | No                                     | IAM + Gateway + Billing |
+| Async provisioning | No                                         | No                                                     | No                                      | No                                                               | No                                     | RabbitMQ                |
+| API Gateway        | No                                         | No                                                     | No                                      | No                                                               | No                                     | Yes                     |
+| Billing            | Stripe/Paddle                              | Stripe/Paddle/Lemon Squeezy                            | Stripe wrapper                          | Stripe wrapper                                                   | Stripe wrapper                         | Stripe Connect          |
+| Self-hosted        | Partial                                    | Yes                                                    | Yes                                     | Yes                                                              | Yes                                    | Yes                     |
+| Vendor lock-in     | Laravel Cloud                              | None                                                   | Heroku/DO                               | AWS                                                              | None                                   | None                    |
+
+### Enterprise tier
+
+| Capability         | [Entando](https://entando.com) | This platform           |
+| ------------------ | ------------------------------ | ----------------------- |
+| Price              | Enterprise                     | Free / OSS              |
+| License            | Proprietary                    | Apache-2.0              |
+| Stack              | Java / Angular                 | Java 21 + React         |
+| Multi-tenancy      | Yes                            | Schema-per-tenant       |
+| Data isolation     | Logical                        | Schema-level            |
+| Infrastructure     | K8s (opinionated)              | K8s + Helm              |
+| Microservices      | Micro-frontend                 | IAM + Gateway + Billing |
+| Async provisioning | No                             | RabbitMQ                |
+| API Gateway        | No                             | Yes                     |
+| Billing            | No                             | Stripe Connect          |
+| Self-hosted        | Partial                        | Yes                     |
+| Vendor lock-in     | Entando Cloud                  | None                    |
 
 ---
 
@@ -22,15 +63,27 @@
 
 **[ShipFast](https://shipfa.st) / [MakerKit](https://makerkit.dev) / Larafast / SaaSLaunchpad** — Next.js monoliths, one-time purchase. No infrastructure, no schema isolation. Aimed at indie hackers and solo founders.
 
+**[Supastarter](https://supastarter.dev)** — Next.js and Nuxt variants, ~$349 one-time. Multi-tenancy via organizations, but shared DB with `tenant_id` filtering. Supabase-dependent for auth and database. No infrastructure layer.
+
+**[Next.js SaaS Boilerplate (ixartz)](https://github.com/ixartz/SaaS-Boilerplate)** — Free, MIT-licensed, actively maintained. Next.js + Tailwind + Shadcn + DrizzleORM. Organizations, RBAC, i18n, Stripe. Shared DB. No infrastructure. Closest free OSS option in the indie tier.
+
+**[BoxyHQ Enterprise SaaS Starter Kit](https://github.com/boxyhq/saas-starter-kit)** — Free, Apache-2.0. Next.js, teams, SAML SSO via Jackson, directory sync, audit logs, webhooks. The most enterprise-feature-complete free boilerplate in the Next.js space. Still a monolith, shared DB, no infrastructure.
+
 **[Laravel Starter Kits](https://laravel.com/starter-kits) / [Laravel Jetstream](https://jetstream.laravel.com) / [Laravel Spark](https://spark.laravel.com)** — Laravel monoliths. The base starter kits ship with Inertia (React/Vue/Svelte) or Livewire stacks and optional WorkOS AuthKit. Jetstream adds teams, roles, and API tokens. Spark layers Stripe/Paddle subscription billing on top. No K8s, no schema isolation.
+
+**[SaaSykit Tenancy](https://saasykit.com/multi-tenancy)** — Laravel, ~$299. The most serious multi-tenancy option in the Laravel ecosystem — uses `stancl/tenancy` to support schema-per-tenant or database-per-tenant isolation. Seat-based billing with Stripe, Paddle, and Lemon Squeezy. No infrastructure layer, no K8s, no async provisioning. Closest competitor on data isolation, but application-only.
 
 **[SaaS Pegasus](https://saaspegasus.com)** — Django/Python, solid docs, teams model. Monolithic, no infrastructure layer.
 
 **[Django SaaS Boilerplate (Apptension)](https://github.com/apptension/saas-boilerplate)** — Open-source, closest to infrastructure-aware in the indie tier. AWS-specific (Cognito, SES) — cloud lock-in. No K8s, no schema-per-tenant.
 
+**[BlazorPlate](https://blazorplate.net)** — .NET 10 + Blazor WASM, ~$499. Supports dedicated DB per tenant, shared DB, or single-tenant mode — switchable without code changes. Clean Architecture, CQRS via MediatR, real-time notifications. No K8s, no async provisioning, no API Gateway. Interesting for .NET teams that need isolation options, but proprietary and no infrastructure story.
+
 **[Entando](https://entando.com)** — Enterprise micro-frontend platform on K8s. Solves composable portal composition, not SaaS tenant provisioning. Java-based, vendor-managed, high TCO.
 
-**This platform wins when:**
+---
+
+## This platform wins when
 
 - The team needs real data isolation — every customer's data lives in its own PostgreSQL schema, not mixed in a shared table with a `tenant_id` column
 - Self-hosting is a requirement — full Kubernetes deployment, no dependency on Vercel, Supabase, AWS, or any vendor
@@ -40,9 +93,19 @@
 
 ---
 
+## Honest gaps vs. the competition
+
+- **SSO / SAML** — BoxyHQ ships it out of the box. This platform has it on the roadmap as a paid extension. Teams that need SAML on day one should look at BoxyHQ or add Jackson themselves.
+- **Audit logs** — BoxyHQ includes structured audit logs. This platform emits events to RabbitMQ which can feed an audit log, but there is no built-in audit log UI or storage.
+- **Billing flexibility** — SaaSykit Tenancy supports Stripe, Paddle, and Lemon Squeezy. This platform is Stripe Connect only.
+- **Language** — The backend is Java 21. Teams on Node, Python, PHP, or .NET will need to treat the services as black-box infrastructure and build their product services in their own language on top of the event bus. That is by design, but it is a real onboarding cost.
+- **Maturity** — ShipFast, MakerKit, SaaS Pegasus, and SaaSykit all have paying customers, community, and battle-tested codebases. This platform is early-stage.
+
+---
+
 ## Gap
 
-No open-source, infrastructure-first, language-agnostic option exists between indie boilerplates and Entando. All indie-tier tools ship application code only — K8s, schema isolation, async provisioning, and a real IAM/Gateway/Billing split are left to the team.
+No open-source, infrastructure-first, language-agnostic option exists between indie boilerplates and Entando. All indie-tier tools ship application code only — K8s, schema isolation, async provisioning, and a real IAM/Gateway/Billing split are left to the team. BoxyHQ comes closest on enterprise features but is still a Next.js monolith with shared DB. SaaSykit Tenancy comes closest on data isolation but has no infrastructure layer.
 
 ---
 
