@@ -34,7 +34,7 @@ K8s-native microservices foundation for multi-tenant B2B SaaS. Three open-source
 docker compose up
 
 # Cluster (deploy each service independently)
-helm install iqscaffold-iam-service ./helm/iam -f iam-values.yaml
+helm install iqkvdev-iam-service ./helm/iam -f iam-values.yaml
 helm install iqscaffold-gateway-service ./helm/api-gateway -f gateway-values.yaml
 helm install iqscaffold-billing-service ./helm/billing -f billing-values.yaml
 helm install iqscaffold-ui-service ./helm/ui -f ui-values.yaml

@@ -144,11 +144,11 @@ Workers retry with exponential backoff on failure. A ShedLock-guarded reaper job
 
 ## Infrastructure as Code
 
-Each service has a dedicated Helm chart. Shared infrastructure (PostgreSQL, RabbitMQ) is managed separately via `KnowHowDevOps/helm-charts/KnowHowDevOps/iqscaffold-infra`.
+Each service has a dedicated Helm chart. Shared infrastructure (PostgreSQL, RabbitMQ) is managed separately via `KnowHowDevOps/helm-charts/KnowHowDevOps/iqkvdev-infra`.
 
 ```
 KnowHowDevOps/helm-charts/IQKV/
-├── iqscaffold-iam-service/
+├── iqkvdev-iam-service/
 ├── iqscaffold-gateway-service/
 ├── iqscaffold-billing-service/
 ├── iqscaffold-user-service/
@@ -161,7 +161,7 @@ Each chart ships environment-specific value files: `values.yaml` (defaults), `va
 Deploy individually — point each service at existing infrastructure instances via connection string values:
 
 ```bash
-helm upgrade --install iqscaffold-iam-service ./iqscaffold-iam-service \
+helm upgrade --install iqkvdev-iam-service ./iqkvdev-iam-service \
   --values ./values.yaml --values ./values-production.yaml \
   --set infraServices.postgresql.password=$PG_PASSWORD \
   --set infraServices.rabbitmq.password=$RMQ_PASSWORD \
