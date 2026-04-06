@@ -165,7 +165,7 @@ helm upgrade --install iqkvdev-iam-service ./iqkvdev-iam-service \
   --values ./values.yaml --values ./values-production.yaml \
   --set infraServices.postgresql.password=$PG_PASSWORD \
   --set infraServices.rabbitmq.password=$RMQ_PASSWORD \
-  --namespace iqscaffold-production-env --atomic --wait
+  --namespace iqkvdev-production-env --atomic --wait
 ```
 
 CI/CD pipelines (Drone) handle deployments automatically. See `KnowHowDevOps/homelab-operations-pipeline/IQKV/` for pipeline definitions per service.
