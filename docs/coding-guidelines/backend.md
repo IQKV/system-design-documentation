@@ -2410,7 +2410,7 @@ Microservices rely on common infrastructure deployed via the `iqkvdev-infra` Hel
 # Example from Drone Pipeline
 helm upgrade --install --atomic --wait --timeout 5m ${DRONE_REPO_NAME} ./ \
   --values ./values.yaml \
-  --values ./values-dev.yaml \
+  --values ./values-test.yaml \
   --set image.tag=${DRONE_BRANCH} \
   --set infraServices.postgresql.password=${INFRA_POSTGRESQL_PASSWORD} \
   --set infraServices.redis.password=${INFRA_REDIS_PASSWORD} \
