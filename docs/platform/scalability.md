@@ -11,7 +11,7 @@ The platform is designed to scale horizontally at every layer. No component is a
 Each microservice is stateless and scales independently via Kubernetes HorizontalPodAutoscaler.
 
 ```yaml
-# IAM service HPA (values-production.yaml)
+# IAM service HPA (values-prd.yaml)
 autoscaling:
   enabled: true
   minReplicas: 2
@@ -87,7 +87,7 @@ These are reference figures for planning purposes, not guarantees. Actual perfor
 
 ## Production Sizing (Minimum)
 
-Derived from `values-production.yaml` defaults across services.
+Derived from `values-prd.yaml` defaults across services.
 
 | Component   | Minimum                         | Recommended                    |
 | ----------- | ------------------------------- | ------------------------------ |

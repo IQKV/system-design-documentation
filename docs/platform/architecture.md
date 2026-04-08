@@ -156,16 +156,16 @@ KnowHowDevOps/helm-charts/IQKV/
 └── iqscaffold-ui-mantine-auth-portal/
 ```
 
-Each chart ships environment-specific value files: `values.yaml` (defaults), `values-local.yaml`, `values-dev.yaml`, `values-staging.yaml`, `values-test.yaml`, `values-production.yaml`.
+Each chart ships environment-specific value files: `values.yaml` (defaults), `values-local.yaml`, `values-sit.yaml`, `values-uat.yaml`, `values-test.yaml`, `values-prd.yaml`.
 
 Deploy individually — point each service at existing infrastructure instances via connection string values:
 
 ```bash
 helm upgrade --install iqkvdev-iam-service ./iqkvdev-iam-service \
-  --values ./values.yaml --values ./values-production.yaml \
+  --values ./values.yaml --values ./values-prd.yaml \
   --set infraServices.postgresql.password=$PG_PASSWORD \
   --set infraServices.rabbitmq.password=$RMQ_PASSWORD \
-  --namespace iqkvdev-production-env --atomic --wait
+  --namespace iqkvdev-prd-env --atomic --wait
 ```
 
 CI/CD pipelines (Drone) handle deployments automatically. See `KnowHowDevOps/homelab-operations-pipeline/IQKV/` for pipeline definitions per service.
