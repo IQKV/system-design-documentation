@@ -144,16 +144,14 @@ Workers retry with exponential backoff on failure. A ShedLock-guarded reaper job
 
 ## Infrastructure as Code
 
-Each service has a dedicated Helm chart. Shared infrastructure (PostgreSQL, RabbitMQ) is managed separately via `KnowHowDevOps/helm-charts/KnowHowDevOps/iqkv-infra`.
+Each service has a dedicated Helm chart. Shared infrastructure (PostgreSQL, RabbitMQ) is managed separately via `KnowHowDevOps/helm-charts/KnowHowDevOps/foundation-infra`.
 
 ```
 KnowHowDevOps/helm-charts/IQKV/
-├── iqkv-iam-service/
-├── iqscaffold-gateway-service/
-├── iqscaffold-billing-service/
-├── iqscaffold-user-service/
-├── iqscaffold-ui-mantine-app-portal/
-└── iqscaffold-ui-mantine-auth-portal/
+├── foundation-iam-service/
+├── foundation-gateway-service/
+├── foundation-billing-service/
+├── foundation-ui-mantine-app-portal/
 ```
 
 Each chart ships environment-specific value files: `values.yaml` (defaults), `values-local.yaml`, `values-sit.yaml`, `values-uat.yaml`, `values-test.yaml`, `values-prd.yaml`.
@@ -161,7 +159,7 @@ Each chart ships environment-specific value files: `values.yaml` (defaults), `va
 Deploy individually — point each service at existing infrastructure instances via connection string values:
 
 ```bash
-helm upgrade --install iqkv-iam-service ./iqkv-iam-service \
+helm upgrade --install foundation-iam-service ./foundation-iam-service \
   --values ./values.yaml --values ./values-prd.yaml \
   --set infraServices.postgresql.password=$PG_PASSWORD \
   --set infraServices.rabbitmq.password=$RMQ_PASSWORD \

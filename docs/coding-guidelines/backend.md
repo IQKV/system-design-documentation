@@ -133,7 +133,7 @@ com.iqscaffold.{service}/
 │   ├── RabbitMQConfig.java
 │   ├── OpenApiConfig.java
 │   ├── GlobalExceptionHandler.java
-│   ├── IqScaffoldProperties.java
+│   ├── IqkvProperties.java
 │   └── ...
 ├── event/                        # Event publishers
 ├── security/                     # JWT filter, security utilities
@@ -169,7 +169,7 @@ com.iqscaffold.{service}/
 | Mapper                 | `{Entity}Mapper`                | `ContactMapper`                    |
 | Event publisher        | `{Entity}EventPublisher`        | `ContactEventPublisher`            |
 | Config class           | `{Concern}Config`               | `SecurityConfig`, `RabbitMQConfig` |
-| Properties record      | `{Service/Concern}Properties`   | `IqScaffoldProperties`             |
+| Properties record      | `{Service/Concern}Properties`   | `IqkvProperties`             |
 | Constants class        | `{Service}Constants`            | `UserServiceConstants`             |
 | Custom exception       | `{Concept}Exception`            | `ContactNotFoundException`         |
 | Enum                   | `{Entity}Status` or descriptive | `ContactStatus`                    |
@@ -673,7 +673,7 @@ This is the canonical token structure. Every service that issues or consumes tok
 ```json
 {
   "sub": "42",
-  "iss": "iqkv-iam-service",
+  "iss": "foundation-iam-service",
   "iat": 1700000000,
   "exp": 1700000900,
   "jti": "550e8400-e29b-41d4-a716-446655440000",
@@ -699,7 +699,7 @@ This is the canonical token structure. Every service that issues or consumes tok
 ```json
 {
   "sub": "42",
-  "iss": "iqkv-iam-service",
+  "iss": "foundation-iam-service",
   "iat": 1700000000,
   "exp": 1700604800,
   "jti": "660e9500-f30c-52e5-b827-557766551111",
@@ -720,7 +720,7 @@ All claim names are defined in `JwtClaimNames` (one copy per service in `securit
 | Constant           | Wire Key           | Type           | Access | Refresh | Notes                                                              |
 | ------------------ | ------------------ | -------------- | ------ | ------- | ------------------------------------------------------------------ |
 | `SUBJECT`          | `sub`              | `String`       | ✅     | ✅      | User ID as string (RFC 7519)                                       |
-| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqkv-iam-service`                                          |
+| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `foundation-iam-service`                                          |
 | `ISSUED_AT`        | `iat`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `EXPIRATION`       | `exp`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `JWT_ID`           | `jti`              | `String`       | ✅     | ✅      | UUID, required for revocation                                      |
@@ -770,7 +770,7 @@ iqscaffold:
   auth:
     jwt:
       algorithm: RS256
-      issuer: iqkv-iam-service
+      issuer: foundation-iam-service
       # Path to RSA private key (PEM). Use a mounted secret in k8s, a local file in dev.
       private-key-path: ${JWT_PRIVATE_KEY_PATH}
 ```
@@ -1162,7 +1162,7 @@ src/main/resources/db/changelog/
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
 
-  <changeSet id="20251110167000-create-contacts-table" author="iqscaffold">
+  <changeSet id="20251110167000-create-contacts-table" author="iqkv">
     <createTable tableName="contacts">
       <column name="id" type="BIGSERIAL">
         <constraints primaryKey="true" nullable="false"/>
@@ -1220,8 +1220,8 @@ src/main/resources/db/changelog/
 ### Properties Record Pattern
 
 ```java
-@ConfigurationProperties(prefix = "iqscaffold")
-public record IqScaffoldProperties(String tenantIdHeader, String userServiceUrl, @NestedConfigurationProperty CrmProperties crm) {
+@ConfigurationProperties(prefix = "iqkv")
+public record IqkvProperties(String tenantIdHeader, String userServiceUrl, @NestedConfigurationProperty CrmProperties crm) {
   public record CrmProperties(@NestedConfigurationProperty SecurityProperties security) {
     public record SecurityProperties(@NestedConfigurationProperty JwtProperties jwt) {
       public record JwtProperties(
@@ -1998,11 +1998,11 @@ iqscaffold:
 
 ---
 
-### 23.3 IqScaffoldProperties — i18n Record
+### 23.3 IqkvProperties — i18n Record
 
 ```java
-@ConfigurationProperties(prefix = "iqscaffold")
-public record IqScaffoldProperties(@NestedConfigurationProperty I18n i18n) {
+@ConfigurationProperties(prefix = "iqkv")
+public record IqkvProperties(@NestedConfigurationProperty I18n i18n) {
   public record I18n(
     List<String> supportedLocales,
     String defaultLocale,
@@ -2032,9 +2032,9 @@ Each service has an `I18nConfig` in its `config/` package that wires `MessageSou
 @Configuration
 public class I18nConfig {
 
-  private final IqScaffoldProperties properties;
+  private final IqkvProperties properties;
 
-  public I18nConfig(final IqScaffoldProperties properties) {
+  public I18nConfig(final IqkvProperties properties) {
     this.properties = properties;
   }
 
@@ -2399,7 +2399,7 @@ All platform microservices use Drone CI pipelines for end-to-end CI/CD and Helm 
 
 ### Helm Chart Configuration & Infrastructure
 
-Microservices rely on common infrastructure deployed via the `iqkv-infra` Helm chart (PostgreSQL, Redis, RabbitMQ, MinIO). Connection details to these services must not be hardcoded in application code.
+Microservices rely on common infrastructure deployed via the `foundation-infra` Helm chart (PostgreSQL, Redis, RabbitMQ, MinIO). Connection details to these services must not be hardcoded in application code.
 
 ### Strict Security Guidelines for `helm --set`
 
