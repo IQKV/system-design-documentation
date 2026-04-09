@@ -720,7 +720,7 @@ All claim names are defined in `JwtClaimNames` (one copy per service in `securit
 | Constant           | Wire Key           | Type           | Access | Refresh | Notes                                                              |
 | ------------------ | ------------------ | -------------- | ------ | ------- | ------------------------------------------------------------------ |
 | `SUBJECT`          | `sub`              | `String`       | ✅     | ✅      | User ID as string (RFC 7519)                                       |
-| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqkv-iam-service`                                       |
+| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqkv-iam-service`                                          |
 | `ISSUED_AT`        | `iat`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `EXPIRATION`       | `exp`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `JWT_ID`           | `jti`              | `String`       | ✅     | ✅      | UUID, required for revocation                                      |
