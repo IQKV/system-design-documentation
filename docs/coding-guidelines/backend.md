@@ -169,7 +169,7 @@ com.iqscaffold.{service}/
 | Mapper                 | `{Entity}Mapper`                | `ContactMapper`                    |
 | Event publisher        | `{Entity}EventPublisher`        | `ContactEventPublisher`            |
 | Config class           | `{Concern}Config`               | `SecurityConfig`, `RabbitMQConfig` |
-| Properties record      | `{Service/Concern}Properties`   | `IqkvProperties`             |
+| Properties record      | `{Service/Concern}Properties`   | `IqkvProperties`                   |
 | Constants class        | `{Service}Constants`            | `UserServiceConstants`             |
 | Custom exception       | `{Concept}Exception`            | `ContactNotFoundException`         |
 | Enum                   | `{Entity}Status` or descriptive | `ContactStatus`                    |
@@ -720,7 +720,7 @@ All claim names are defined in `JwtClaimNames` (one copy per service in `securit
 | Constant           | Wire Key           | Type           | Access | Refresh | Notes                                                              |
 | ------------------ | ------------------ | -------------- | ------ | ------- | ------------------------------------------------------------------ |
 | `SUBJECT`          | `sub`              | `String`       | ✅     | ✅      | User ID as string (RFC 7519)                                       |
-| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `foundation-iam-service`                                          |
+| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `foundation-iam-service`                                    |
 | `ISSUED_AT`        | `iat`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `EXPIRATION`       | `exp`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `JWT_ID`           | `jti`              | `String`       | ✅     | ✅      | UUID, required for revocation                                      |
