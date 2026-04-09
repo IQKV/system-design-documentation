@@ -673,7 +673,7 @@ This is the canonical token structure. Every service that issues or consumes tok
 ```json
 {
   "sub": "42",
-  "iss": "iqkvdev-iam-service",
+  "iss": "iqkv-iam-service",
   "iat": 1700000000,
   "exp": 1700000900,
   "jti": "550e8400-e29b-41d4-a716-446655440000",
@@ -699,7 +699,7 @@ This is the canonical token structure. Every service that issues or consumes tok
 ```json
 {
   "sub": "42",
-  "iss": "iqkvdev-iam-service",
+  "iss": "iqkv-iam-service",
   "iat": 1700000000,
   "exp": 1700604800,
   "jti": "660e9500-f30c-52e5-b827-557766551111",
@@ -720,7 +720,7 @@ All claim names are defined in `JwtClaimNames` (one copy per service in `securit
 | Constant           | Wire Key           | Type           | Access | Refresh | Notes                                                              |
 | ------------------ | ------------------ | -------------- | ------ | ------- | ------------------------------------------------------------------ |
 | `SUBJECT`          | `sub`              | `String`       | ✅     | ✅      | User ID as string (RFC 7519)                                       |
-| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqkvdev-iam-service`                                       |
+| `ISSUER`           | `iss`              | `String`       | ✅     | ✅      | Always `iqkv-iam-service`                                       |
 | `ISSUED_AT`        | `iat`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `EXPIRATION`       | `exp`              | `Instant`      | ✅     | ✅      | RFC 7519                                                           |
 | `JWT_ID`           | `jti`              | `String`       | ✅     | ✅      | UUID, required for revocation                                      |
@@ -770,7 +770,7 @@ iqscaffold:
   auth:
     jwt:
       algorithm: RS256
-      issuer: iqkvdev-iam-service
+      issuer: iqkv-iam-service
       # Path to RSA private key (PEM). Use a mounted secret in k8s, a local file in dev.
       private-key-path: ${JWT_PRIVATE_KEY_PATH}
 ```
@@ -2399,7 +2399,7 @@ All platform microservices use Drone CI pipelines for end-to-end CI/CD and Helm 
 
 ### Helm Chart Configuration & Infrastructure
 
-Microservices rely on common infrastructure deployed via the `iqkvdev-infra` Helm chart (PostgreSQL, Redis, RabbitMQ, MinIO). Connection details to these services must not be hardcoded in application code.
+Microservices rely on common infrastructure deployed via the `iqkv-infra` Helm chart (PostgreSQL, Redis, RabbitMQ, MinIO). Connection details to these services must not be hardcoded in application code.
 
 ### Strict Security Guidelines for `helm --set`
 
