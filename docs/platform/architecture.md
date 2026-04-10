@@ -86,16 +86,16 @@ Deployed as a static build (Nginx container or CDN). No direct database or servi
 Each service owns its own PostgreSQL database. No shared database, no cross-service table access — inter-service data flows through the API or the event bus.
 
 | Service | Database             | Contents                                              |
-| ------- | -------------------- | ----------------------------------------------------- |
-| IAM     | `iqscaffold_iam`     | Users, organizations, memberships, roles, invitations |
-| Billing | `iqscaffold_billing` | Stripe customer refs, subscription IDs, webhook log   |
+| ------- |----------------------| ----------------------------------------------------- |
+| IAM     | `foundation_iam`     | Users, organizations, memberships, roles, invitations |
+| Billing | `foundation_billing` | Stripe customer refs, subscription IDs, webhook log   |
 
 ### Schema-Per-Tenant (within IAM database)
 
-Within `iqscaffold_iam`, each tenant gets a dedicated PostgreSQL schema:
+Within `foundation_iam`, each tenant gets a dedicated PostgreSQL schema:
 
 ```
-iqscaffold_iam/
+foundation_iam/
 ├── public/          # platform registry (users, tenants, token_denylist, failed_logins, shedlock)
 ├── tenant_acme/     # per-tenant: members, authorities, tenant-scoped data
 ├── tenant_globex/

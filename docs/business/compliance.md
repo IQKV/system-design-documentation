@@ -2,7 +2,7 @@
 
 ## Schema-Per-Tenant
 
-Each tenant has a dedicated PostgreSQL schema within the IAM database (`iqscaffold_iam`). The schema boundary is enforced at the database engine level, not in application code.
+Each tenant has a dedicated PostgreSQL schema within the IAM database (`foundation_iam`). The schema boundary is enforced at the database engine level, not in application code.
 
 Practical implications:
 

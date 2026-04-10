@@ -2403,7 +2403,7 @@ Microservices rely on common infrastructure deployed via the `foundation-infra` 
 
 ### Strict Security Guidelines for `helm --set`
 
-- **Never hardcode secrets in `values.yaml`:** Passwords, JWT secret keys, OAuth client IDs/secrets, and SMTP credentials must be set to empty strings or safe placeholder values (like `"iqscaffold_dev_password"` ONLY for local dev overrides) in the `values.yaml` files.
+- **Never hardcode secrets in `values.yaml`:** Passwords, JWT secret keys, OAuth client IDs/secrets, and SMTP credentials must be set to empty strings or safe placeholder values (like `"iqkv_password"` ONLY for local dev overrides) in the `values.yaml` files.
 - **Dynamic Secret Injection via `--set`:** All sensitive configuration is managed in CI/CD secrets (e.g., Drone CI `from_secret`) and injected at deploy time using `--set`.
 
 ```bash
