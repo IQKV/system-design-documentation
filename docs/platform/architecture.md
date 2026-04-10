@@ -58,9 +58,37 @@ Stripe Connect wrapper. No custom billing logic — subscriptions, invoices, and
 
 - Creates Stripe customer per tenant on `tenant.provisioned`
 - Handles Stripe webhooks (idempotent)
-- Stores Stripe customer ID and subscription ID per tenant
+- Stripe customer ID and subscription ID stored in `billing_settings`
 
-Publishes: `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`
+Publishes: `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`, `billing.settings.updated`
+
+### Billing Settings
+
+Each tenant has a `billing_settings` record (1:1) — the single source of truth for Stripe customer metadata. Decouples billing identity from IAM users.
+
+```
+billing_settings
+├── id                UUID PK
+├── tenant_key        VARCHAR(21) UNIQUE FK → tenant
+├── stripe_customer_id VARCHAR
+├── billing_email     VARCHAR        -- finance dept contact, no system access required
+├── company_name      VARCHAR
+├── billing_address   JSONB          -- street, city, country, postal_code
+├── tax_id            VARCHAR        -- VAT/GST number
+├── tax_id_type       VARCHAR        -- Stripe enum: eu_vat, gb_vat, au_abn, etc.
+├── currency          VARCHAR(3)     -- ISO 4217, default USD
+├── profile_owner_id  BIGINT NULL FK → users(id)  -- optional, null by default
+├── created_at        TIMESTAMP
+└── updated_at        TIMESTAMP
+```
+
+**Key decisions:**
+- Created automatically on `tenant.provisioned` with defaults from registration data
+- Any update syncs to Stripe via `CustomerUpdateParams` (name, email, address, tax ID) — outbox pattern ensures delivery
+- Owner/CEO changes in IAM do not affect billing identity
+- `billing_email` allows finance teams to receive invoices without a system account
+- VAT/GST details flow directly into Stripe invoices — required for B2B tax compliance
+- `profile_owner_id` is nullable — billing settings are fully decoupled from users by default; optionally points to a user who "owns" the billing profile (e.g. CFO with a system account)
 
 ---
 
@@ -97,9 +125,9 @@ Within `foundation_iam`, each tenant gets a dedicated PostgreSQL schema:
 ```
 foundation_iam/
 ├── public/          # platform registry (users, tenants, token_denylist, failed_logins, shedlock)
-├── tenant_acme/     # per-tenant: members, authorities, tenant-scoped data
-├── tenant_globex/
-└── tenant_initech/
+├── tenant_V1StGXR8_Z5j/     # per-tenant: members, authorities, tenant-scoped data
+├── tenant_K9pL2mN7qR4s/
+└── tenant_A3bC5dE7fG9h/
 ```
 
 The `MyBatisSchemaInterceptor` rewrites `search_path` per request based on the resolved tenant context from the JWT claim. Cross-tenant queries are not possible in normal application flow.

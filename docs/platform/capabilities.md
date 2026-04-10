@@ -42,13 +42,16 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 
 Stripe Connect wrapper. No custom billing logic — subscriptions, invoices, and the dashboard are managed on Stripe's side.
 
-| Capability       | Notes                                                                                        | Status |
-| ---------------- | -------------------------------------------------------------------------------------------- | ------ |
-| Stripe customer  | Created per tenant automatically on `tenant.provisioned`                                     | 🚧     |
-| Subscriptions    | Managed in Stripe Dashboard; no custom subscription logic                                    | 🚧     |
-| Invoices         | Generated and hosted by Stripe                                                               | 🚧     |
-| Webhooks         | Processed idempotently; duplicate delivery is safe                                           | 🚧     |
-| Lifecycle events | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` | 🚧     |
+| Capability        | Notes                                                                                        | Status |
+| ----------------- | -------------------------------------------------------------------------------------------- | ------ |
+| Stripe customer   | Created per tenant automatically on `tenant.provisioned`                                     | 🚧     |
+| Billing settings  | 1:1 per tenant — owns Stripe customer metadata, decoupled from IAM users                    | 🚧     |
+| Billing email     | Separate contact for finance dept; no system account required                                | 🚧     |
+| Tax ID / VAT/GST  | Stored in `billing_settings`, synced to Stripe for compliant B2B invoices                   | 🚧     |
+| Subscriptions     | Managed in Stripe Dashboard; no custom subscription logic                                    | 🚧     |
+| Invoices          | Generated and hosted by Stripe                                                               | 🚧     |
+| Webhooks          | Processed idempotently; duplicate delivery is safe                                           | 🚧     |
+| Lifecycle events  | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` | 🚧     |
 
 ---
 
