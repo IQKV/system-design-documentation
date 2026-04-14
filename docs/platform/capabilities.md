@@ -8,19 +8,20 @@ Status key: ✅ implemented · 🚧 in progress · 📋 planned
 
 Identity, access, and tenant lifecycle. All auth flows pass through this service.
 
-| Capability          | Notes                                                                              | Status |
-| ------------------- | ---------------------------------------------------------------------------------- | ------ |
-| Registration        | Email/password, email verification required before access                          | 🚧     |
-| Authentication      | JWT RS256 access token (15 min) + refresh token (7 day)                            | 🚧     |
-| Account recovery    | Password reset via signed email token, rate-limited                                | 🚧     |
-| Brute-force lockout | Failed login tracking per email; temporary account lock                            | 🚧     |
-| Token revocation    | JTI denylist (single session) + global signout timestamp                           | 🚧     |
-| JWKS endpoint       | `/.well-known/jwks.json` — downstream services validate locally                    | 🚧     |
-| Organizations       | Create, update, suspend, delete; async provisioning via RabbitMQ                   | 🚧     |
-| RBAC                | Roles: `TENANT_OWNER`, `ADMIN`, `MEMBER`                                           | 🚧     |
-| Invitations         | Email invite with expiring token                                                   | 🚧     |
-| Multi-org           | One user can belong to multiple organizations with independent roles               | 🚧     |
-| Events              | Publishes `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed` | 🚧     |
+| Capability          | Notes                                                                                                       | Status |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- | ------ |
+| Registration        | Email/password, email verification required before access                                                   | 🚧     |
+| Authentication      | JWT RS256 access token (15 min) + refresh token (7 day)                                                     | 🚧     |
+| Account recovery    | Password reset via signed email token, rate-limited                                                         | 🚧     |
+| Brute-force lockout | Failed login tracking per email; temporary account lock                                                     | 🚧     |
+| Token revocation    | JTI denylist (single session) + global signout timestamp                                                    | 🚧     |
+| JWKS endpoint       | `/.well-known/jwks.json` — downstream services validate locally                                             | 🚧     |
+| Organizations       | Create, update, suspend, delete; async provisioning via RabbitMQ                                            | 🚧     |
+| RBAC                | Roles: `TENANT_OWNER`, `ADMIN`, `MEMBER`                                                                    | 🚧     |
+| Invitations         | Email invite with expiring token                                                                            | 🚧     |
+| Multi-org           | One user can belong to multiple organizations with independent roles                                        | 🚧     |
+| Tenancy mode        | `multi` (default) or `single` — configured via Helm; single-tenant provisions one default tenant at startup | 📋     |
+| Events              | Publishes `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`                          | 🚧     |
 
 ---
 
@@ -42,16 +43,16 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 
 Stripe Connect wrapper. No custom billing logic — subscriptions, invoices, and the dashboard are managed on Stripe's side.
 
-| Capability        | Notes                                                                                        | Status |
-| ----------------- | -------------------------------------------------------------------------------------------- | ------ |
-| Stripe customer   | Created per tenant automatically on `tenant.provisioned`                                     | 🚧     |
-| Billing settings  | 1:1 per tenant — owns Stripe customer metadata, decoupled from IAM users                    | 🚧     |
-| Billing email     | Separate contact for finance dept; no system account required                                | 🚧     |
-| Tax ID / VAT/GST  | Stored in `billing_settings`, synced to Stripe for compliant B2B invoices                   | 🚧     |
-| Subscriptions     | Managed in Stripe Dashboard; no custom subscription logic                                    | 🚧     |
-| Invoices          | Generated and hosted by Stripe                                                               | 🚧     |
-| Webhooks          | Processed idempotently; duplicate delivery is safe                                           | 🚧     |
-| Lifecycle events  | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` | 🚧     |
+| Capability       | Notes                                                                                        | Status |
+| ---------------- | -------------------------------------------------------------------------------------------- | ------ |
+| Stripe customer  | Created per tenant automatically on `tenant.provisioned`                                     | 🚧     |
+| Billing settings | 1:1 per tenant — owns Stripe customer metadata, decoupled from IAM users                     | 🚧     |
+| Billing email    | Separate contact for finance dept; no system account required                                | 🚧     |
+| Tax ID / VAT/GST | Stored in `billing_settings`, synced to Stripe for compliant B2B invoices                    | 🚧     |
+| Subscriptions    | Managed in Stripe Dashboard; no custom subscription logic                                    | 🚧     |
+| Invoices         | Generated and hosted by Stripe                                                               | 🚧     |
+| Webhooks         | Processed idempotently; duplicate delivery is safe                                           | 🚧     |
+| Lifecycle events | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` | 🚧     |
 
 ---
 
@@ -73,18 +74,18 @@ React + Mantine SPA. All requests go through the API Gateway — no direct acces
 
 ## Infrastructure
 
-| Capability           | Notes                                                                                           | Status |
-| -------------------- | ----------------------------------------------------------------------------------------------- | ------ |
-| Kubernetes           | Deployments with HPA, pod anti-affinity, network policies                                       | 🚧     |
-| Helm                 | Dedicated chart per service; env-specific value files (local/dev/test/staging/production)       | 🚧     |
-| Docker Compose       | Local dev environment with PostgreSQL, RabbitMQ, MailHog                                        | 🚧     |
-| Database-per-service | Each service owns its own PostgreSQL database; no cross-service table access                    | ✅     |
-| Schema-per-tenant    | PostgreSQL schema isolation per tenant within the IAM database                                  | ✅     |
-| Async provisioning   | RabbitMQ event-driven; ShedLock-guarded reaper for tenants stuck in `PROVISIONING`              | 🚧     |
-| Secrets management   | K8s Secrets injected at deploy time via CI pipeline — never committed to source                 | 🚧     |
-| TLS                  | cert-manager integration via Helm ingress values                                                | 🚧     |
-| Observability        | Prometheus metrics (Micrometer), structured JSON logs (Logstash encoder), correlation ID filter | 🚧     |
-| CI/CD                | Drone pipelines per service: verify → publish artifacts → publish image → deploy → promote      | 🚧     |
+| Capability           | Notes                                                                                                                 | Status |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- | ------ |
+| Kubernetes           | Deployments with HPA, pod anti-affinity, network policies                                                             | 🚧     |
+| Helm                 | Dedicated chart per service; env-specific value files (local/dev/test/staging/production)                             | 🚧     |
+| Docker Compose       | Local dev environment with PostgreSQL, RabbitMQ, MailHog                                                              | 🚧     |
+| Database-per-service | Each service owns its own PostgreSQL database; no cross-service table access                                          | ✅     |
+| Schema-per-tenant    | PostgreSQL schema isolation per tenant within the IAM database; identical model in both single and multi-tenant modes | ✅     |
+| Async provisioning   | RabbitMQ event-driven; ShedLock-guarded reaper for tenants stuck in `PROVISIONING`                                    | 🚧     |
+| Secrets management   | K8s Secrets injected at deploy time via CI pipeline — never committed to source                                       | 🚧     |
+| TLS                  | cert-manager integration via Helm ingress values                                                                      | 🚧     |
+| Observability        | Prometheus metrics (Micrometer), structured JSON logs (Logstash encoder), correlation ID filter                       | 🚧     |
+| CI/CD                | Drone pipelines per service: verify → publish artifacts → publish image → deploy → promote                            | 🚧     |
 
 ---
 

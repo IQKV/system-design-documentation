@@ -1,5 +1,28 @@
 # Architecture
 
+## Tenancy Mode
+
+Tenancy mode is a deploy-time configuration — no code changes required.
+
+| Mode          | Helm value                                         | Behavior                                                               |
+| ------------- | -------------------------------------------------- | ---------------------------------------------------------------------- |
+| Multi-tenant  | `tenancy.mode: multi` (default)                    | Tenants are created on demand via the registration flow                |
+| Single-tenant | `tenancy.mode: single` + `tenancy.defaultTenant.*` | IAM provisions one default tenant at startup; registration is disabled |
+
+In single-tenant mode the schema isolation model is identical — the platform operates with one tenant. Migrating to multi-tenant later requires no schema or code changes.
+
+```yaml
+# values.yaml (single-tenant example)
+tenancy:
+  mode: single
+  defaultTenant:
+    key: "my-org"
+    name: "My Organization"
+    ownerEmail: "admin@example.com"
+```
+
+---
+
 ## Overview
 
 ```
@@ -83,6 +106,7 @@ billing_settings
 ```
 
 **Key decisions:**
+
 - Created automatically on `tenant.provisioned` with defaults from registration data
 - Any update syncs to Stripe via `CustomerUpdateParams` (name, email, address, tax ID) — outbox pattern ensures delivery
 - Owner/CEO changes in IAM do not affect billing identity
@@ -114,7 +138,7 @@ Deployed as a static build (Nginx container or CDN). No direct database or servi
 Each service owns its own PostgreSQL database. No shared database, no cross-service table access — inter-service data flows through the API or the event bus.
 
 | Service | Database             | Contents                                              |
-| ------- |----------------------| ----------------------------------------------------- |
+| ------- | -------------------- | ----------------------------------------------------- |
 | IAM     | `foundation_iam`     | Users, organizations, memberships, roles, invitations |
 | Billing | `foundation_billing` | Stripe customer refs, subscription IDs, webhook log   |
 
@@ -146,6 +170,8 @@ To migrate a tenant to a dedicated database instance: dump schema → restore �
 
 ## Tenant Provisioning Flow
 
+### Multi-tenant (default)
+
 ```
 1. POST /api/v1/iam/auth/signup
        │
@@ -164,6 +190,21 @@ To migrate a tenant to a dedicated database instance: dump schema → restore �
        └── Billing worker
              create Stripe customer
              store customer ID
+```
+
+### Single-tenant (deploy-time)
+
+When `tenancy.mode: single`, IAM runs the same provisioning flow at application startup for the configured default tenant. Registration endpoint is disabled. All subsequent users are invited into the single tenant by the owner.
+
+```
+1. Application startup
+       │
+2. IAM checks if default tenant exists
+       │
+3. If not: creates tenant + owner account (status: PROVISIONING)
+       │     → same async flow as multi-tenant
+       │
+4. If yes: no-op — idempotent startup
 ```
 
 Workers retry with exponential backoff on failure. A ShedLock-guarded reaper job cleans up tenants stuck in `PROVISIONING` beyond a configurable timeout. Owners can manually trigger `POST /tenants/{tenantKey}/retry-provisioning` for `PROVISIONING_FAILED` tenants.

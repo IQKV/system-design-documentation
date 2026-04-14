@@ -18,6 +18,8 @@ Three open-source microservices covering the infrastructure layer:
 
 Deployed via Helm to any Kubernetes cluster. PostgreSQL with schema-per-tenant. RabbitMQ for async provisioning.
 
+Tenancy mode is a deploy-time configuration. Multi-tenant by default; single-tenant by provisioning one default tenant at startup — same codebase, same schema model, no code changes required.
+
 ---
 
 ## Scope at This Stage
@@ -36,7 +38,7 @@ Out of scope for now: SSO/SAML, usage-based billing, multi-region, managed hosti
 
 ## Target Users
 
-Engineering teams (3–15 people) building B2B SaaS who need a deployable infrastructure baseline and have Kubernetes experience. Not aimed at solo founders or no-code users.
+Engineering teams (3–15 people) building B2B SaaS who need a deployable infrastructure baseline and have Kubernetes experience. Works equally well for single-product deployments (single-tenant mode) and multi-customer platforms (multi-tenant mode). Not aimed at solo founders or no-code users.
 
 ---
 

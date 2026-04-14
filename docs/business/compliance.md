@@ -1,5 +1,18 @@
 # Compliance & Data Isolation
 
+## Tenancy Modes
+
+The platform supports two deployment modes, configured at deploy time via Helm values — no code changes required.
+
+| Mode          | Configuration                                      | Use case                                                |
+| ------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| Multi-tenant  | `tenancy.mode: multi` (default)                    | Standard B2B SaaS — each customer gets their own schema |
+| Single-tenant | `tenancy.mode: single` + `tenancy.defaultTenant.*` | Internal tools, dedicated deployments, white-label      |
+
+In single-tenant mode, IAM provisions one default tenant at startup. The schema isolation model is identical — the platform simply operates with one tenant instead of many. Switching from single to multi-tenant later requires no schema or code changes.
+
+---
+
 ## Schema-Per-Tenant
 
 Each tenant has a dedicated PostgreSQL schema within the IAM database (`foundation_iam`). The schema boundary is enforced at the database engine level, not in application code.

@@ -7,6 +7,7 @@ Goal: all four components running on a public demo host with enough UI to evalua
 **Services**
 
 - [ ] IAM — registration, login, JWT RS256, tenant lifecycle, RBAC, email verification, password reset, brute-force lockout, token revocation, JWKS endpoint
+- [ ] IAM — tenancy mode config (`tenancy.mode: multi | single`); single-tenant provisions default tenant at startup
 - [ ] API Gateway — JWT validation, tenant resolution, routing
 - [ ] Billing — Stripe Connect integration, webhook handling, lifecycle events
 - [ ] UI — React + Mantine, deployed as static build behind the Gateway

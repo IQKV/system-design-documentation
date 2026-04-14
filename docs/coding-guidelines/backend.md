@@ -1090,6 +1090,27 @@ The following `ROLE_` references are legacy artifacts and must be removed:
 
 ## 11. Multi-Tenancy
 
+### Tenancy Mode
+
+The platform supports two modes, selected at deploy time via Helm values. No code changes are required to switch modes.
+
+| Mode          | `tenancy.mode` value | Behavior                                                                        |
+| ------------- | -------------------- | ------------------------------------------------------------------------------- |
+| Multi-tenant  | `multi` (default)    | Tenants created on demand via registration; any number of tenants supported     |
+| Single-tenant | `single`             | IAM provisions one default tenant at startup; registration endpoint is disabled |
+
+In single-tenant mode the schema isolation model is identical — the platform simply operates with one tenant. The `TenantBootstrapRunner` checks for the default tenant on startup and runs the standard async provisioning flow if it does not exist (idempotent).
+
+```yaml
+# values.yaml — single-tenant example
+tenancy:
+  mode: single
+  defaultTenant:
+    key: "my-org"
+    name: "My Organization"
+    ownerEmail: "admin@example.com"
+```
+
 ### Architecture
 
 Schema-per-tenant strategy: each tenant gets its own PostgreSQL schema (`tenant_{tenant_key}`). The `public` schema holds system-level data (tenant registry, users, memberships, etc.).

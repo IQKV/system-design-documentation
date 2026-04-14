@@ -30,7 +30,14 @@ K8s-native microservices foundation for multi-tenant B2B SaaS. Three open-source
 ## Quick Start
 
 ```bash
-# Local
+# Local (multi-tenant by default)
+docker compose up
+
+# Single-tenant mode — provision one default tenant at startup
+# Set in your values file:
+#   tenancy.mode: single
+#   tenancy.defaultTenant.key: "my-org"
+#   tenancy.defaultTenant.name: "My Organization"
 docker compose up
 
 # Cluster (deploy each service independently)
