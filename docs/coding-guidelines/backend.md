@@ -1,4 +1,4 @@
-# IQ Scaffold Platform — Coding Guidelines
+# IQ  Key Value Platform — Coding Guidelines
 
 > Consolidated conventions, design rules, and clean coding principles extracted from all platform microservices.
 > Every developer building a new service or feature must follow this document.
@@ -1780,7 +1780,7 @@ Use text blocks for any multi-line string: SQL queries, JSON templates, OpenAPI 
 ````java
 // Correct — OpenAPI description
 .description("""
-    CRM contact management service for IQ Scaffold platform.
+    CRM contact management service for IQ  Key Value platform.
 
     ## Authentication
     All endpoints require JWT authentication:
@@ -1979,9 +1979,9 @@ validation.min.length={0} must be at least {1} characters
 validation.email.invalid=Invalid email format
 
 # Email content
-email.verification.subject=Verify your IQ Scaffold account
+email.verification.subject=Verify your IQ  Key Value account
 email.verification.greeting=Hello {0}
-email.password.reset.subject=Reset your IQ Scaffold password
+email.password.reset.subject=Reset your IQ  Key Value password
 ```
 
 Rules:
@@ -2213,7 +2213,7 @@ context.setVariable("body",
     messageService.getMessage("email.verification.body", userLocale));
 
 // Wrong — hardcoded text
-helper.setSubject("Verify your IQ Scaffold account");
+helper.setSubject("Verify your IQ  Key Value account");
 context.setVariable("greeting", "Hello " + user.getFirstName());
 ```
 
