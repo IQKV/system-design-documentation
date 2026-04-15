@@ -1,6 +1,6 @@
 # UI Coding Guidelines
 
-> Consolidated reference for building UI code across `app.iqscaffold.com` and `auth.iqscaffold.com`.
+> Consolidated reference for building UI code across `app.iqkv.dev` and `auth.iqkv.dev`.
 > Both projects share identical conventions. Follow this document as the single source of truth.
 
 ---
