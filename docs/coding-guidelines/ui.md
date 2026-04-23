@@ -473,7 +473,7 @@ Config: `lingui.config.ts`
 
 ```tsx
 import { Trans, useLingui } from "@lingui/react/macro";
-import { msg } from "@lingui/macro";
+import { msg } from "@lingui/core/macro";
 
 // JSX translation
 function MyComponent() {
