@@ -28,7 +28,7 @@
 19. [KISS — Keep It Simple, Stupid](#19-kiss--keep-it-simple-stupid)
 20. [DRY — Don't Repeat Yourself](#20-dry--dont-repeat-yourself)
 21. [Constant Usage](#21-constant-usage)
-22. [Java 21+ Language Features](#22-java-21-language-features)
+22. [Java 25+ Language Features](#22-java-21-language-features)
 23. [Internationalization (i18n)](#23-internationalization-i18n)
 24. [Inter-Service Communication & Resilience](#24-inter-service-communication--resilience)
 25. [Reactive Programming (Gateway Service)](#25-reactive-programming-gateway-service)
@@ -1675,9 +1675,9 @@ rabbitTemplate.convertAndSend("iqscaffold.events", "contact.created", event);
 
 ---
 
-## 22. Java 21+ Language Features
+## 22. Java 25+ Language Features
 
-The platform targets **Java 21**. Modern language features are not optional style preferences — they are the expected baseline. Reviewers should flag code that ignores these patterns in favour of older equivalents.
+The platform targets **Java 25**. Modern language features are not optional style preferences — they are the expected baseline. Reviewers should flag code that ignores these patterns in favour of older equivalents.
 
 ---
 
@@ -1907,7 +1907,7 @@ Long leadId = (Long) convertedFromLeadIdObj;
 
 ### Virtual Threads (Project Loom)
 
-Spring Boot 3.2+ on Java 21 supports virtual threads. Enable them in all services — every platform service is I/O-bound by nature (database, HTTP, messaging):
+Spring Boot 4.2+ on Java 25 supports virtual threads. Enable them in all services — every platform service is I/O-bound by nature (database, HTTP, messaging):
 
 ```yaml
 spring:
@@ -1924,7 +1924,7 @@ Rules:
 
 ---
 
-### What to Avoid (Pre-Java 21 Patterns)
+### What to Avoid (Pre-Java 25 Patterns)
 
 | Avoid                                                 | Use instead                                      |
 | ----------------------------------------------------- | ------------------------------------------------ |
@@ -2239,7 +2239,7 @@ context.setVariable("greeting", "Hello " + user.getFirstName());
 Use modern HTTP clients for synchronous inter-service calls instead of legacy options:
 
 ```java
-// Prefer Spring's RestClient (blocking, Spring Boot 3.2+) or WebClient (reactive)
+// Prefer Spring's RestClient (blocking, Spring Boot 4.2+) or WebClient (reactive)
 @Bean
 public RestClient {service}RestClient(RestClient.Builder builder) {
     return builder.baseUrl("http://iqscaffold-{service}-service").build();
@@ -2542,7 +2542,7 @@ The `FinalParameters` Checkstyle rule enforces `final` on:
 - For-each clause variables (`FOR_EACH_CLAUSE`)
 - Catch block parameters (`LITERAL_CATCH`)
 
-Primitive types are exempt (`ignorePrimitiveTypes = true`). Unnamed parameters (Java 21 `_`) are exempt.
+Primitive types are exempt (`ignorePrimitiveTypes = true`). Unnamed parameters (Java 25 `_`) are exempt.
 
 ```java
 // Correct
