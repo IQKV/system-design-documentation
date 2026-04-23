@@ -63,7 +63,7 @@ helm install foundation-ui-service ./helm/ui -f ui-values.yaml
 
 ## Coding Guidelines
 
-Backend services (IAM, Gateway, Billing) are Java 21 + Spring Boot. Each service follows a vertical-slice package structure (`com.iqscaffold.{service}`), uses constructor injection, interface-backed services, MyBatis for data access with Liquibase migrations, and publishes domain events to RabbitMQ. REST APIs are versioned (`/api/v1/`), secured with RS256 JWT, and documented via OpenAPI.
+Backend services (IAM, Gateway, Billing) are Java 25 + Spring Boot. Each service follows a vertical-slice package structure (`com.iqscaffold.{service}`), uses constructor injection, interface-backed services, MyBatis for data access with Liquibase migrations, and publishes domain events to RabbitMQ. REST APIs are versioned (`/api/v1/`), secured with RS256 JWT, and documented via OpenAPI.
 
 The UI is React 19 + Mantine v8, built with Vite + SWC. It follows Feature-Sliced Design — layers are enforced by an architecture test that runs on every CI build. Routing via TanStack Router, server state via TanStack Query, forms via React Hook Form + Zod.
 

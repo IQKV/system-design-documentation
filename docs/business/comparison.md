@@ -10,7 +10,7 @@ The original six competitors plus notable additions discovered since the initial
 | ------------------ | ----------------------------- | -------------------------------- | -------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------- | -------------------------- |
 | Price              | $199–299                      | $299                             | ~$349                                  | Free / OSS                                                    | Free / OSS                                           | Free / OSS                 |
 | License            | Proprietary                   | Proprietary                      | Proprietary                            | MIT                                                           | Apache-2.0                                           | Apache-2.0                 |
-| Stack              | Next.js                       | Next.js / Remix                  | Next.js / Nuxt                         | Next.js                                                       | Next.js                                              | Java 21 + React            |
+| Stack              | Next.js                       | Next.js / Remix                  | Next.js / Nuxt                         | Next.js                                                       | Next.js                                              | Java 25 + React            |
 | Multi-tenancy      | None                          | Basic org                        | Organizations                          | Organizations                                                 | Teams                                                | Schema-per-tenant (hybrid) |
 | Data isolation     | Shared DB                     | Shared DB                        | Shared DB                              | Shared DB                                                     | Shared DB                                            | Schema-level               |
 | Infrastructure     | None                          | None                             | None                                   | None                                                          | None                                                 | K8s + Helm                 |
@@ -29,7 +29,7 @@ The original six competitors plus notable additions discovered since the initial
 | ------------------ | ------------------------------------------ | ------------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------- | -------------------------------------- | -------------------------- |
 | Price              | $99/yr                                     | ~$299                                                  | $249                                    | Free/paid                                                        | ~$499                                  | Free / OSS                 |
 | License            | Proprietary                                | Proprietary                                            | Proprietary                             | MIT                                                              | Proprietary                            | Apache-2.0                 |
-| Stack              | Laravel / PHP                              | Laravel / PHP                                          | Django / Python                         | Django / Python                                                  | .NET 10 / Blazor WASM                  | Java 21 + React            |
+| Stack              | Laravel / PHP                              | Laravel / PHP                                          | Django / Python                         | Django / Python                                                  | .NET 10 / Blazor WASM                  | Java 25 + React            |
 | Multi-tenancy      | Basic                                      | Schema or DB per tenant                                | Teams                                   | None                                                             | Dedicated DB or shared                 | Schema-per-tenant (hybrid) |
 | Data isolation     | Shared DB                                  | Schema-level or DB-level                               | Shared DB                               | Shared DB                                                        | DB-level or shared                     | Schema-level               |
 | Infrastructure     | None                                       | None                                                   | None                                    | None                                                             | None                                   | K8s + Helm                 |
@@ -46,7 +46,7 @@ The original six competitors plus notable additions discovered since the initial
 | ------------------ | ------------------------------ | -------------------------- |
 | Price              | Enterprise                     | Free / OSS                 |
 | License            | Proprietary                    | Apache-2.0                 |
-| Stack              | Java / Angular                 | Java 21 + React            |
+| Stack              | Java / Angular                 | Java 25 + React            |
 | Multi-tenancy      | Yes                            | Schema-per-tenant (hybrid) |
 | Data isolation     | Logical                        | Schema-level               |
 | Infrastructure     | K8s (opinionated)              | K8s + Helm                 |
@@ -99,7 +99,7 @@ The original six competitors plus notable additions discovered since the initial
 - **SSO / SAML** — BoxyHQ ships it out of the box. This platform has it on the roadmap as a paid extension. Teams that need SAML on day one should look at BoxyHQ or add Jackson themselves.
 - **Audit logs** — BoxyHQ includes structured audit logs. This platform emits events to RabbitMQ which can feed an audit log, but there is no built-in audit log UI or storage.
 - **Billing flexibility** — SaaSykit Tenancy supports Stripe, Paddle, and Lemon Squeezy. This platform is Stripe Connect only.
-- **Language** — The backend is Java 21. Teams on Node, Python, PHP, or .NET will need to treat the services as black-box infrastructure and build their product services in their own language on top of the event bus. That is by design, but it is a real onboarding cost.
+- **Language** — The backend is Java 25. Teams on Node, Python, PHP, or .NET will need to treat the services as black-box infrastructure and build their product services in their own language on top of the event bus. That is by design, but it is a real onboarding cost.
 - **Maturity** — ShipFast, MakerKit, SaaS Pegasus, and SaaSykit all have paying customers, community, and battle-tested codebases. This platform is early-stage.
 
 ---
