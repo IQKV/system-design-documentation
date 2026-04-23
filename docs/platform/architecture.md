@@ -60,7 +60,7 @@ tenancy:
 
 Publishes: `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`
 
-Stack: Java 25, Spring Boot 4.4, MyBatis (no JPA), PostgreSQL, Liquibase, RabbitMQ, JJWT, ShedLock
+Stack: Java 25, Spring Boot 4.0, MyBatis (no JPA), PostgreSQL, Liquibase, RabbitMQ, JJWT, ShedLock
 
 ---
 
