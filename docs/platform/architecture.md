@@ -5,11 +5,14 @@
 The platform uses a **Hybrid Tenancy Model** that supports both public SaaS (Multi-Tenant) and internal/enterprise (Single-Tenant) deployments using the same codebase.
 
 ### Deployment Archetypes
+
 - **Multi-Tenant (Default):** Every registration creates a new organization with a unique NanoID key.
 - **Single-Tenant:** Tenancy is hidden. All users are automatically joined to a single "Default" tenant created during bootstrapping.
 
 ### Isolation Strategy
+
 Isolation is handled via a **Tiered Model**:
+
 1. **Logical (Standard):** Dedicated PostgreSQL schemas on a shared instance.
 2. **Physical (Enterprise):** Dedicated PostgreSQL instances.
 
@@ -154,14 +157,14 @@ To migrate a tenant to a dedicated database instance: dump schema → restore �
 
 ### RabbitMQ — Event Bus
 
-| Exchange      | Routing key              | Consumer            | Purpose                       |
-| ------------- | ------------------------ | ------------------- | ----------------------------- |
+| Exchange      | Routing key              | Consumer            | Purpose                         |
+| ------------- | ------------------------ | ------------------- | ------------------------------- |
 | `iqkv.events` | `tenant.created`         | Billing             | Create payment gateway customer |
-| `iqkv.events` | `tenant.created`         | Provisioning worker | Create schema, run migrations |
-| `iqkv.events` | `tenant.updated`         | Provisioning worker | Schema provisioning succeeded |
-| `iqkv.events` | `tenant.suspended`       | Billing             | Mark billing profile inactive |
-| `iqkv.events` | `user.removed`           | (extensions)        | Membership removed            |
-| `iqkv.events` | `subscription.cancelled` | IAM                 | Suspend tenant                |
+| `iqkv.events` | `tenant.created`         | Provisioning worker | Create schema, run migrations   |
+| `iqkv.events` | `tenant.updated`         | Provisioning worker | Schema provisioning succeeded   |
+| `iqkv.events` | `tenant.suspended`       | Billing             | Mark billing profile inactive   |
+| `iqkv.events` | `user.removed`           | (extensions)        | Membership removed              |
+| `iqkv.events` | `subscription.cancelled` | IAM                 | Suspend tenant                  |
 
 ---
 

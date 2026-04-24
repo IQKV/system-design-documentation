@@ -6,7 +6,8 @@ This document outlines the implementation details of the IQKV **Hybrid Tenancy M
 
 ## 1. Hybrid Tenancy Philosophy
 
-The core goal of the platform is **Architectural Symmetry**. 
+The core goal of the platform is **Architectural Symmetry**.
+
 - In **Multi-Tenant mode**, the organization is a visible, primary entity.
 - In **Single-Tenant mode**, the organization is a hidden, background entity.
 
@@ -20,7 +21,9 @@ Regardless of the mode, the **data path** is identical:
 The system enforces the use of **NanoIDs** for all tenant keys to avoid brittle, human-readable identifiers in infrastructure (e.g., schema names).
 
 ### The "Hidden" Default Tenant
+
 In Single-Tenant mode, the system operates with a single "Master" workspace. To ensure this key is stable across deployments:
+
 1. **Deterministic Seed:** The NanoID for the default tenant can be generated using a fixed seed (e.g., a system-wide `TENANCY_SEED` secret).
 2. **Platform Registry lookup:** On startup, the IAM service checks the `public.tenants` table for a record marked with `is_default: true`.
 3. **Implicit Enrolment:** During the `POST /signup` flow, if the mode is `SINGLE`, the backend ignores the tenant creation step and automatically creates a `TenantMembership` for the user against the resolved Default NanoID.
@@ -43,18 +46,19 @@ To ensure the system is ready for the first user, the IAM service performs an au
 
 The UI remains "Tenancy-Blind" in Single-Tenant mode by observing **Capability Flags** provided by the IAM service:
 
-| Feature | Multi-Tenant Behavior | Single-Tenant Behavior |
-| :--- | :--- | :--- |
-| **Signup Form** | Asks for "Organization Name". | Only asks for User details. |
-| **Login Flow** | May require selecting an Org. | Directly enters the default Org. |
-| **Dashboard** | Shows "Organization" switcher. | Switcher is hidden. |
-| **Settings** | "Organization Management". | "Workspace Configuration". |
+| Feature         | Multi-Tenant Behavior          | Single-Tenant Behavior           |
+| :-------------- | :----------------------------- | :------------------------------- |
+| **Signup Form** | Asks for "Organization Name".  | Only asks for User details.      |
+| **Login Flow**  | May require selecting an Org.  | Directly enters the default Org. |
+| **Dashboard**   | Shows "Organization" switcher. | Switcher is hidden.              |
+| **Settings**    | "Organization Management".     | "Workspace Configuration".       |
 
 ---
 
 ## 5. Migration: Single to Multi
 
 Because the Single-Tenant mode uses the exact same `schema-per-tenant` logic as the SaaS mode, migrating a customer from an "Internal Tool" to a "Public Platform" is a **Zero-Migration** event:
+
 1. Change `TENANCY_MODE` to `MULTI`.
 2. The existing users remain in the `default` tenant.
 3. New registrations will now trigger the standard "Create Organization" flow, spawning new schemas alongside the original one.
