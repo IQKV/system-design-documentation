@@ -1,25 +1,19 @@
 # Architecture
 
-## Tenancy Mode
+## Tenancy & Isolation
 
-Tenancy mode is a deploy-time configuration — no code changes required.
+The platform uses a **Hybrid Tenancy Model** that supports both public SaaS (Multi-Tenant) and internal/enterprise (Single-Tenant) deployments using the same codebase.
 
-| Mode          | Helm value                                         | Behavior                                                               |
-| ------------- | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| Multi-tenant  | `tenancy.mode: multi` (default)                    | Tenants are created on demand via the registration flow                |
-| Single-tenant | `tenancy.mode: single` + `tenancy.defaultTenant.*` | IAM provisions one default tenant at startup; registration is disabled |
+### Deployment Archetypes
+- **Multi-Tenant (Default):** Every registration creates a new organization with a unique NanoID key.
+- **Single-Tenant:** Tenancy is hidden. All users are automatically joined to a single "Default" tenant created during bootstrapping.
 
-In single-tenant mode the schema isolation model is identical — the platform operates with one tenant. Migrating to multi-tenant later requires no schema or code changes.
+### Isolation Strategy
+Isolation is handled via a **Tiered Model**:
+1. **Logical (Standard):** Dedicated PostgreSQL schemas on a shared instance.
+2. **Physical (Enterprise):** Dedicated PostgreSQL instances.
 
-```yaml
-# values.yaml (single-tenant example)
-tenancy:
-  mode: single
-  defaultTenant:
-    key: "my-org"
-    name: "My Organization"
-    ownerEmail: "admin@example.com"
-```
+For details on the hybrid architecture, NanoID resolution, and bootstrapping, see the [Tenancy Deep Dive](./tenancy.md).
 
 ---
 
@@ -160,11 +154,14 @@ To migrate a tenant to a dedicated database instance: dump schema → restore �
 
 ### RabbitMQ — Event Bus
 
-| Exchange   | Routing key              | Consumer            | Purpose                       |
-| ---------- | ------------------------ | ------------------- | ----------------------------- |
-| `platform` | `tenant.provisioned`     | Billing             | Create Stripe customer        |
-| `platform` | `tenant.provisioned`     | Provisioning worker | Create schema, run migrations |
-| `platform` | `subscription.cancelled` | IAM                 | Suspend org access            |
+| Exchange      | Routing key              | Consumer            | Purpose                       |
+| ------------- | ------------------------ | ------------------- | ----------------------------- |
+| `iqkv.events` | `tenant.created`         | Billing             | Create payment gateway customer |
+| `iqkv.events` | `tenant.created`         | Provisioning worker | Create schema, run migrations |
+| `iqkv.events` | `tenant.updated`         | Provisioning worker | Schema provisioning succeeded |
+| `iqkv.events` | `tenant.suspended`       | Billing             | Mark billing profile inactive |
+| `iqkv.events` | `user.removed`           | (extensions)        | Membership removed            |
+| `iqkv.events` | `subscription.cancelled` | IAM                 | Suspend tenant                |
 
 ---
 
