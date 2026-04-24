@@ -8,20 +8,20 @@ Status key: ✅ implemented · 🚧 in progress · 📋 planned
 
 Identity, access, and tenant lifecycle. All auth flows pass through this service.
 
-| Capability          | Notes                                                                                                       | Status |
-| ------------------- | ----------------------------------------------------------------------------------------------------------- | ------ |
-| Registration        | Email/password, email verification required before access                                                   | 🚧     |
-| Authentication      | JWT RS256 access token (15 min) + refresh token (7 day)                                                     | 🚧     |
-| Account recovery    | Password reset via signed email token, rate-limited                                                         | 🚧     |
-| Brute-force lockout | Failed login tracking per email; temporary account lock                                                     | 🚧     |
-| Token revocation    | JTI denylist (single session) + global signout timestamp                                                    | 🚧     |
-| JWKS endpoint       | `/.well-known/jwks.json` — downstream services validate locally                                             | 🚧     |
-| Organizations       | Create, update, suspend, delete; async provisioning via RabbitMQ                                            | 🚧     |
-| RBAC                | Roles: `TENANT_OWNER`, `ADMIN`, `MEMBER`                                                                    | 🚧     |
-| Invitations         | Email invite with expiring token                                                                            | 🚧     |
-| Multi-org           | One user can belong to multiple organizations with independent roles                                        | 🚧     |
-| Tenancy mode        | `multi` (default) or `single` — configured via Helm; single-tenant provisions one default tenant at startup | 📋     |
-| Events              | Publishes `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`                          | 🚧     |
+| Capability          | Notes                                                                                                                                                                                                    | Status |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Registration        | Email/password, email verification required before access                                                                                                                                                | 🚧     |
+| Authentication      | JWT RS256 access token (15 min) + refresh token (7 day)                                                                                                                                                  | 🚧     |
+| Account recovery    | Password reset via signed email token, rate-limited                                                                                                                                                      | 🚧     |
+| Brute-force lockout | Failed login tracking per email; temporary account lock                                                                                                                                                  | 🚧     |
+| Token revocation    | JTI denylist (single session) + global signout timestamp                                                                                                                                                 | 🚧     |
+| JWKS endpoint       | `/.well-known/jwks.json` — downstream services validate locally                                                                                                                                          | 🚧     |
+| Organizations       | Create, update, suspend, delete; async provisioning via RabbitMQ                                                                                                                                         | 🚧     |
+| RBAC                | Authorities: `TENANT_OWNER`, `ADMIN`, `MEMBER`                                                                                                                                                           | 🚧     |
+| Invitations         | Email invite with 72 h expiring token; `authority` defaults to `MEMBER`; new users created on accept (email pre-verified); existing users verified by password; ShedLock-guarded reaper expires stale tokens | 🚧     |
+| Multi-org           | One user can belong to multiple organizations with independent authorities                                                                                                                               | 🚧     |
+| Tenancy mode        | `multi` (default) or `single` — configured via Helm; single-tenant provisions one default tenant at startup                                                                                              | 📋     |
+| Events              | Publishes `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`                                                                                                                       | 🚧     |
 
 ---
 

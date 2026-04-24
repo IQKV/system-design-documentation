@@ -50,7 +50,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Login / logout, JWT RS256 access (15 min) + refresh (7 day) tokens
 - Password reset via signed email token, brute-force lockout
 - Tenant lifecycle (create, suspend, delete, retry provisioning)
-- Member invitations, role assignment (`TENANT_OWNER` / `ADMIN` / `MEMBER`)
+- Member invitations — email invite with 72 h token; `authority` defaults to `MEMBER`; new users created on accept (email pre-verified); existing users verified by password
 - Multi-tenant membership — one user, multiple tenants
 - Token revocation: JTI denylist + global signout timestamp
 - JWKS endpoint (`/.well-known/jwks.json`) for downstream token validation
@@ -163,6 +163,7 @@ To migrate a tenant to a dedicated database instance: dump schema → restore �
 | `iqkv.events` | `tenant.created`         | Provisioning worker | Create schema, run migrations   |
 | `iqkv.events` | `tenant.updated`         | Provisioning worker | Schema provisioning succeeded   |
 | `iqkv.events` | `tenant.suspended`       | Billing             | Mark billing profile inactive   |
+| `iqkv.events` | `user.invited`           | (extensions)        | Invitation sent                 |
 | `iqkv.events` | `user.removed`           | (extensions)        | Membership removed              |
 | `iqkv.events` | `subscription.cancelled` | IAM                 | Suspend tenant                  |
 
