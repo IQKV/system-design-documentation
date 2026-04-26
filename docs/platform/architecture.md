@@ -55,6 +55,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 **Core Identity & Access Management with Multi-Tenant Support**
 
 **Authentication & Authorization:**
+
 - User signup with email verification (secure token-based)
 - JWT RS256 authentication: access tokens (15 min) + refresh tokens (7 days)
 - Password reset via signed email tokens (1h TTL), rate-limited (3 requests per 15min window)
@@ -63,6 +64,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - JWKS endpoint (`/.well-known/jwks.json`) for distributed token validation
 
 **Tenant & Organization Management:**
+
 - Tenant lifecycle: create, suspend, delete, retry provisioning
 - Async tenant provisioning via RabbitMQ with ShedLock-guarded reaper for stuck tenants
 - Multi-tenant membership: one user can belong to multiple organizations
@@ -70,12 +72,14 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Cross-tenant user context switching and tenant discovery
 
 **Invitation System:**
+
 - Email invitations with 72h expiring tokens, default authority `MEMBER`
 - New users created on accept (email pre-verified)
 - Existing users verified by password
 - ShedLock-guarded reaper for stale invitation cleanup
 
 **Multi-Mode Support:**
+
 - Pluggable bootstrap strategies for different rollout modes
 - Single-tenant: auto-provision default tenant at startup
 - Multi-tenant: per-signup tenant creation
@@ -92,6 +96,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 **Reactive Gateway with Security & Context Propagation**
 
 **Core Capabilities:**
+
 - Spring Cloud Gateway with WebFlux (reactive, non-blocking)
 - JWT validation against IAM JWKS endpoint with authority extraction
 - Multi-mode tenant resolution: JWT claims (multi-tenant) vs auto-injection (single-tenant)
@@ -99,18 +104,21 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Header sanitization: prevents client spoofing of `X-User-*` and `X-Tenant-ID` headers
 
 **Context Propagation:**
+
 - Extracts user context from validated JWTs
 - Propagates as headers to downstream services:
   - `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`
 - Correlation ID injection for distributed tracing
 
 **Routing & Security:**
+
 - Path-based routing to upstream services (IAM, Billing)
 - Configurable public paths (JWKS, webhooks, health checks, Swagger UI)
 - Global CORS configuration with configurable origins and methods
 - Rate limiting and request logging with structured output
 
 **Observability:**
+
 - Prometheus metrics and health checks on separate management port
 - Swagger UI aggregation from downstream services
 - Correlation ID filter for request tracing
@@ -126,6 +134,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 **Stripe Integration with Multi-Tenant Billing Support**
 
 **Core Features:**
+
 - Complete Stripe integration layer with webhook processing
 - Plan catalog management with tenant/user scoped plans
 - Multi-mode billing: tenant-scoped (multi-tenant) vs user-scoped (single-tenant)
@@ -133,12 +142,14 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Entitlement evaluation for authorization decisions
 
 **Stripe Integration:**
+
 - Customer provisioning and management
 - Webhook processing with signature verification and idempotency
 - Outbox pattern for reliable event delivery
 - Subscription state caching for fast reads
 
 **Plan Management:**
+
 - Pre-provisioned subscription plans with pricing and features
 - Plan eligibility validation based on rollout mode
 - CRUD API for plan catalog management
@@ -169,6 +180,7 @@ billing_settings
 ```
 
 **Key Design Decisions:**
+
 - Auto-created on tenant provisioning with registration defaults
 - Decoupled from IAM users for billing independence
 - VAT/GST details flow directly into Stripe invoices
@@ -182,18 +194,21 @@ billing_settings
 **React SPA with Mantine UI Framework**
 
 **Architecture:**
+
 - Single Page Application (SPA) built with React and Mantine UI
 - Communicates exclusively through the API Gateway (no direct service access)
 - Deployed as static build (Nginx container or CDN)
 - JWT-based authentication with automatic token refresh
 
 **Feature Coverage:**
+
 - **Authentication Flows:** Sign up, login, password reset, email verification
 - **Organization Management:** Create org, invite members, manage roles, tenant switching
 - **Account Settings:** Profile management, password change, user preferences
 - **Billing Portal:** Integration with Stripe-hosted dashboard for subscriptions and invoices
 
 **Tenancy Adaptation:**
+
 - Mode detection via IAM actuator endpoint (`/actuator/info`)
 - Conditional UI rendering based on rollout mode
 - Multi-tenant: shows organization switcher and management features
@@ -209,8 +224,8 @@ billing_settings
 
 Each service owns its own PostgreSQL database with complete data isolation. No shared databases or cross-service table access — inter-service communication flows through APIs or the event bus.
 
-| Service | Database             | Contents                                                    |
-| ------- | -------------------- | ----------------------------------------------------------- |
+| Service | Database             | Contents                                                      |
+| ------- | -------------------- | ------------------------------------------------------------- |
 | IAM     | `foundation_iam`     | Users, tenants, memberships, authorities, invitations, tokens |
 | Billing | `foundation_billing` | Stripe customer refs, subscription cache, webhook logs, plans |
 
@@ -236,6 +251,7 @@ foundation_iam/
 ```
 
 **Schema Switching Implementation:**
+
 ```java
 @Intercepts({@Signature(type = StatementHandler.class, method = "prepare")})
 public class MyBatisSchemaInterceptor implements Interceptor {
@@ -243,7 +259,7 @@ public class MyBatisSchemaInterceptor implements Interceptor {
         Connection connection = (Connection) invocation.getArgs()[0];
         String tenantKey = TenantContext.getCurrentTenant();
         String schema = "t_" + tenantKey;
-        
+
         try (PreparedStatement stmt = connection.prepareStatement(
                 "SET search_path TO " + schema + ", public")) {
             stmt.execute();
@@ -254,6 +270,7 @@ public class MyBatisSchemaInterceptor implements Interceptor {
 ```
 
 **Migration Strategy:**
+
 - **System Migrations:** `db/changelog/system/db.changelog-master.xml`
 - **Tenant Migrations:** `db/changelog/tenant/master.xml`
 - **Liquibase Runner:** Automatic schema creation and migration per tenant
@@ -263,17 +280,18 @@ public class MyBatisSchemaInterceptor implements Interceptor {
 
 Asynchronous communication and tenant provisioning via RabbitMQ with durable queues and dead letter handling:
 
-| Exchange      | Routing Key              | Consumer                | Purpose                           |
-| ------------- | ------------------------ | ----------------------- | --------------------------------- |
-| `iqkv.events` | `tenant.provisioning.requested` | Provisioning Worker | Create schema, run migrations |
-| `iqkv.events` | `tenant.provisioned`     | Billing Service         | Create Stripe customer            |
-| `iqkv.events` | `tenant.provisioning.failed` | Monitoring/Alerts   | Handle provisioning failures      |
-| `iqkv.events` | `tenant.suspended`       | Billing Service         | Mark billing profile inactive     |
-| `iqkv.events` | `user.invited`           | Extensions              | Invitation notifications          |
-| `iqkv.events` | `user.removed`           | Extensions              | Membership removal cleanup        |
-| `iqkv.events` | `subscription.cancelled` | IAM Service             | Suspend tenant on payment failure |
+| Exchange      | Routing Key                     | Consumer            | Purpose                           |
+| ------------- | ------------------------------- | ------------------- | --------------------------------- |
+| `iqkv.events` | `tenant.provisioning.requested` | Provisioning Worker | Create schema, run migrations     |
+| `iqkv.events` | `tenant.provisioned`            | Billing Service     | Create Stripe customer            |
+| `iqkv.events` | `tenant.provisioning.failed`    | Monitoring/Alerts   | Handle provisioning failures      |
+| `iqkv.events` | `tenant.suspended`              | Billing Service     | Mark billing profile inactive     |
+| `iqkv.events` | `user.invited`                  | Extensions          | Invitation notifications          |
+| `iqkv.events` | `user.removed`                  | Extensions          | Membership removal cleanup        |
+| `iqkv.events` | `subscription.cancelled`        | IAM Service         | Suspend tenant on payment failure |
 
 **Event Processing Patterns:**
+
 - **Idempotent Consumers:** All event handlers are idempotent and safe to retry
 - **Dead Letter Queues:** Failed events are routed to DLQ for manual investigation
 - **ShedLock Coordination:** Prevents duplicate processing in clustered deployments
@@ -329,6 +347,7 @@ When `iqkv.platform.rollout-mode: SINGLE_TENANT`, IAM runs the same provisioning
 ```
 
 **Failure Handling:**
+
 - **Exponential Backoff:** Workers retry with exponential backoff on failure
 - **Stuck Tenant Reaper:** ShedLock-guarded job cleans up tenants stuck in `PROVISIONING` (configurable timeout: 10 minutes)
 - **Manual Retry:** Owners can trigger `POST /tenants/{tenantKey}/retry-provisioning` for `PROVISIONING_FAILED` tenants
@@ -341,12 +360,14 @@ When `iqkv.platform.rollout-mode: SINGLE_TENANT`, IAM runs the same provisioning
 ### JWT-Based Authentication
 
 **Token Structure:**
+
 - **Algorithm:** RS256 (asymmetric signing)
 - **Access Token:** 15-minute expiry with user context and authorities
 - **Refresh Token:** 7-day expiry for token rotation
 - **Claims:** `userId`, `username`, `email`, `tenant_id`, `authorities`, `email_verified`
 
 **Token Lifecycle:**
+
 ```
 1. Login → Generate token pair (access + refresh)
 2. API requests → Validate access token via JWKS
@@ -356,6 +377,7 @@ When `iqkv.platform.rollout-mode: SINGLE_TENANT`, IAM runs the same provisioning
 ```
 
 **Validation Chain:**
+
 1. **Signature Verification:** Against IAM JWKS endpoint
 2. **Expiry Check:** Token not expired
 3. **Denylist Check:** JTI not in revocation list
@@ -365,11 +387,13 @@ When `iqkv.platform.rollout-mode: SINGLE_TENANT`, IAM runs the same provisioning
 ### Multi-Tenant Security
 
 **Tenant Isolation:**
+
 - **Database Level:** PostgreSQL schema isolation with `search_path` switching
 - **Application Level:** Tenant context validation on every request
 - **API Level:** Gateway strips and re-injects tenant headers to prevent spoofing
 
 **Authorization Model:**
+
 ```
 User → TenantMembership → Authorities (per tenant)
      ↓
@@ -379,6 +403,7 @@ User → TenantMembership → Authorities (per tenant)
 ```
 
 **Cross-Tenant Protection:**
+
 - **Context Validation:** Every database operation validates tenant context
 - **Header Sanitization:** Gateway prevents client-supplied tenant headers
 - **Schema Isolation:** Database-level isolation prevents cross-tenant queries
@@ -408,11 +433,13 @@ helm-charts/IQKV/
 ### Deployment Strategy
 
 **Service Independence:**
+
 - Each service deploys independently with its own release cycle
 - Shared infrastructure (PostgreSQL, RabbitMQ) managed separately
 - Configuration via Helm values and Kubernetes secrets
 
 **Example Deployment:**
+
 ```bash
 # Deploy IAM service to production
 helm upgrade --install foundation-iam-service ./foundation-iam-service \
@@ -426,6 +453,7 @@ helm upgrade --install foundation-iam-service ./foundation-iam-service \
 ```
 
 **Configuration Management:**
+
 - **Secrets:** Kubernetes secrets for sensitive data (passwords, keys)
 - **ConfigMaps:** Non-sensitive configuration (URLs, timeouts, feature flags)
 - **Environment Variables:** Runtime configuration injection
@@ -434,6 +462,7 @@ helm upgrade --install foundation-iam-service ./foundation-iam-service \
 ### CI/CD Pipeline Integration
 
 **Pipeline Stages:**
+
 1. **Build & Test:** Maven build, unit tests, integration tests
 2. **Security Scan:** Dependency vulnerability scanning
 3. **Image Build:** Docker multi-stage builds with layer caching
@@ -442,6 +471,7 @@ helm upgrade --install foundation-iam-service ./foundation-iam-service \
 6. **Health Checks:** Post-deployment validation and monitoring
 
 **Pipeline Configuration:**
+
 ```yaml
 # .drone.yml example
 kind: pipeline
@@ -472,17 +502,20 @@ steps:
 ### Monitoring Stack
 
 **Metrics Collection:**
+
 - **Micrometer + Prometheus:** Application metrics (JVM, HTTP, custom business metrics)
 - **Grafana Dashboards:** Pre-configured dashboards for each service
 - **Alerting:** Prometheus AlertManager with Slack/email notifications
 
 **Key Metrics:**
+
 - **Authentication:** Login success/failure rates, token validation latency
 - **Tenant Provisioning:** Provisioning success rate, time to active, stuck tenant count
 - **API Gateway:** Request throughput, response times, error rates by service
 - **Database:** Connection pool usage, query performance, schema count
 
 **Logging Strategy:**
+
 - **Structured JSON Logs:** Logstash encoder for consistent log format
 - **Correlation IDs:** Request tracing across service boundaries
 - **Log Aggregation:** Centralized logging with ELK stack or similar
@@ -491,6 +524,7 @@ steps:
 ### Health Checks & Readiness
 
 **Spring Boot Actuator:**
+
 ```yaml
 management:
   endpoints:
@@ -505,11 +539,13 @@ management:
 ```
 
 **Health Check Hierarchy:**
+
 - **Liveness:** Service is running and not deadlocked
 - **Readiness:** Service can handle traffic (database connected, dependencies available)
 - **Custom Checks:** Platform mode consistency, tenant provisioning capacity
 
 **Operational Endpoints:**
+
 - `GET /actuator/health` - Kubernetes liveness/readiness probes
 - `GET /actuator/info` - Service version, build info, platform mode
 - `GET /actuator/metrics` - Application metrics
@@ -533,12 +569,14 @@ Platform Exchange (iqkv.events)
 ```
 
 **Extension Patterns:**
+
 - **Event Subscribers:** React to platform events without modifying core services
 - **API Extensions:** Additional REST endpoints via separate services
 - **UI Extensions:** Micro-frontend architecture for additional features
 - **Webhook Extensions:** External system integrations via webhook consumers
 
 **Versioning Strategy:**
+
 - **Event Schema Versioning:** Backward-compatible event schema evolution
 - **API Versioning:** Semantic versioning for REST APIs
 - **Database Migrations:** Forward-only Liquibase migrations
@@ -547,12 +585,14 @@ Platform Exchange (iqkv.events)
 ### Scalability Considerations
 
 **Horizontal Scaling:**
+
 - **Stateless Services:** All services are stateless and horizontally scalable
 - **Database Scaling:** Read replicas, connection pooling, query optimization
 - **Message Queue Scaling:** RabbitMQ clustering for high availability
 - **Caching Strategy:** Redis for session storage and frequently accessed data
 
 **Performance Optimization:**
+
 - **Connection Pooling:** HikariCP for database connections
 - **Async Processing:** Non-blocking I/O with WebFlux where appropriate
 - **Batch Processing:** Bulk operations for data-intensive tasks

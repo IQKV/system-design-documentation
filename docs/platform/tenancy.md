@@ -33,7 +33,7 @@ The system enforces the use of **NanoIDs** for all tenant keys to avoid brittle,
 
 ```java
 // 8-character NanoID using alphabet [a-z0-9]
-String tenantKey = NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR, 
+String tenantKey = NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR,
     "abcdefghijklmnopqrstuvwxyz0123456789".toCharArray(), 8);
 // Example: "abc12345"
 ```
@@ -52,19 +52,19 @@ In Single-Tenant mode, the system operates with a single "Master" workspace. To 
 ```java
 @Component
 public class DefaultTenantResolverImpl implements DefaultTenantResolver {
-    
+
     public String resolveDefaultTenantKey() {
         // 1. Check configuration
         if (hasConfiguredKey()) {
             return tenancyProps.getDefaultTenantKey();
         }
-        
+
         // 2. Query database for existing default
         Optional<Tenant> defaultTenant = tenantMapper.findDefaultTenant();
         if (defaultTenant.isPresent()) {
             return defaultTenant.get().getTenantKey();
         }
-        
+
         // 3. Create new default tenant
         return createDefaultTenant();
     }
@@ -97,7 +97,7 @@ To ensure the system is ready for the first user, the IAM service performs an au
 @Component
 @ConditionalOnProperty(name = "iqkv.platform.rollout-mode", havingValue = "SINGLE_TENANT")
 public class SingleTenantBootstrapStrategy implements TenantBootstrapStrategy {
-    
+
     @EventListener(ApplicationReadyEvent.class)
     public void bootstrap() {
         if (!defaultTenantExists()) {
@@ -126,19 +126,19 @@ Automatic schema switching is handled by a MyBatis interceptor:
 
 ```java
 @Intercepts({
-    @Signature(type = StatementHandler.class, method = "prepare", 
+    @Signature(type = StatementHandler.class, method = "prepare",
                args = {Connection.class, Integer.class})
 })
 public class MyBatisSchemaInterceptor implements Interceptor {
-    
+
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
         Connection connection = (Connection) invocation.getArgs()[0];
-        
+
         try {
             String tenantKey = TenantContext.getCurrentTenant();
             String schema = "t_" + tenantKey;
-            
+
             try (PreparedStatement stmt = connection.prepareStatement(
                     "SET search_path TO " + schema + ", public")) {
                 stmt.execute();
@@ -146,7 +146,7 @@ public class MyBatisSchemaInterceptor implements Interceptor {
         } catch (IllegalStateException e) {
             // No tenant context - use public schema
         }
-        
+
         return invocation.proceed();
     }
 }
@@ -161,23 +161,23 @@ Separate changelog files for system and tenant schemas:
 
 ```java
 public class TenantLiquibaseRunner {
-    
+
     public void runMigrationsForTenant(String tenantKey) throws Exception {
         String schema = "t_" + tenantKey;
-        
+
         try (Connection connection = dataSource.getConnection()) {
             // Create schema if not exists
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("CREATE SCHEMA IF NOT EXISTS " + schema);
                 stmt.execute("SET search_path TO " + schema);
             }
-            
+
             // Run Liquibase migrations
             Database database = DatabaseFactory.getInstance()
                 .findCorrectDatabaseImplementation(new JdbcConnection(connection));
             database.setDefaultSchemaName(schema);
-            
-            try (Liquibase liquibase = new Liquibase(TENANT_CHANGELOG, 
+
+            try (Liquibase liquibase = new Liquibase(TENANT_CHANGELOG,
                     new ClassLoaderResourceAccessor(), database)) {
                 liquibase.update(new Contexts(), new LabelExpression());
             }
@@ -209,35 +209,35 @@ The API Gateway handles tenant context resolution differently based on rollout m
 ```java
 @Component
 public class TenantContextFilter implements GlobalFilter {
-    
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         Optional<String> resolved = resolveTenantContext(exchange);
-        
+
         if (resolved.isEmpty()) {
             return chain.filter(exchange); // Multi-tenant: no injection
         }
-        
+
         String tenantKey = resolved.get();
         ServerHttpRequest mutated = exchange.getRequest().mutate()
             .header("X-Tenant-ID", tenantKey)
             .build();
-            
+
         return chain.filter(exchange.mutate().request(mutated).build());
     }
-    
+
     private Optional<String> resolveTenantContext(ServerWebExchange exchange) {
         String existingTenantId = exchange.getRequest().getHeaders().getFirst("X-Tenant-ID");
-        
+
         // Honor existing JWT-derived tenant context
         if (existingTenantId != null && !existingTenantId.isBlank()) {
             return Optional.of(existingTenantId);
         }
-        
+
         if (platformConfig.rolloutMode() == RolloutMode.MULTI_TENANT) {
             return Optional.empty(); // No auto-injection
         }
-        
+
         // Single-tenant: inject default tenant key
         return Optional.ofNullable(tenancyProperties.getDefaultTenantKey());
     }
@@ -289,15 +289,15 @@ ShedLock-protected job that handles stuck provisioning:
 ```java
 @Component
 public class StuckTenantReaperJob {
-    
+
     @Scheduled(cron = "0 */5 * * * *")
     @SchedulerLock(name = "StuckTenantReaperJob.reapStuckTenants")
     public void reapStuckTenants() {
         Instant cutoff = Instant.now().minus(tenancyProps.provisioningTimeout());
         List<Tenant> stuckTenants = tenantMapper.findStuckProvisioning(cutoff);
-        
+
         for (Tenant tenant : stuckTenants) {
-            tenantMapper.updateStatus(tenant.getTenantKey(), 
+            tenantMapper.updateStatus(tenant.getTenantKey(),
                 TenantStatus.PROVISIONING_FAILED.name(), LocalDateTime.now());
             messagingService.publishTenantProvisioningFailed(tenant.getTenantKey());
         }
@@ -418,17 +418,17 @@ The gateway validates mode consistency with the IAM service:
 ```java
 @Component
 public class PlatformModeGuardFilter implements GlobalFilter {
-    
+
     @PostConstruct
     public void validateOnStartup() {
         performModeCheck();
     }
-    
+
     @Scheduled(fixedDelay = 60_000)
     public void revalidatePeriodically() {
         performModeCheck();
     }
-    
+
     private void performModeCheck() {
         // Query IAM /actuator/info endpoint
         // Compare local vs canonical mode
