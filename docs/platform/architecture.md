@@ -195,7 +195,7 @@ To migrate a tenant to a dedicated database instance: dump schema â†’ restore â†
 
 ### Single-tenant (deploy-time)
 
-When `tenancy.mode: single`, IAM runs the same provisioning flow at application startup for the configured default tenant. Registration endpoint is disabled. All subsequent users are invited into the single tenant by the owner.
+When `platform.rolloutMode: SINGLE_TENANT`, IAM runs the same provisioning flow at application startup for the configured default tenant. Registration endpoint is disabled. All subsequent users are invited into the single tenant by the owner.
 
 ```
 1. Application startup

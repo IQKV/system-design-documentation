@@ -20,7 +20,7 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 | RBAC                | Authorities: `TENANT_OWNER`, `ADMIN`, `MEMBER`                                                                                                                                                           | 🚧     |
 | Invitations         | Email invite with 72 h expiring token; `authority` defaults to `MEMBER`; new users created on accept (email pre-verified); existing users verified by password; ShedLock-guarded reaper expires stale tokens | 🚧     |
 | Multi-org           | One user can belong to multiple organizations with independent authorities                                                                                                                               | 🚧     |
-| Tenancy mode        | `multi` (default) or `single` — configured via Helm; single-tenant provisions one default tenant at startup                                                                                              | 📋     |
+| Rollout mode        | `MULTI_TENANT` (default) or `SINGLE_TENANT` — configured via `platform.rolloutMode`; single-tenant provisions one default tenant at startup                                                             | ✅     |
 | Events              | Publishes `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`                                                                                                                       | 🚧     |
 
 ---

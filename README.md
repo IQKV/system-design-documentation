@@ -35,9 +35,9 @@ docker compose up
 
 # Single-tenant mode — provision one default tenant at startup
 # Set in your values file:
-#   tenancy.mode: single
-#   tenancy.defaultTenant.key: "my-org"
-#   tenancy.defaultTenant.name: "My Organization"
+#   platform.rolloutMode: "SINGLE_TENANT"
+#   platform.defaultTenantKey: "my-org"
+#   platform.defaultTenantName: "My Organization"
 docker compose up
 
 # Cluster (deploy each service independently)
