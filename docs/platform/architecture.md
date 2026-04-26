@@ -46,7 +46,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 ### IAM
 
-- User registration with email verification
+- User signup with email verification
 - Login / logout, JWT RS256 access (15 min) + refresh (7 day) tokens
 - Password reset via signed email token, brute-force lockout
 - Tenant lifecycle (create, suspend, delete, retry provisioning)

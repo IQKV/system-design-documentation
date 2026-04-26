@@ -9,8 +9,8 @@ Status key: ✅ implemented · 🚧 in progress · 📋 planned
 Identity, access, and tenant lifecycle. All auth flows pass through this service.
 
 | Capability          | Notes                                                                                                                                                                                                        | Status |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| Registration        | Email/password, email verification required before access                                                                                                                                                    | 🚧     |
+|---------------------| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| Signup              | Email/password, email verification required before access                                                                                                                                                    | 🚧     |
 | Authentication      | JWT RS256 access token (15 min) + refresh token (7 day)                                                                                                                                                      | 🚧     |
 | Account recovery    | Password reset via signed email token, rate-limited                                                                                                                                                          | 🚧     |
 | Brute-force lockout | Failed login tracking per email; temporary account lock                                                                                                                                                      | 🚧     |
