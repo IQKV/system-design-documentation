@@ -9,7 +9,7 @@ Status key: ✅ implemented · 🚧 in progress · 📋 planned
 Identity, access, and tenant lifecycle. All auth flows pass through this service.
 
 | Capability          | Notes                                                                                                                                                                                                        | Status |
-|---------------------| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
 | Signup              | Email/password, email verification required before access                                                                                                                                                    | 🚧     |
 | Authentication      | JWT RS256 access token (15 min) + refresh token (7 day)                                                                                                                                                      | 🚧     |
 | Account recovery    | Password reset via signed email token, rate-limited                                                                                                                                                          | 🚧     |
@@ -41,18 +41,22 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 
 ## Billing
 
-Stripe Connect wrapper. No custom billing logic — subscriptions, invoices, and the dashboard are managed on Stripe's side.
+Stripe integration layer with plan catalog and subscription management. Handles tenant-to-customer mapping, webhook processing, and entitlement evaluation.
 
-| Capability       | Notes                                                                                        | Status |
-| ---------------- | -------------------------------------------------------------------------------------------- | ------ |
-| Stripe customer  | Created per tenant automatically on `tenant.provisioned`                                     | 🚧     |
-| Billing settings | 1:1 per tenant — owns Stripe customer metadata, decoupled from IAM users                     | 🚧     |
-| Billing email    | Separate contact for finance dept; no system account required                                | 🚧     |
-| Tax ID / VAT/GST | Stored in `billing_settings`, synced to Stripe for compliant B2B invoices                    | 🚧     |
-| Subscriptions    | Managed in Stripe Dashboard; no custom subscription logic                                    | 🚧     |
-| Invoices         | Generated and hosted by Stripe                                                               | 🚧     |
-| Webhooks         | Processed idempotently; duplicate delivery is safe                                           | 🚧     |
-| Lifecycle events | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` | 🚧     |
+| Capability           | Notes                                                                                                    | Status |
+| -------------------- | -------------------------------------------------------------------------------------------------------- | ------ |
+| Plan catalog         | Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER); CRUD via REST API   | ✅     |
+| Plan eligibility     | Validates plan scope matches rollout mode (tenant vs user scoped plans)                                 | ✅     |
+| Billing settings     | Per-tenant settings: Stripe customer ID, billing email, company info, tax ID, billing address           | ✅     |
+| User billing         | Per-user billing settings for single-tenant mode; auto-created on first access                          | ✅     |
+| Subscription cache   | Local cache of Stripe subscription state; updated via webhooks for fast reads                           | ✅     |
+| Entitlement eval     | Evaluates active subscriptions and plan features for authorization decisions                             | ✅     |
+| Stripe integration   | Customer provisioning, webhook processing with signature verification, outbox pattern for reliability    | ✅     |
+| Multi-mode support   | Supports both multi-tenant (tenant-scoped) and single-tenant (user-scoped) billing models              | ✅     |
+| Webhook processing   | Idempotent Stripe webhook handling; processes subscription lifecycle events safely                       | ✅     |
+| REST API             | Complete API for plans, settings, subscriptions with JWT auth and tenant isolation                      | ✅     |
+| Lifecycle events     | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` via RabbitMQ | ✅     |
+| Tax compliance       | Tax ID/VAT/GST storage and Stripe sync for B2B invoicing                                                | 🚧     |
 
 ---
 
