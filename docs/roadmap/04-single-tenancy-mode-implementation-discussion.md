@@ -1,4 +1,5 @@
 # Single-tenancy mode implementation
+
 _Exported on 4/25/2026 at 10:23:50 GMT+3 from Cursor (3.1.17)_
 
 ---
@@ -61,11 +62,11 @@ Use tenancy mode as the selector, and isolate mode-specific behavior behind inte
 
 Recommended shape:
 
-- `SignupStrategy`  
-  - `MultiTenantSignupStrategy` (current create-tenant flow)  
+- `SignupStrategy`
+  - `MultiTenantSignupStrategy` (current create-tenant flow)
   - `SingleTenantSignupStrategy` (resolve default tenant + auto-membership)
-- `TenantBootstrapStrategy`  
-  - `MultiTenantBootstrapStrategy` (no-op or existing behavior)  
+- `TenantBootstrapStrategy`
+  - `MultiTenantBootstrapStrategy` (no-op or existing behavior)
   - `SingleTenantBootstrapStrategy` (ensure default tenant exists/provisioned)
 - optional: `TenantAuthorizationPolicy` if role logic diverges by mode
 
@@ -149,9 +150,9 @@ Best approach: **make Billing tenant-event handling owner-agnostic and idempoten
 - Treat `tenant.created` as **tenant identity event**, not owner event.
 - Make `ownerEmail` optional in Billing consumer.
 - Use fallback billing contact strategy:
-  1) event `ownerEmail` (multi mode),
-  2) configured default billing email (single mode),
-  3) null/blank (if acceptable) and update later via settings UI/API.
+  1. event `ownerEmail` (multi mode),
+  2. configured default billing email (single mode),
+  3. null/blank (if acceptable) and update later via settings UI/API.
 - Keep `billing_settings.profile_owner_id` nullable (already compatible with your model).
 - Ensure duplicate `tenant.created` stays harmless (`existsByTenantKey` guard is already present).
 
@@ -260,7 +261,7 @@ Best approach: make subscription domain explicitly scoped.
 
 Use strategy/policy here too:
 
-- `SubscriptionSubjectResolver`  
+- `SubscriptionSubjectResolver`
   - multi mode -> resolve subject as tenant
   - single mode -> resolve subject as user
 - `PlanEligibilityPolicy`
@@ -338,7 +339,7 @@ Gateway should use this contract to drive routing/validation behavior consistent
 - One Helm umbrella/values set should inject the same mode into all core services.
 - CI/CD pipeline should validate “all core charts have identical mode value” before deploy.
 
-This gives you the AIO guarantee you described: impossible to run mixed core modes by accident.  
+This gives you the AIO guarantee you described: impossible to run mixed core modes by accident.
 
 If you want, I can now add a dedicated “Global Rollout Mode Contract” section to your spec with concrete config keys, readiness rules, and failure scenarios.
 
@@ -381,7 +382,7 @@ If you want, I can do one more pass to split this into “MVP phase” vs “Pha
 
 **User**
 
-based on current Implementations, describe in system-design-documentation\docs\platform\single-tenant-mode-spec.md required strict restrctions, gates, components, might be authorities (who knows?:)) for overall platfrom and each microservice 
+based on current Implementations, describe in system-design-documentation\docs\platform\single-tenant-mode-spec.md required strict restrctions, gates, components, might be authorities (who knows?:)) for overall platfrom and each microservice
 
 ---
 
@@ -445,13 +446,13 @@ Yes — for this codebase, most of this should live under the **`tenancy` packag
 
 Best-fit placement:
 
-- `tenancy`  
-  - `TenancyMode` enum  
-  - `TenancyConfigurationProperties` (extended)  
-  - `TenancyModeStrategyResolver`  
-  - `SignupStrategy` + mode implementations  
-  - `TenantBootstrapStrategy` + mode implementations  
-  - `DefaultTenantResolver`  
+- `tenancy`
+  - `TenancyMode` enum
+  - `TenancyConfigurationProperties` (extended)
+  - `TenancyModeStrategyResolver`
+  - `SignupStrategy` + mode implementations
+  - `TenantBootstrapStrategy` + mode implementations
+  - `DefaultTenantResolver`
   - `PlatformModeValidator` (if only tenancy-related)
 
 - Keep in existing domain packages:
@@ -461,7 +462,7 @@ Best-fit placement:
 
 If you want strict DDD cleanliness, a nice pattern is:
 
-- `tenancy` = mode rules and tenant resolution  
+- `tenancy` = mode rules and tenant resolution
 - `platform` (new package) = cross-service rollout contract (`platform.rollout-mode`, capability handshake)
 
 But if you prefer minimal refactor and current style, putting it in `tenancy` is absolutely consistent.
@@ -509,4 +510,3 @@ Updated — removed `PLATFORM_BILLING_OPERATOR` and standardized on just:
 - `PLATFORM_OPERATOR`
 
 Also adjusted the implementation checklist task to reflect a single platform-level authority model.
-

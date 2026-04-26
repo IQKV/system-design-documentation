@@ -744,4 +744,3 @@ If cross-service rollout contract becomes broader than tenancy, introduce `platf
 - shared platform-level validators.
 
 Until then, defaulting to `tenancy` keeps implementation consistent and minimally invasive.
-

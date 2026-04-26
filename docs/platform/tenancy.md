@@ -74,10 +74,12 @@ The platform uses a single configuration variable to control tenancy behavior:
 **Environment Variable:** `ROLLOUT_MODE`  
 **Configuration Path:** `iqkv.platform.rollout-mode`  
 **Valid Values:**
+
 - `MULTI_TENANT` - Multi-tenant SaaS mode (default)
 - `SINGLE_TENANT` - Single-tenant managed mode
 
 **Example Configuration:**
+
 ```yaml
 # application.yml
 iqkv:
@@ -86,11 +88,12 @@ iqkv:
 ```
 
 **Helm Values:**
+
 ```yaml
 # values.yaml
 platform:
   rolloutMode: "MULTI_TENANT"
-  defaultTenantKey: ""           # Required for SINGLE_TENANT mode
+  defaultTenantKey: "" # Required for SINGLE_TENANT mode
   defaultTenantName: "Default Organization"
 ```
 
@@ -102,14 +105,15 @@ Additional tenancy settings control schema isolation and tenant provisioning:
 # application.yml
 iqkv:
   tenancy:
-    schema-prefix: t_              # Prefix for tenant schemas
-    default-schema: public         # Default schema for shared data
-    provisioning-timeout: PT5M     # Timeout for tenant provisioning
+    schema-prefix: t_ # Prefix for tenant schemas
+    default-schema: public # Default schema for shared data
+    provisioning-timeout: PT5M # Timeout for tenant provisioning
     default-tenant-key: ${DEFAULT_TENANT_KEY:}
     default-tenant-name: ${DEFAULT_TENANT_NAME:Default Organization}
 ```
 
 **Key Points:**
+
 - `ROLLOUT_MODE` is the single source of truth for platform behavior
 - Tenancy behavior (schema isolation, signup flow, UI) is derived from `ROLLOUT_MODE`
 - No separate "tenancy mode" configuration is needed
@@ -124,6 +128,7 @@ The platform validates `ROLLOUT_MODE` at startup:
 3. **Cross-Service Consistency:** Gateway validates its mode matches IAM service
 
 **Startup Logs:**
+
 ```
 Platform rollout mode validated successfully: MULTI_TENANT
 ```
