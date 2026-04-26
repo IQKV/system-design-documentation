@@ -10,18 +10,26 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 
 | Capability          | Notes                                                                                                                                                                                                        | Status |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| Signup              | Email/password, email verification required before access                                                                                                                                                    | 🚧     |
-| Authentication      | JWT RS256 access token (15 min) + refresh token (7 day)                                                                                                                                                      | 🚧     |
-| Account recovery    | Password reset via signed email token, rate-limited                                                                                                                                                          | 🚧     |
-| Brute-force lockout | Failed login tracking per email; temporary account lock                                                                                                                                                      | 🚧     |
-| Token revocation    | JTI denylist (single session) + global signout timestamp                                                                                                                                                     | 🚧     |
-| JWKS endpoint       | `/.well-known/jwks.json` — downstream services validate locally                                                                                                                                              | 🚧     |
-| Organizations       | Create, update, suspend, delete; async provisioning via RabbitMQ                                                                                                                                             | 🚧     |
-| RBAC                | Authorities: `TENANT_OWNER`, `ADMIN`, `MEMBER`                                                                                                                                                               | 🚧     |
-| Invitations         | Email invite with 72 h expiring token; `authority` defaults to `MEMBER`; new users created on accept (email pre-verified); existing users verified by password; ShedLock-guarded reaper expires stale tokens | 🚧     |
-| Multi-org           | One user can belong to multiple organizations with independent authorities                                                                                                                                   | 🚧     |
-| Rollout mode        | `MULTI_TENANT` (default) or `SINGLE_TENANT` — configured via `platform.rolloutMode`; single-tenant provisions one default tenant at startup                                                                  | ✅     |
-| Events              | Publishes `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`                                                                                                                           | 🚧     |
+| Signup              | Email/password with self-service tenant creation; email verification required before access; supports both multi-tenant (new tenant per signup) and single-tenant (join default tenant) modes            | ✅     |
+| Authentication      | JWT RS256 access token (15 min) + refresh token (7 day); tokens carry user context and tenant membership; JJWT library with custom claims                                                                  | ✅     |
+| Account recovery    | Password reset via signed email token (1h TTL), rate-limited (3 requests per 15min window); Thymeleaf email templates with i18n support                                                                    | ✅     |
+| Brute-force lockout | Failed login tracking per email; temporary account lock after 5 attempts for 15 minutes; automatic cleanup of expired lockout records                                                                       | ✅     |
+| Token revocation    | JTI denylist (single session) + global signout timestamp; both access and refresh tokens validated against denylist; automatic cleanup of expired denylist entries                                         | ✅     |
+| JWKS endpoint       | `/.well-known/jwks.json` — gateway and downstream services validate RS256 tokens locally; public key rotation support                                                                                        | ✅     |
+| Organizations       | Create, update, suspend, delete; async provisioning via RabbitMQ with ShedLock-guarded reaper for stuck tenants; automatic retry mechanism for failed provisioning                                          | ✅     |
+| RBAC                | Authorities: `TENANT_OWNER`, `ADMIN`, `MEMBER`; per-tenant membership with independent roles across organizations; authority-based endpoint protection                                                        | ✅     |
+| Invitations         | Email invite with 72h expiring token; `authority` defaults to `MEMBER`; new users created on accept (email pre-verified); existing users verified by password; ShedLock-guarded reaper expires stale tokens | ✅     |
+| Multi-org           | One user can belong to multiple organizations with different authorities; tenant discovery by credentials; cross-tenant user context switching                                                               | ✅     |
+| Rollout mode        | `MULTI_TENANT` (default) or `SINGLE_TENANT` — configured via `platform.rolloutMode`; single-tenant provisions one default tenant at startup; mode consistency enforced across services                     | ✅     |
+| Events              | Publishes `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed` via RabbitMQ for async processing; event-driven architecture for cross-service coordination                             | ✅     |
+| Schema isolation    | PostgreSQL schema-per-tenant with `t_` prefix; MyBatis interceptor for automatic schema switching; Liquibase migrations per tenant; identical model in both single and multi-tenant modes                 | ✅     |
+| Email notifications | Thymeleaf-rendered transactional emails (verification, password reset, invitations) via SMTP with i18n support; configurable templates and localization                                                     | ✅     |
+| Email verification  | Secure token-based email verification; resend capability with rate limiting; verification status tracking; required before account activation                                                                | ✅     |
+| Token validation    | Introspection endpoint for gateway; validates token signature, expiry, denylist status, and global signout timestamp; returns user context for downstream services                                          | ✅     |
+| Tenant discovery    | Endpoint to discover user's tenant memberships by credentials; supports multi-tenant user workflows; returns tenant keys and authorities                                                                     | ✅     |
+| Scheduled jobs      | ShedLock-protected background jobs: token denylist cleanup, invitation expiry, stuck tenant reaper, email verification cleanup; distributed-safe execution                                                  | ✅     |
+| Bootstrap strategies| Pluggable tenant bootstrap for different rollout modes; default tenant resolution and creation; startup-time tenant provisioning for single-tenant mode                                                     | ✅     |
+| Observability       | Prometheus metrics, structured JSON logging with correlation IDs, health checks, actuator endpoints; comprehensive monitoring and debugging capabilities                                                     | ✅     |
 
 ---
 
@@ -29,13 +37,20 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 
 Entry point for all client traffic. No request reaches IAM or Billing without passing through here.
 
-| Capability        | Notes                                                    | Status |
-| ----------------- | -------------------------------------------------------- | ------ |
-| Routing           | Path-based and header-based routing to upstream services | 🚧     |
-| JWT validation    | Validates RS256 token on every request                   | 🚧     |
-| Tenant resolution | Resolved from token claim or request header              | 🚧     |
-| Request logging   | Structured logs: tenant, latency, upstream, status code  | 🚧     |
-| Metering events   | Publishes `api.request.metered` per request              | 📋     |
+| Capability           | Notes                                                                                                                                                                                                        | Status |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| Routing              | Path-based routing to upstream services (IAM, Billing); Spring Cloud Gateway with WebFlux                                                                                                                   | ✅     |
+| JWT validation       | Validates RS256 tokens against IAM JWKS endpoint; extracts authorities from JWT claims                                                                                                                       | ✅     |
+| Tenant resolution    | Multi-mode: JWT claim in multi-tenant, auto-inject default tenant in single-tenant; enforces mode consistency with IAM service                                                                              | ✅     |
+| Context propagation  | Extracts user context from JWT and propagates as headers: `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`                                                                   | ✅     |
+| Header sanitization  | Strips client-supplied `X-User-*` and `X-Tenant-ID` headers to prevent spoofing; runs before JWT context propagation                                                                                        | ✅     |
+| Public paths         | Configurable public endpoints (JWKS, webhooks, health checks, Swagger UI); bypasses authentication                                                                                                           | ✅     |
+| Platform mode guard  | Validates rollout mode consistency with IAM service; blocks traffic on mismatch with 503 Service Unavailable                                                                                                | ✅     |
+| CORS                 | Global CORS configuration with configurable origins, methods, and headers                                                                                                                                    | ✅     |
+| Request logging      | Structured logs with correlation ID filter for request tracing                                                                                                                                               | ✅     |
+| Observability        | Prometheus metrics, health checks, and actuator endpoints on separate management port                                                                                                                        | ✅     |
+| Swagger aggregation  | Aggregates API documentation from downstream services (IAM, Billing) in unified Swagger UI                                                                                                                  | ✅     |
+| Metering events      | Publishes `api.request.metered` per request                                                                                                                                                                  | 📋     |
 
 ---
 
