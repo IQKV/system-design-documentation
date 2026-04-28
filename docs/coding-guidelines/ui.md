@@ -1,6 +1,6 @@
 # UI Coding Guidelines
 
-> Consolidated reference for building UI code across `app.iqkv.dev` and `auth.iqkv.dev`.
+> Consolidated reference for building UI code across `app.iqkv.site` and `auth.iqkv.site`.
 > Both projects share identical conventions. Follow this document as the single source of truth.
 
 ---

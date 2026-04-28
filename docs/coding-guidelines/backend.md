@@ -578,7 +578,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ProblemDetail> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
     ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
-    pd.setType(URI.create("https://api.iqkv.dev/errors/validation-error"));
+    pd.setType(URI.create("https://api.iqkv.site/errors/validation-error"));
     pd.setTitle("Validation Error");
     pd.setInstance(URI.create(request.getRequestURI()));
     Map<String, String> errors = new HashMap<>();
@@ -594,7 +594,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ContactNotFoundException.class)
   public ResponseEntity<ProblemDetail> handleNotFound(ContactNotFoundException ex, HttpServletRequest request) {
     ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-    pd.setType(URI.create("https://api.iqkv.dev/errors/not-found"));
+    pd.setType(URI.create("https://api.iqkv.site/errors/not-found"));
     pd.setTitle("Not Found");
     pd.setInstance(URI.create(request.getRequestURI()));
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(pd);
@@ -609,7 +609,7 @@ public class GlobalExceptionHandler {
 - One `GlobalExceptionHandler` per service annotated with `@RestControllerAdvice`.
 - All error responses use Spring's `ProblemDetail` (RFC 7807 Problem Details).
 - Every `ProblemDetail` must set: `type` (URI), `title`, `detail`, `instance` (request URI).
-- Error type URIs follow the pattern: `https://api.iqkv.dev/errors/{error-slug}`.
+- Error type URIs follow the pattern: `https://api.iqkv.site/errors/{error-slug}`.
 - Log `WARN` for client errors (4xx), `ERROR` for server errors (5xx).
 - Never catch and swallow exceptions silently — always log at minimum.
 - `AccessDeniedException` → 403, `AuthenticationException` → 401, handled in the global handler.
