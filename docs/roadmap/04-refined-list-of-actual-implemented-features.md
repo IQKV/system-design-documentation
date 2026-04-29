@@ -5,13 +5,14 @@ Exported: 4/29/2026, 12:04:17 PM
 ## Steering Documents
 
 **Workspace:**
+
 - AGENTS.md
 
 ---
 
 **User:**
 
-examine maven submodule foundation-iam-service implementation, configuration, docker compose support, and accuratly adopt root (umbrella) ./compose.yaml, ./docker/* content
+examine maven submodule foundation-iam-service implementation, configuration, docker compose support, and accuratly adopt root (umbrella) ./compose.yaml, ./docker/\* content
 
 ---
 
@@ -35,6 +36,7 @@ Examine the foundation-iam-service Maven submodule in detail. I need to understa
 6. Any docker/ folder inside foundation-iam-service
 
 Also examine the ROOT level:
+
 1. ./compose.yaml - current content
 2. ./docker/ folder - all files (postgres init scripts, rabbitmq config, prometheus, grafana, loki, promtail, traefik configs)
 3. Root .env.example
@@ -46,6 +48,7 @@ Please read ALL these files completely so I can understand what needs to be upda
 I've completed a comprehensive examination of the foundation-iam-service Maven submodule and root-level Docker infrastructure. Here's what I found:
 
 ## ROOT LEVEL COMPOSE.YAML
+
 - **Traefik** (v3.0): Reverse proxy on ports 80, 443, 8080 with dashboard
 - **PostgreSQL instances**: postgres-iam (5432), postgres-billing (5432), postgres-contact, postgres-lead, postgres-pipeline
 - **Redis** (7-alpine): Port 6379 for caching/sessions
@@ -57,11 +60,13 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Volumes**: 8 named volumes for data persistence
 
 ## FOUNDATION-IAM-SERVICE COMPOSE.YAML
+
 - Extends compose.base.yaml with postgres-iam, rabbitmq-iam, mailhog services
 - Network: foundation-iam-network-dev (172.21.0.0/16)
 - Volumes: postgres_iam_data, rabbitmq_iam_data
 
 ## FOUNDATION-IAM-SERVICE COMPOSE.BASE.YAML
+
 - **PostgreSQL 17-alpine**: Port 5432, optimized with pg_stat_statements, 100 max connections, 256MB shared buffers
 - **RabbitMQ 3.13-management**: Ports 5672, 15672, with management UI
 - **MailHog v1.0.1**: Ports 1025, 8025
@@ -71,6 +76,7 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Resource limits**: CPU 0.5, Memory 768M (limits); CPU 0.25, Memory 384M (reservations)
 
 ## FOUNDATION-IAM-SERVICE POM.XML
+
 - **Parent**: com.iqkv:boot-parent-pom:0.24.7
 - **Java**: 25
 - **Key Dependencies**:
@@ -90,6 +96,7 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Build**: Multi-stage Docker build with optimized caching
 
 ## FOUNDATION-IAM-SERVICE DOCKERFILE
+
 - **Multi-stage build**: builder stage + production runtime
 - **Base image**: eclipse-temurin:25-jre-alpine
 - **Security**: Non-root user (appuser:1001), minimal packages
@@ -99,6 +106,7 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Entrypoint**: JarLauncher with JAVA_OPTS and JAVA_TOOL_OPTIONS
 
 ## APPLICATION.YML (BASE CONFIG)
+
 - **Database**: PostgreSQL with configurable host/port/name/user/password
 - **RabbitMQ**: Configurable host/port/user/password
 - **Mail**: SMTP configuration with Thymeleaf templates
@@ -111,6 +119,7 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Observability**: Structured logging, metrics, tracing
 
 ## APPLICATION-LOCAL.YML (LOCAL PROFILE)
+
 - **Liquibase**: Enabled with demo data context
 - **Mail**: SMTP auth disabled, port 1025 (MailHog)
 - **Management**: All actuator endpoints exposed
@@ -119,6 +128,7 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Password**: Min length 6 (relaxed for dev)
 
 ## .ENV.EXAMPLE (ROOT)
+
 - Database credentials (POSTGRES_USER, POSTGRES_PASSWORD)
 - JWT_SECRET (256-bit)
 - Grafana admin password
@@ -127,6 +137,7 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - OpenTelemetry endpoint
 
 ## FOUNDATION-IAM-SERVICE .ENV.EXAMPLE
+
 - Database: DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD
 - RabbitMQ: RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_USERNAME, RABBITMQ_PASSWORD
 - Mail: MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM, MAIL_REPLY_TO
@@ -136,12 +147,14 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - Tenancy: ROLLOUT_MODE (MULTI_TENANT/SINGLE_TENANT), DEFAULT_TENANT_KEY, DEFAULT_TENANT_NAME
 
 ## DOCKER/POSTGRES/INIT-IAM.SQL
+
 - Creates auth schema
 - Enables uuid-ossp and pg_stat_statements extensions
 - Grants permissions to foundation_iam user
 - Creates update_updated_at_column() trigger function
 
 ## DOCKER/RABBITMQ/RABBITMQ.CONF
+
 - Management plugin on 15672
 - Default user: foundation / foundation_password
 - Logging: console + file
@@ -150,14 +163,16 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - Heartbeat: 60s
 
 ## DOCKER/RABBITMQ/DEFINITIONS.JSON
+
 - **User**: foundation (administrator role)
 - **Exchanges**: foundation.events (topic), foundation.dlx (dead-letter)
 - **Queues**: foundation.user.events, foundation.notifications, foundation.dlq
-- **Bindings**: user.* → user.events, notification.* → notifications
+- **Bindings**: user._ → user.events, notification._ → notifications
 - **TTL**: 24 hours per message
 - **Dead-letter**: foundation.dlx for failed messages
 
 ## DOCKER/PROMETHEUS/PROMETHEUS.YML
+
 - **Global**: 15s scrape interval, 15s evaluation interval
 - **Jobs**:
   - prometheus (localhost:9090)
@@ -167,6 +182,7 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
   - redis (redis-exporter:9121, 30s interval)
 
 ## DOCKER/LOKI/LOKI-CONFIG.YML
+
 - **Server**: Port 3100
 - **Storage**: Filesystem (boltdb-shipper)
 - **Schema**: v11 from 2020-10-24
@@ -174,12 +190,14 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Analytics**: Disabled
 
 ## DOCKER/PROMTAIL/PROMTAIL-CONFIG.YML
+
 - **Server**: Port 9080
 - **Loki endpoint**: http://loki:3100/loki/api/v1/push
 - **Scrape configs**: Docker containers, iam-service logs, gateway-service logs
 - **Pipeline**: JSON parsing, timestamp extraction, label assignment
 
 ## DOCKER/TRAEFIK/TRAEFIK.YML
+
 - **API**: Dashboard on 8080 (insecure)
 - **Entry points**: web (80), websecure (443), gateway (8080)
 - **Provider**: Docker with foundation-network
@@ -188,10 +206,12 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Metrics**: Prometheus with entry points, services, routers labels
 
 ## DOCKER/GRAFANA/PROVISIONING/DATASOURCES/DATASOURCES.YML
+
 - **Prometheus**: http://prometheus:9090 (default, proxy access)
 - **Loki**: http://loki:3100 (proxy access)
 
 ## DOCKER/OBSERVABILITY/DOCKER-COMPOSE.OBSERVABILITY.YML
+
 - **Jaeger** (1.60): Ports 16686 (UI), 14250 (gRPC), 4317 (OTLP gRPC), 4318 (OTLP HTTP)
 - **Prometheus** (v2.54.1): Port 9090
 - **Grafana** (11.3.0): Port 3000
@@ -201,11 +221,13 @@ I've completed a comprehensive examination of the foundation-iam-service Maven s
 - **Volumes**: prometheus-data, grafana-data, loki-data
 
 ## FOUNDATION-IAM-SERVICE DOCKER/PROMETHEUS/PROMETHEUS.YML
+
 - **Global**: 15s scrape interval
 - **Job**: prometheus on localhost:8080/actuator/prometheus (5s interval)
 - **External labels**: monitor=appindevelopment
 
 ## FOUNDATION-IAM-SERVICE DOCKER/GRAFANA/PROVISIONING/DATASOURCES/DATASOURCE.YML
+
 - **Prometheus**: http://localhost:9090 (default, proxy access)
 - **Basic auth**: Disabled
 - **Editable**: true
@@ -233,6 +255,7 @@ Now I have a complete picture. Let me also check the remaining files I need:
 Now I have everything I need. The analysis reveals significant mismatches between the root `compose.yaml` and the actual iam-service implementation. Here's what needs to be fixed:
 
 **Key discrepancies found:**
+
 1. Root compose uses wrong DB/user names (`foundation_iam` / `foundation_password`) — iam-service expects `iam`/`iam`
 2. Root compose uses wrong env var names (`IQKV_DATABASE_URL`, `IQKV_CACHE_REDIS_HOST`, etc.) — iam-service uses `DB_HOST`, `DB_PORT`, `DB_NAME`, `RABBITMQ_HOST`, etc.
 3. Root compose references `init-user.sql` — file is actually `init-iam.sql`
@@ -264,6 +287,7 @@ Compose validates cleanly. Here's a summary of all changes made:
 ---
 
 **`compose.yaml`** — fully rewritten to match iam-service reality:
+
 - `postgres-iam`: upgraded to `postgres:17-alpine`, correct DB/user `iam`/`iam`, proper init script mount (`init-iam.sql`), tuned postgres config matching `compose.base.yaml`
 - `iam-service`: fixed build context to `./foundation-iam-service`, corrected all env vars (`DB_HOST`, `DB_PORT`, `DB_NAME`, `RABBITMQ_HOST`, `MAIL_HOST`, etc.), added missing `ROLLOUT_MODE`/`DEFAULT_TENANT_KEY`/`DEFAULT_TENANT_NAME`, health check now targets port `8081` (`/actuator/health/readiness`), exposes both 8080 and 8081, added `iam_logs`/`iam_tmp` volumes
 - `billing-service`: aligned env var naming pattern to match iam-service conventions, corrected health check port
@@ -285,7 +309,7 @@ Compose validates cleanly. Here's a summary of all changes made:
 
 **User:**
 
-examine maven submodule foundation-billing-service implementation, configuration, docker compose support, and accuratly adopt root (umbrella) ./compose.yaml, ./docker/* content
+examine maven submodule foundation-billing-service implementation, configuration, docker compose support, and accuratly adopt root (umbrella) ./compose.yaml, ./docker/\* content
 
 ---
 
@@ -356,7 +380,7 @@ All good. Here's a summary of every change made:
 
 **User:**
 
-examine maven submodule foundation-gateway-service implementation, configuration, docker compose support, and accuratly adopt root (umbrella) ./compose.yaml, ./docker/* content
+examine maven submodule foundation-gateway-service implementation, configuration, docker compose support, and accuratly adopt root (umbrella) ./compose.yaml, ./docker/\* content
 
 ---
 
@@ -367,6 +391,7 @@ Let me gather everything about the gateway service first.
 I have everything I need. Now let me do a precise analysis of what the gateway service requires vs what's in the root compose:
 
 **Findings from `application.yml`:**
+
 1. **No Redis, no RabbitMQ, no database, no mail** — gateway is stateless; it only needs IAM service for JWKS validation
 2. **`IAM_SERVICE_URI`** → routes to IAM (`/api/v1/iam/**`, `/.well-known/**`)
 3. **`BILLING_SERVICE_URI`** → routes to billing (`/api/v1/billing/**`)
@@ -414,6 +439,7 @@ Everything looks correct. Here's a precise summary of all changes made:
 **`compose.yaml`**
 
 `gateway-service` — added as a new service with:
+
 - Build context `./foundation-gateway-service`
 - All env vars sourced directly from `application.yml`: `IAM_SERVICE_URI`, `IAM_JWKS_URI`, `IAM_SERVICE_URL` (three distinct vars — the first two for routing/JWT, the third for `PlatformModeGuardFilter`), `BILLING_SERVICE_URI`, `CORS_ALLOWED_ORIGINS`, `SERVER_PORT`, `MANAGEMENT_PORT`, `ROLLOUT_MODE`, `DEFAULT_TENANT_KEY`
 - No Redis, no RabbitMQ, no DB, no mail — gateway is stateless
@@ -452,7 +478,7 @@ Covers: accurate env vars for all three services, gateway-service added as the s
 
 **User:**
 
-exam foundation-billing-service/*/main/*, foundation-iam-service/*/main/*, foundation-gateway-service/*/main/*, and update README.md with really available features. keep style, format, tone the same.
+exam foundation-billing-service/_/main/_, foundation-iam-service/_/main/_, foundation-gateway-service/_/main/_, and update README.md with really available features. keep style, format, tone the same.
 
 ---
 
@@ -471,6 +497,7 @@ Now read the key source files to understand what's actually implemented:
 Read the following files completely and return their full content. I need to understand what features are actually implemented in each service.
 
 IAM Service files:
+
 - foundation-iam-service/src/main/java/com/iqkv/foundation/iamservice/authentication/
 - foundation-iam-service/src/main/java/com/iqkv/foundation/iamservice/denylist/
 - foundation-iam-service/src/main/java/com/iqkv/foundation/iamservice/invitation/
@@ -486,6 +513,7 @@ IAM Service files:
 - foundation-iam-service/src/main/java/com/iqkv/foundation/iamservice/infrastructure/
 
 Gateway Service files:
+
 - foundation-gateway-service/src/main/java/com/iqkv/foundation/gatewayservice/infrastructure/config/SecurityConfig.java
 - foundation-gateway-service/src/main/java/com/iqkv/foundation/gatewayservice/infrastructure/config/GatewayProperties.java
 - foundation-gateway-service/src/main/java/com/iqkv/foundation/gatewayservice/infrastructure/config/PlatformModeGuardFilter.java
@@ -498,6 +526,7 @@ Gateway Service files:
 - foundation-gateway-service/src/main/java/com/iqkv/foundation/gatewayservice/infrastructure/security/ResponseTransformationFilter.java
 
 Billing Service files:
+
 - foundation-billing-service/src/main/java/com/iqkv/foundation/billingservice/plan/PlanCatalogRestResource.java
 - foundation-billing-service/src/main/java/com/iqkv/foundation/billingservice/plan/Plan.java
 - foundation-billing-service/src/main/java/com/iqkv/foundation/billingservice/plan/PlanEligibilityPolicy.java
@@ -529,6 +558,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 ### `authentication/`
 
 **`AuthenticationRestResource`** — `@RestController /api/v1/iam/auth`
+
 - `POST /signup` → `UserService.registerUser()`, returns 201 + `SignupResponse`
 - `POST /signin` → `AuthenticationService.signIn()`, returns access + refresh tokens
 - `POST /refresh` → rotates token pair
@@ -537,6 +567,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 - `POST /validate` → decodes token, checks denylist, returns userId/email/tenantId/authorities (gateway introspection)
 
 **`AuthenticationServiceImpl`** — `@Service @Transactional`
+
 - `signIn`: resolves tenant from `TenantContext`, rejects SUSPENDED/DELETED/PROVISIONING_FAILED tenants, BCrypt password check, lockout check, resolves membership + authorities, generates RS256 access + refresh tokens
 - `refresh`: validates `type=refresh` claim, checks tenant context match, re-resolves membership, issues new pair
 - `signOut`: `TokenDenylistService.denyToken(jti, userId, expiresAt)`
@@ -547,6 +578,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 - `resendVerification`: rate-limited (3/hour), generates new token, publishes `VERIFY_EMAIL` notification
 
 **`JwtTokenGenerator`** — `@Component`
+
 - Loads RSA private key from PEM at startup
 - `generateAccessToken`: RS256 JWT with claims: `sub`, `iss`, `iat`, `exp`, `jti`, `type=access`, `userId`, `username`, `email`, `firstName`, `lastName`, `tenant_id`, `email_verified`, `authorities`
 - `generateRefreshToken`: RS256 JWT with `type=refresh`, minimal claims
@@ -558,6 +590,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`TokenDenylist`** — domain: `id`, `jti`, `userId`, `expiresAt`, `createdAt`
 
 **`TokenDenylistService`** — `@Component`
+
 - `denyToken(jti, userId, expiresAt)`: inserts into DB denylist
 - `isRevoked(jti)`: checks by JTI
 - `cleanupExpired()`: `@Scheduled(cron="0 0 * * * *")` + `@SchedulerLock` — hourly cleanup
@@ -567,6 +600,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 ### `email/`
 
 **`EmailVerificationRestResource`** — `@RestController /api/v1/iam/users/email`
+
 - `POST /verify` → consumes one-time token, marks email verified
 - `POST /resend-verification` → rate-limited resend, returns 202
 
@@ -585,11 +619,13 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`InvitationStatus`** — enum: `PENDING`, `ACCEPTED`, `REVOKED`, `EXPIRED`
 
 **`InvitationDtos`** — records:
+
 - `SendInvitationRequest`: `@Email email`, `@Pattern(ADMIN|MEMBER) authority`
 - `AcceptInvitationRequest`: `firstName`, `lastName`, `@NotBlank password`
 - `InvitationResponse`, `InvitationPreviewResponse`, `AcceptInvitationResponse`
 
 **`InvitationServiceImpl`** — `@Service @Transactional`
+
 - `sendInvitation`: MULTI_TENANT only; verifies inviter has `TENANT_OWNER` or `ADMIN`; guards duplicate PENDING + existing membership; generates 32-byte hex token; publishes `user.invited` event + `INVITATION` email
 - `previewInvitation`: public; returns tenant name, email, authority, expiry, `requiresSignup` flag
 - `acceptInvitation`: validates pending token; existing user → verifies password with lockout; new user → creates with `emailVerified=true`; creates membership + grants authority; consumes invitation; issues JWT pair
@@ -597,6 +633,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 - `listInvitations`: all `PENDING` for a tenant
 
 **`InvitationRestResource`** — `@RestController`
+
 - `POST /api/v1/iam/tenants/{tenantKey}/invitations` — `@PreAuthorize("hasAnyAuthority('TENANT_OWNER', 'ADMIN')")`
 - `GET /api/v1/iam/tenants/{tenantKey}/invitations` — same
 - `DELETE /api/v1/iam/tenants/{tenantKey}/invitations/{invitationId}` — same
@@ -610,6 +647,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 ### `lockout/`
 
 **`AccountLockoutManager`** — `@Component`
+
 - Reads `loginAttempts` threshold + `lockoutDuration` from `AuthConfigurationProperties`
 - `recordFailedAttempt(email)`: inserts failed attempt record
 - `isLocked(email)`: counts attempts within window; true if ≥ threshold
@@ -626,6 +664,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`TenantMemberAuthority`** — domain: `id`, `membershipId`, `authority`
 
 **`MembershipServiceImpl`** — `@Service @Transactional(readOnly=true)`
+
 - `resolveMembership`: finds membership, throws `MembershipNotFoundException` if SUSPENDED or REMOVED
 - `getAuthorities`: returns list of authority strings for a membership
 
@@ -634,10 +673,12 @@ For each file, list the directory first, then read all Java files in it. Return 
 ### `passwordreset/`
 
 **`PasswordResetServiceImpl`** — `@Service @Transactional`
+
 - `initiate`: silently ignores unknown emails (prevents enumeration); rate-limits (configurable); generates 32-byte hex token; publishes `PASSWORD_RESET_INITIATE` notification
 - `complete`: validates token + expiry; enforces password complexity (lowercase + uppercase + digit + special char, 8–128 chars); updates password hash; deletes token; sets `last_global_signout_at` (invalidates all sessions); publishes `PASSWORD_RESET_CONFIRMED` notification
 
 **`PasswordResetRestResource`** — `@RestController /api/v1/iam/users/password`
+
 - `POST /forgot` → always returns 200 (prevents enumeration)
 - `POST /reset` → 200 on success, 400 on invalid/expired token
 
@@ -650,6 +691,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`JwtClaimNames`** — constants: `SUB`, `ISS`, `IAT`, `EXP`, `JTI`, `TYPE`, `USER_ID`, `USERNAME`, `EMAIL`, `FIRST_NAME`, `LAST_NAME`, `TENANT_ID`, `AUTHORITIES`, `EMAIL_VERIFIED`, `TYPE_ACCESS`, `TYPE_REFRESH`, `ISSUER`
 
 **`JwtAuthenticationFilter`** — `@Component extends OncePerRequestFilter` — runs before `BearerTokenAuthenticationFilter`
+
 - Check 1: JTI in `token_denylist` → 401
 - Check 2: token `iat` ≤ `last_global_signout_at` → 401
 - Skips public paths (signup, signin, refresh, validate, email verify, password reset)
@@ -663,12 +705,14 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`SignupResult`** — record: `user`, `tenant`, `membership`, `authorities`
 
 **`MultiTenantSignupStrategy`** — `@Service @ConditionalOnProperty(rollout-mode=MULTI_TENANT)`
+
 - Upserts user by email (atomic, eliminates TOCTOU)
 - Creates new tenant with NanoID 8-char key, status `PROVISIONING`
 - Creates membership `ACTIVE`, grants `TENANT_OWNER`
 - Publishes `tenant.created` event with owner fields
 
 **`SingleTenantSignupStrategy`** — `@Service @ConditionalOnProperty(rollout-mode=SINGLE_TENANT)`
+
 - Ignores `tenantName` field
 - Upserts user, resolves default tenant via `DefaultTenantResolver`
 - Guards against duplicate membership
@@ -682,6 +726,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`TenantContext`** — `ThreadLocal<String>`: `setCurrentTenant`, `getCurrentTenant` (throws if not set), `clear`
 
 **`TenantExtractionFilter`** — `@Component @Order(HIGHEST_PRECEDENCE+1) extends OncePerRequestFilter`
+
 - Priority 1: `X-Tenant-ID` header; Priority 2: JWT `tenant_id` claim
 - Returns 400 if unresolvable; always clears `TenantContext` in `finally`
 - Skips public paths
@@ -689,6 +734,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`MyBatisSchemaInterceptor`** — `@Intercepts(StatementHandler.prepare)` — sets PostgreSQL `search_path` to `t_{tenantKey}, public` before each MyBatis statement; validates key against `^[a-zA-Z0-9_]+$`
 
 **`TenantLiquibaseRunner`** — `@Component ApplicationRunner`
+
 - `run()`: runs system schema migrations on `public` at startup
 - `runMigrationsForTenant(tenantKey)`: creates `t_{tenantKey}` schema + runs tenant Liquibase changelog
 
@@ -699,11 +745,13 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`TenantStatus`** — enum: `PROVISIONING`, `ACTIVE`, `SUSPENDED`, `DELETED`, `PROVISIONING_FAILED`
 
 **`TenantServiceImpl`** — `@Service @Transactional`
+
 - `createTenant`: checks name uniqueness, NanoID key, inserts `PROVISIONING`, publishes `tenant.created`
 - `updateTenantStatus`: enforces allowed transitions (`ACTIVE↔SUSPENDED`, `ACTIVE/SUSPENDED/PROVISIONING_FAILED→DELETED`); publishes `tenant.suspended` or `tenant.deleted`
 - `retryProvisioning`: only from `PROVISIONING_FAILED`; re-publishes `tenant.created`
 
 **`TenantRestResource`** — `@RestController /api/v1/iam/tenants`
+
 - `GET /{tenantKey}` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")`
 - `PATCH /{tenantKey}/status` — same
 - `POST /{tenantKey}/retry-provisioning` — same
@@ -721,6 +769,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`User`** — domain: `id`, `email`, `passwordHash`, `firstName`, `lastName`, `status`, `emailVerified`, `lastGlobalSignoutAt`, audit fields
 
 **`UserServiceImpl`** — `@Service @Transactional`
+
 - `registerUser`: delegates to `SignupStrategy`, publishes `user.created`, generates email verification token, publishes `VERIFY_EMAIL` notification
 - `listUsers`: paginated `PagedUserResponse`
 - `createUser`: admin path — random temp password
@@ -729,10 +778,12 @@ For each file, list the directory first, then read all Java files in it. Return 
 - `deleteUserById`: hard-deletes user record
 
 **`UserRestResource`** — `@RestController /api/v1/iam/users`
+
 - `GET /me`, `PATCH /me`, `DELETE /me` — `@PreAuthorize("isAuthenticated()")`
 - `POST /tenants` — credential-gated tenant discovery (no JWT)
 
 **`UserAdminRestResource`** — `@RestController /api/v1/iam/admin/users`
+
 - `GET /` (paginated), `GET /{id}`, `POST /`, `PUT /{id}`, `PATCH /{id}`, `DELETE /{id}`
 
 ---
@@ -748,6 +799,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`PlatformModeValidatorImpl`** — `@Order(HIGHEST_PRECEDENCE) ApplicationRunner`: validates rollout mode at startup; throws `InvalidPlatformModeException` if missing
 
 **`RabbitMQConfig`** — `@ConditionalOnProperty(rabbitmq.enabled=true) @Profile("!test")`
+
 - Exchange: `iqkv.events` (topic), `iqkv.dlx` (dead-letter)
 - Queues: `iqkv.iam.user.events`, `iqkv.iam.notifications`, `iqkv.iam.tenant.provisioning`, `iqkv.iam.subscription.events`
 - All queues: 24h TTL + dead-letter exchange
@@ -789,6 +841,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 ### `infrastructure/config/`
 
 **`SecurityConfig`** — `@EnableWebFluxSecurity` (reactive)
+
 - CSRF, HTTP Basic, form login disabled
 - Public paths from `GatewayProperties.publicPaths`
 - OAuth2 Resource Server with JWKS endpoint (from IAM)
@@ -798,12 +851,14 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`GatewayProperties`** — `@ConfigurationProperties("iqkv.gateway")`: `publicPaths: List<String>`
 
 **`GatewayConfigurationProperties`** — nested:
+
 - `Tenancy @ConfigurationProperties("iqkv.tenancy")`: `defaultTenantKey`
 - `Iam @ConfigurationProperties("iqkv.iam")`: `serviceUrl` (default: `http://foundation-iam-service:8080`)
 
 **`PlatformModeValidatorImpl`** — `@Order(HIGHEST_PRECEDENCE) ApplicationRunner`: validates rollout mode; on failure sets readiness to `REFUSING_TRAFFIC`
 
 **`PlatformModeGuardFilter`** — `GlobalFilter, Ordered` (order: `HIGHEST_PRECEDENCE`)
+
 - `@PostConstruct` + `@Scheduled(fixedDelay=60s)`: queries IAM `/actuator/info` for `platform.rollout-mode`
 - Mismatch → `modeMismatchDetected=true`, `ReadinessState.REFUSING_TRAFFIC`, returns 503 on all requests
 - IAM unreachable → fail-open (logs warning, allows traffic)
@@ -822,12 +877,14 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`TenantContextResolutionPolicy`** — interface: `resolveTenantContext(exchange)` → `Optional<String>`
 
 **`TenantContextFilter`** — `GlobalFilter, TenantContextResolutionPolicy` (order: `-50`)
+
 - `MULTI_TENANT`: uses `X-Tenant-ID` from JWT propagation; no auto-injection
 - `SINGLE_TENANT`: if `X-Tenant-ID` absent, injects `iqkv.tenancy.default-tenant-key`
 
 **`ResponseTransformationFilter`** — `GlobalFilter` (order: `MIN_VALUE+1`): adds `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`; echoes `X-Correlation-ID` to client
 
 **Filter execution order:**
+
 1. `-200` `CorrelationIdFilter`: generate/propagate correlation ID
 2. `-190` `HeaderSanitizationFilter`: strip spoofable headers
 3. Spring Security: validate JWT via JWKS
@@ -845,6 +902,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`Plan`** — domain: `id`, `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `priceMinor` (cents), `currency`, `featureSet` (JSON string), `scope` (TENANT|USER), `active`
 
 **`PlanCatalogRestResource`** — `@RestController /api/v1/billing/plans`
+
 - `GET /` — list active plans (any authenticated user)
 - `GET /{planCode}` — get by planCode (any authenticated user)
 - `POST /` — `@PreAuthorize("hasAuthority('PLATFORM_OPERATOR')")` — create
@@ -860,6 +918,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`BillingSettings`** — domain: `id`, `tenantKey`, `externalCustomerId` (Stripe `cus_xxx`), `billingEmail`, `companyName`, `billingAddress` (JSONB as String), `taxId`, `taxIdType`, `currency`, `profileOwnerId` (soft ref to IAM user, no FK)
 
 **`BillingSettingsRestResource`** — `@RestController /api/v1/billing/settings`
+
 - `GET /{tenantKey}` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")` — validates JWT tenant matches path
 - `PATCH /{tenantKey}` — same — partial update, publishes `BILLING_UPDATED` notification
 
@@ -872,6 +931,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`Subscription`** — domain: `id`, `tenantKey`, `externalSubscriptionId`, `externalCustomerId`, `status` (active|past_due|canceled|unpaid|trialing), `planId`, `currentPeriodStart`, `currentPeriodEnd`, `cancelAtPeriodEnd`, `canceledAt`, `subjectType` (TENANT|USER), `subjectKey`
 
 **`SubscriptionRestResource`** — `@RestController /api/v1/billing/subscriptions`
+
 - `GET /{tenantKey}/active` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")` — active subscription for tenant
 - `GET /{tenantKey}` — `TENANT_OWNER` — all subscriptions for tenant
 - `GET /me/active` — `TENANT_OWNER` or `MEMBER` — active subscription for resolved subject (tenant or user depending on mode)
@@ -884,6 +944,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`DefaultEntitlementEvaluator`** — `@Component`: finds active subscription by subject; enriches with plan `featureSet` from plan catalog; returns `EntitlementDetails` (subject, planId, status, currentPeriodEnd, featureSet)
 
 **`TrialNotificationService`** — `@Service @ConditionalOnProperty(rabbitmq.enabled=true)`
+
 - `sendTrialEndingNotifications()`: `@Scheduled(cron="0 0 9 * * *")` + `@SchedulerLock` — daily 9AM UTC; finds trials ending in 2–3 days; publishes `TRIAL_ENDING` notification
 - `sendPaymentOverdueNotifications()`: `@Scheduled(cron="0 0 10 * * *")` + `@SchedulerLock` — daily 10AM UTC; finds `past_due` subscriptions; publishes `PAYMENT_OVERDUE` notification
 
@@ -898,9 +959,11 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`WebhookLog`** — domain: `id`, `externalEventId`, `eventType`, `status` (RECEIVED|PROCESSED|FAILED), `errorMessage`, `receivedAt`, `processedAt`
 
 **`StripeWebhookRestResource`** — `@RestController /api/v1/billing/webhooks`
+
 - `POST /stripe` — no auth; verifies `Stripe-Signature` header via `Webhook.constructEvent()`; delegates to `WebhookProcessingService`; always returns 200 after idempotency check
 
 **`WebhookProcessingService`** — `@Service`
+
 - Idempotency via `webhook_log` (checks `existsByExternalEventId` before processing)
 - Status lifecycle: `RECEIVED` → `PROCESSED` or `FAILED`
 - Handles: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
@@ -925,6 +988,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 ### `infrastructure/messaging/`
 
 **`TenantEventConsumer`** — `@Component @ConditionalOnProperty(rabbitmq.enabled=true)` — `@RabbitListener(TENANT_EVENTS_QUEUE)`
+
 - `TENANT_CREATED`: creates Stripe customer via `PaymentGatewayClient`, inserts `BillingSettings`; resolves billing email via `BillingContactResolver` fallback chain
 - `TENANT_PROVISIONED`: sends `SUBSCRIPTION_ACTIVATED` notification to billing contact
 - `TENANT_PROVISIONING_FAILED`: logs warning, no billing action
@@ -932,6 +996,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 - `TENANT_DELETED`: logs, future: cancel Stripe customer
 
 **`UserEventConsumer`** — `@Component @ConditionalOnProperty(rabbitmq.enabled=true)` — `@RabbitListener(USER_EVENTS_QUEUE)`
+
 - `USER_REMOVED`: clears `profileOwnerId` on that tenant's billing settings if it matches
 - `USER_DELETED`: clears `profileOwnerId` across all billing settings for that user
 
@@ -950,6 +1015,7 @@ For each file, list the directory first, then read all Java files in it. Return 
 **`PaymentGatewayClient`** — `@Component`: initializes `Stripe.apiKey` at construction; `createCustomer(name, email)` — creates Stripe customer, returns `cus_xxx` ID
 
 **`SecurityConfig`** — `@EnableWebSecurity @EnableMethodSecurity`
+
 - Stateless, CSRF disabled
 - Public: actuator, api-docs, swagger-ui, `POST /api/v1/billing/webhooks/stripe`
 - OAuth2 Resource Server with RSA public key from PEM
@@ -982,6 +1048,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 ### `authentication/`
 
 **`AuthenticationRestResource`** — `@RestController` at `/api/v1/iam/auth`
+
 - `POST /signup` → delegates to `UserService.registerUser()`, returns 201 with `SignupResponse`
 - `POST /signin` → calls `AuthenticationService.signIn()`, returns access + refresh tokens
 - `POST /refresh` → calls `AuthenticationService.refresh()`, rotates token pair
@@ -992,6 +1059,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`AuthenticationService`** — interface defining: `signIn`, `refresh`, `signOut`, `signOutAll`, `validateToken`, `listUserTenants`, `verifyEmail`, `resendVerification`
 
 **`AuthenticationServiceImpl`** — `@Service @Transactional`
+
 - `signIn`: resolves tenant from `TenantContext`, checks tenant status (rejects SUSPENDED/DELETED/PROVISIONING_FAILED), loads user, checks lockout, verifies BCrypt password, resolves membership + authorities, resets lockout counter, generates RS256 access + refresh tokens
 - `refresh`: decodes refresh token, validates `type=refresh` claim, checks tenant context match, re-resolves membership, issues new token pair
 - `signOut`: calls `TokenDenylistService.denyToken(jti, userId, expiresAt)`
@@ -1002,6 +1070,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 - `resendVerification`: rate-limited (3/hour), generates new 32-byte hex token, publishes `VERIFY_EMAIL` notification
 
 **`JwtTokenGenerator`** — `@Component`
+
 - Loads RSA private key from PEM file at startup
 - `generateAccessToken(user, tenantKey, authorities)`: RS256 JWT with claims: `sub`, `iss`, `iat`, `exp`, `jti`, `type=access`, `userId`, `username`, `email`, `firstName`, `lastName`, `tenant_id`, `email_verified`, `authorities`
 - `generateRefreshToken(user, tenantKey)`: RS256 JWT with `type=refresh`, minimal claims
@@ -1015,6 +1084,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`TokenDenylistMapper`** — `@Mapper` (MyBatis): `insert`, `existsByJti`, `findByUserId`, `deleteByExpiresAtBefore`
 
 **`TokenDenylistService`** — `@Component`
+
 - `denyToken(jti, userId, expiresAt)`: inserts into denylist table
 - `isRevoked(jti)`: checks existence by JTI
 - `cleanupExpired()`: `@Scheduled(cron="0 0 * * * *")` + `@SchedulerLock` — hourly cleanup of expired entries
@@ -1024,6 +1094,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 ### `email/`
 
 **`EmailVerificationRestResource`** — `@RestController` at `/api/v1/iam/users/email`
+
 - `POST /verify` → calls `AuthenticationService.verifyEmail(token)`
 - `POST /resend-verification` → calls `AuthenticationService.resendVerification(email)`, returns 202
 
@@ -1032,6 +1103,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`EmailVerificationTokenMapper`** — `@Mapper`: `insert`, `findByToken`, `deleteByUserId`, `deleteByExpiresAtBefore`, `incrementResendCount`, `countResendsWithinWindow`
 
 **`ExpiredVerificationTokenReaperJob`** — `@Component`
+
 - `cleanup()`: `@Scheduled(cron="0 0 * * * *")` + `@SchedulerLock` — hourly deletion of expired tokens
 
 ---
@@ -1043,6 +1115,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`InvitationStatus`** — enum: `PENDING`, `ACCEPTED`, `REVOKED`, `EXPIRED`
 
 **`InvitationDtos`** — records:
+
 - `SendInvitationRequest`: `@Email email`, `@Pattern(ADMIN|MEMBER) authority`
 - `AcceptInvitationRequest`: `firstName`, `lastName`, `@NotBlank password`
 - `InvitationResponse`, `InvitationPreviewResponse`, `AcceptInvitationResponse`
@@ -1050,6 +1123,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`InvitationService`** — interface: `sendInvitation`, `previewInvitation`, `acceptInvitation`, `revokeInvitation`, `listInvitations`
 
 **`InvitationServiceImpl`** — `@Service @Transactional`
+
 - `sendInvitation`: only available in `MULTI_TENANT` mode; verifies inviter has `TENANT_OWNER` or `ADMIN`; guards against duplicate PENDING invites and existing membership; generates 32-byte hex token; publishes `user.invited` event + `INVITATION` notification email
 - `previewInvitation`: public (no auth); returns tenant name, email, authority, expiry, `requiresSignup` flag
 - `acceptInvitation`: validates pending token; resolves or creates user (existing user: verifies password with lockout protection; new user: creates with `emailVerified=true`); creates membership + grants authority; consumes invitation; issues JWT token pair
@@ -1057,6 +1131,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 - `listInvitations`: returns all `PENDING` invitations for a tenant
 
 **`InvitationRestResource`** — `@RestController`
+
 - `POST /api/v1/iam/tenants/{tenantKey}/invitations` — `@PreAuthorize("hasAnyAuthority('TENANT_OWNER', 'ADMIN')")`
 - `GET /api/v1/iam/tenants/{tenantKey}/invitations` — same authority
 - `DELETE /api/v1/iam/tenants/{tenantKey}/invitations/{invitationId}` — same authority
@@ -1078,6 +1153,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`FailedLoginAttemptMapper`** — `@Mapper`: `insert`, `countByEmailAndAttemptedAtAfter`, `deleteByEmail`
 
 **`AccountLockoutManager`** — `@Component`
+
 - Reads `loginAttempts` threshold and `lockoutDuration` from `AuthConfigurationProperties`
 - `recordFailedAttempt(email)`: inserts a failed attempt record
 - `isLocked(email)`: counts attempts within the lockout window; returns true if ≥ threshold
@@ -1100,6 +1176,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`MembershipService`** — interface: `resolveMembership(userId, tenantKey)`, `getAuthorities(membershipId)`
 
 **`MembershipServiceImpl`** — `@Service @Transactional(readOnly=true)`
+
 - `resolveMembership`: finds membership, throws `MembershipNotFoundException` if SUSPENDED or REMOVED
 - `getAuthorities`: returns list of authority strings for a membership
 
@@ -1114,10 +1191,12 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`PasswordResetService`** — interface: `initiate(email)`, `complete(token, newPassword)`
 
 **`PasswordResetServiceImpl`** — `@Service @Transactional`
+
 - `initiate`: silently ignores unknown emails (prevents enumeration); rate-limits (configurable max requests per window); generates 32-byte hex token; publishes `PASSWORD_RESET_INITIATE` notification
 - `complete`: validates token + expiry; enforces password complexity (regex: lowercase + uppercase + digit + special char, 8–128 chars); updates password hash; deletes token; sets `last_global_signout_at` (invalidates all sessions); publishes `PASSWORD_RESET_CONFIRMED` notification
 
 **`PasswordResetRestResource`** — `@RestController` at `/api/v1/iam/users/password`
+
 - `POST /forgot` → always returns 200
 - `POST /reset` → returns 200 on success, 400 on invalid/expired token
 
@@ -1130,6 +1209,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`JwtClaimNames`** — constants class: `SUB`, `ISS`, `IAT`, `EXP`, `JTI`, `TYPE`, `USER_ID`, `USERNAME`, `EMAIL`, `FIRST_NAME`, `LAST_NAME`, `TENANT_ID`, `AUTHORITIES`, `EMAIL_VERIFIED`, `TYPE_ACCESS`, `TYPE_REFRESH`, `ISSUER`
 
 **`JwtAuthenticationFilter`** — `@Component extends OncePerRequestFilter`
+
 - Runs before Spring Security's `BearerTokenAuthenticationFilter`
 - Checks two revocation conditions: (1) JTI in `token_denylist`; (2) token `iat` ≤ `last_global_signout_at`
 - Returns 401 `application/problem+json` if either condition is met
@@ -1144,6 +1224,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`SignupResult`** — record: `user`, `tenant`, `membership`, `authorities`
 
 **`MultiTenantSignupStrategy`** — `@Service @ConditionalOnProperty(rollout-mode=MULTI_TENANT)`
+
 - Upserts user by email (atomic, eliminates TOCTOU)
 - Creates new tenant with NanoID 8-char key, status `PROVISIONING`
 - Creates membership with `ACTIVE` status
@@ -1151,6 +1232,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 - Publishes `tenant.created` event with owner fields
 
 **`SingleTenantSignupStrategy`** — `@Service @ConditionalOnProperty(rollout-mode=SINGLE_TENANT)`
+
 - Ignores `tenantName` field (logs debug message)
 - Upserts user by email
 - Resolves default tenant via `DefaultTenantResolver`
@@ -1166,6 +1248,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`TenantContext`** — `ThreadLocal<String>` holder: `setCurrentTenant`, `getCurrentTenant` (throws `IllegalStateException` if not set), `clear`
 
 **`TenantExtractionFilter`** — `@Component @Order(HIGHEST_PRECEDENCE+1) extends OncePerRequestFilter`
+
 - Priority 1: `X-Tenant-ID` header
 - Priority 2: JWT `tenant_id` claim from Bearer token
 - Returns 400 if tenant cannot be resolved
@@ -1175,6 +1258,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`MyBatisSchemaInterceptor`** — `@Intercepts(StatementHandler.prepare)` — sets PostgreSQL `search_path` to `t_{tenantKey}, public` before each MyBatis statement when tenant context is active; validates tenant key against `^[a-zA-Z0-9_]+$`
 
 **`TenantLiquibaseRunner`** — `@Component ApplicationRunner @ConditionalOnProperty(tenant-runner-enabled=true)`
+
 - `run()`: runs system schema migrations on `public` schema at startup
 - `runMigrationsForTenant(tenantKey)`: creates `t_{tenantKey}` schema and runs tenant-specific Liquibase changelog
 
@@ -1191,17 +1275,20 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`TenantService`** — interface: `createTenant`, `getTenantByKey`, `updateTenantStatus`, `retryProvisioning`
 
 **`TenantServiceImpl`** — `@Service @Transactional`
+
 - `createTenant`: checks name uniqueness, generates NanoID key, inserts with `PROVISIONING` status, publishes `tenant.created` event
 - `getTenantByKey`: read-only lookup
 - `updateTenantStatus`: enforces allowed transitions (`ACTIVE↔SUSPENDED`, `ACTIVE/SUSPENDED/PROVISIONING_FAILED→DELETED`); publishes `tenant.suspended` or `tenant.deleted` events
 - `retryProvisioning`: only from `PROVISIONING_FAILED` state; re-publishes `tenant.created` event
 
 **`TenantRestResource`** — `@RestController` at `/api/v1/iam/tenants`
+
 - `GET /{tenantKey}` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")`
 - `PATCH /{tenantKey}/status` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")`
 - `POST /{tenantKey}/retry-provisioning` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")`
 
 **`TenantProvisioningConsumer`** — `@Component @ConditionalOnProperty(rabbitmq.enabled=true)`
+
 - `@RabbitListener(TENANT_PROVISIONING_QUEUE)`: runs `TenantLiquibaseRunner.runMigrationsForTenant()`, sets status to `ACTIVE`, publishes `tenant.provisioned`; on failure sets `PROVISIONING_FAILED`, publishes `tenant.provisioning_failed`
 
 **`StuckTenantReaperJob`** — `@Component`: `@Scheduled(cron="0 */5 * * * *")` + `@SchedulerLock` — every 5 minutes marks tenants stuck in `PROVISIONING` beyond configured timeout as `PROVISIONING_FAILED`
@@ -1223,6 +1310,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`UserService`** — interface: `registerUser`, `getUserById`, `listUsers`, `createUser`, `updateUser`, `patchUser`, `deleteUser`, `deleteUserById`
 
 **`UserServiceImpl`** — `@Service @Transactional`
+
 - `registerUser`: delegates to `SignupStrategy`, publishes `user.created` event, generates email verification token, publishes `VERIFY_EMAIL` notification
 - `listUsers`: paginated, returns `PagedUserResponse`
 - `createUser`: admin path — creates user with random temp password
@@ -1232,12 +1320,14 @@ Here is the complete, thorough breakdown of every file read across all three ser
 - `deleteUserById`: hard-deletes user record
 
 **`UserRestResource`** — `@RestController` at `/api/v1/iam/users`
+
 - `GET /me` — `@PreAuthorize("isAuthenticated()")`
 - `PATCH /me` — update own profile
 - `DELETE /me` — remove own membership from current tenant
 - `POST /tenants` — credential-gated tenant discovery (no JWT required)
 
 **`UserAdminRestResource`** — `@RestController` at `/api/v1/iam/admin/users`
+
 - `GET /` — paginated list (page, size params, max 100)
 - `GET /{id}` — get by UUID
 - `POST /` — create user
@@ -1250,6 +1340,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 ### `infrastructure/config/`
 
 **`SecurityConfig`** — `@Configuration @EnableWebSecurity`
+
 - Stateless, CSRF disabled
 - Public paths: actuator, api-docs, swagger-ui, `.well-known`, signup, signin, refresh, validate, email verify, password reset, admin users, invitation accept flow
 - `TENANT_OWNER` required for tenant management endpoints
@@ -1266,6 +1357,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`PlatformModeValidator` / `PlatformModeValidatorImpl`** — `@Component @Order(HIGHEST_PRECEDENCE) ApplicationRunner`: validates `rolloutMode` is set at startup; throws `InvalidPlatformModeException` if missing
 
 **`RabbitMQConfig`** — `@Configuration @ConditionalOnProperty(rabbitmq.enabled=true) @Profile("!test")`
+
 - Exchange: `iqkv.events` (topic), `iqkv.dlx` (dead-letter)
 - Queues: `iqkv.iam.user.events`, `iqkv.iam.notifications`, `iqkv.iam.tenant.provisioning`, `iqkv.iam.subscription.events`
 - Routing keys: `tenant.created`, `tenant.provisioned`, `tenant.provisioning_failed`, `tenant.updated`, `tenant.deleted`, `tenant.suspended`, `user.created`, `user.updated`, `user.deleted`, `user.removed`, `user.invited`, `subscription.cancelled`, `notification.iam.email`
@@ -1318,6 +1410,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 ### `infrastructure/config/`
 
 **`SecurityConfig`** — `@Configuration @EnableWebFluxSecurity`
+
 - Reactive (WebFlux) security
 - CSRF, HTTP Basic, form login all disabled
 - Public paths loaded from `GatewayProperties.publicPaths`
@@ -1329,6 +1422,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`GatewayProperties`** — `@ConfigurationProperties("iqkv.gateway")`: `publicPaths: List<String>`
 
 **`GatewayConfigurationProperties`** — nested config class:
+
 - `Tenancy @ConfigurationProperties("iqkv.tenancy")`: `defaultTenantKey`
 - `Iam @ConfigurationProperties("iqkv.iam")`: `serviceUrl` (default: `http://foundation-iam-service:8080`)
 
@@ -1339,6 +1433,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`PlatformModeValidator` / `PlatformModeValidatorImpl`** — `@Component @Order(HIGHEST_PRECEDENCE) ApplicationRunner`: validates rollout mode at startup; on failure sets readiness to `REFUSING_TRAFFIC`
 
 **`PlatformModeGuardFilter`** — `@Component implements GlobalFilter, Ordered` (order: `HIGHEST_PRECEDENCE`)
+
 - On `@PostConstruct` and every 60 seconds: queries IAM `/actuator/info` for `platform.rollout-mode`
 - If mismatch detected: sets `modeMismatchDetected=true`, publishes `ReadinessState.REFUSING_TRAFFIC`, returns 503 on all requests
 - If IAM unreachable: fail-open (logs warning, allows traffic)
@@ -1349,29 +1444,35 @@ Here is the complete, thorough breakdown of every file read across all three ser
 ### `infrastructure/security/`
 
 **`CorrelationIdFilter`** — `GlobalFilter, Ordered` (order: `-200`)
+
 - Generates or propagates `X-Correlation-ID` header
 - Stores in exchange attributes for later use by `ResponseTransformationFilter`
 
 **`HeaderSanitizationFilter`** — `GlobalFilter, Ordered` (order: `-190`)
+
 - Strips all user/tenant context headers from incoming client requests to prevent identity spoofing
 - Removed headers: `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-User-Permissions`, `X-Tenant-ID`, `X-Organization-ID`
 
 **`JwtContextPropagationFilter`** — `GlobalFilter, Ordered` (order: `-100`)
+
 - Reads validated JWT from `ReactiveSecurityContextHolder`
 - Adds downstream headers: `X-User-ID` (userId claim), `X-Username`, `X-User-Email`, `X-Tenant-ID` (tenant_id claim), `X-User-Authorities` (comma-separated)
 
 **`TenantContextResolutionPolicy`** — interface: `resolveTenantContext(exchange)` → `Optional<String>`
 
 **`TenantContextFilter`** — `GlobalFilter, Ordered, TenantContextResolutionPolicy` (order: `-50`)
+
 - Runs after JWT propagation
 - `MULTI_TENANT` mode: uses `X-Tenant-ID` already set by JWT propagation; no auto-injection
 - `SINGLE_TENANT` mode: if `X-Tenant-ID` absent, injects `iqkv.tenancy.default-tenant-key`; logs warning if not configured
 
 **`ResponseTransformationFilter`** — `GlobalFilter, Ordered` (order: `Integer.MIN_VALUE + 1`)
+
 - Adds security response headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`
 - Echoes `X-Correlation-ID` back to client
 
 **Filter execution order summary:**
+
 1. `CorrelationIdFilter` (-200): generate/propagate correlation ID
 2. `HeaderSanitizationFilter` (-190): strip spoofable headers
 3. Spring Security OAuth2 validation (validates JWT via JWKS)
@@ -1391,6 +1492,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`PlanRequest`** — record (request body): `@NotBlank planCode`, `displayName`, `billingPeriod`, `@Positive priceMinor`, `currency`, `featureSet`, `@NotBlank scope`, `active`
 
 **`PlanCatalogRestResource`** — `@RestController` at `/api/v1/billing/plans`
+
 - `GET /` — list all active plans (any authenticated user)
 - `GET /{planCode}` — get by planCode (any authenticated user)
 - `POST /` — `@PreAuthorize("hasAuthority('PLATFORM_OPERATOR')")` — create plan
@@ -1410,10 +1512,12 @@ Here is the complete, thorough breakdown of every file read across all three ser
 **`BillingSettingsDtos`** — `UpdateBillingSettingsRequest` record, `BillingSettingsResponse` record
 
 **`BillingSettingsRestResource`** — `@RestController` at `/api/v1/billing/settings`
+
 - `GET /{tenantKey}` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")` — validates JWT tenant matches path
 - `PATCH /{tenantKey}` — `@PreAuthorize("hasAuthority('TENANT_OWNER')")` — partial update, validates tenant match
 
 **`BillingSettingsService`** — `@Service`
+
 - `getByTenantKey`: throws `ResourceNotFoundException` if not found
 - `update`: validates tenant context match; applies non-null fields; publishes `BILLING_UPDATED` notification
 
@@ -1436,6 +1540,7 @@ Here's what changed and why:
 ---
 
 **Removed — things the README claimed that don't exist in the code:**
+
 - Redis rate limiting (ZSET sliding window) — no Redis dependency in any service; gateway has no Redis
 - Resilience4j circuit breaker — not in any pom.xml or source
 - Dual-layer rate limiting (global IP + tenant-specific) — not implemented
@@ -1449,6 +1554,7 @@ Here's what changed and why:
 - `IqkvProperties` record in gateway — actual class names are `GatewayProperties`, `GatewayConfigurationProperties`
 
 **Added — things that are actually implemented:**
+
 - Full invitation flow (send, preview, accept for existing/new users, revoke, expiry reaper)
 - `PlatformModeGuardFilter` — polls IAM `/actuator/info` every 60s, sets `REFUSING_TRAFFIC` on mismatch
 - `HeaderSanitizationFilter` with exact header list and spoofing prevention explanation
