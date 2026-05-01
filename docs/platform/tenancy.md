@@ -357,7 +357,7 @@ iqkv:
 platform:
   rolloutMode: "MULTI_TENANT"
   defaultTenantKey: "" # Required for SINGLE_TENANT mode
-  defaultTenantName: "Default Organization"
+  defaultTenantName: "Acme Corp."
 ```
 
 ### Tenancy Configuration
@@ -372,7 +372,7 @@ iqkv:
     default-schema: public # Default schema for shared data
     provisioning-timeout: PT10M # Timeout for tenant provisioning
     default-tenant-key: ${DEFAULT_TENANT_KEY:}
-    default-tenant-name: ${DEFAULT_TENANT_NAME:Default Organization}
+    default-tenant-name: ${DEFAULT_TENANT_NAME:Acme Corp.}
   liquibase:
     system-change-log: db/changelog/system/db.changelog-master.xml
     tenant-change-log: db/changelog/tenant/master.xml
