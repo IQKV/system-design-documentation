@@ -13,7 +13,7 @@ K8s-native microservices foundation for multi-tenant B2B SaaS. Three open-source
 
 - **IAM** — registration, JWT auth, account recovery, organizations, RBAC, invitations
 - **API Gateway** — JWT validation, tenant resolution, request routing
-- **Billing** — Stripe Connect integration; subscriptions and invoices managed on Stripe's side
+- **Billing** — Stripe wrapper integration; subscriptions and invoices managed on Stripe's side
 - **UI** — React + Mantine UI app covering auth flows, org management, and billing portal
 
 ---
