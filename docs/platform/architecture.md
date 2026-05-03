@@ -131,61 +131,137 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 ### Billing Service
 
-**Stripe Integration with Multi-Tenant Billing Support**
+**Stripe Connect Wrapper with Multi-Mode Billing Support**
 
-**Core Features:**
+**Core Responsibilities:**
 
-- Complete Stripe integration layer with webhook processing
-- Plan catalog management with tenant/user scoped plans
-- Multi-mode billing: tenant-scoped (multi-tenant) vs user-scoped (single-tenant)
-- Subscription lifecycle management with local caching
-- Entitlement evaluation for authorization decisions
+- Acts as the single point of integration with Stripe — no custom billing logic
+- Automatic Stripe customer provisioning per tenant via `tenant.created` events
+- Tenant-to-customer mapping and billing metadata management
+- Idempotent webhook processing with signature verification
+- Platform-wide lifecycle event publishing via RabbitMQ
+- Async email notification publishing for billing events
+- Pre-provisioned plan catalog with eligibility validation
+- Multi-mode support: tenant-scoped (multi-tenant) vs user-scoped (single-tenant)
 
 **Stripe Integration:**
 
-- Customer provisioning and management
-- Webhook processing with signature verification and idempotency
-- Outbox pattern for reliable event delivery
-- Subscription state caching for fast reads
+- Customer provisioning on tenant creation with metadata sync
+- Webhook processing: `subscription.created`, `subscription.updated`, `subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
+- Signature verification and idempotency via `webhook_log` table
+- Subscription state caching for fast reads without Stripe API calls
+- Tax ID/VAT/GST sync to Stripe for compliant B2B invoices
 
-**Plan Management:**
+**Plan Catalog:**
 
-- Pre-provisioned subscription plans with pricing and features
-- Plan eligibility validation based on rollout mode
-- CRUD API for plan catalog management
-- Feature-based entitlement evaluation
+- Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER)
+- Plan eligibility policy validates scope matches rollout mode
+- CRUD API for platform operators to manage catalog
+- Feature-based entitlement evaluation for authorization decisions
 
-**Events Published:** `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`, `billing.settings.updated`
+**Multi-Mode Architecture:**
 
-**Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL, Stripe Java SDK, RabbitMQ, Jackson (JSON processing)
+- **Multi-Tenant Mode**: Subscriptions scoped per tenant; `billing_settings` table used
+- **Single-Tenant Mode**: Subscriptions scoped per user; `user_billing_settings` table used
+- Subject resolution strategy pattern for mode-aware subscription handling
+- Plan catalog filtered by scope based on active rollout mode
+
+**Email Notifications:**
+
+- Publishes async email notification events to RabbitMQ
+- 9 notification types: subscription activated/updated/cancelled, trial ending, payment overdue, invoice paid, payment failed, billing updated, account suspended
+- Email resolution: `billingEmail` from settings (multi-tenant) or `userBillingSettings` (single-tenant)
+- Scheduled jobs for proactive notifications (trial ending, payment overdue)
+
+**Events Published:** `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`, `notification.billing.email`
+
+**Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17, Stripe Java SDK, RabbitMQ, ShedLock 7.x, Thymeleaf (email templates)
 
 ### Billing Settings
 
-Each tenant/user has a `billing_settings` record — the single source of truth for Stripe customer metadata:
+Each tenant (multi-tenant mode) or user (single-tenant mode) has billing settings — the single source of truth for Stripe customer metadata:
+
+**Multi-Tenant Mode (`billing_settings`):**
 
 ```sql
 billing_settings
-├── id                UUID PK
-├── tenant_key        VARCHAR(8) UNIQUE FK → tenant (multi-tenant)
-├── user_id           UUID UNIQUE FK → user (single-tenant)
-├── stripe_customer_id VARCHAR
-├── billing_email     VARCHAR        -- finance contact, no system access required
-├── company_name      VARCHAR
-├── billing_address   JSONB          -- street, city, country, postal_code
-├── tax_id            VARCHAR        -- VAT/GST number for B2B compliance
-├── tax_id_type       VARCHAR        -- Stripe enum: eu_vat, gb_vat, au_abn, etc.
-├── currency          VARCHAR(3)     -- ISO 4217, default USD
-├── created_at        TIMESTAMP
-└── updated_at        TIMESTAMP
+├── id                    UUID PK
+├── tenant_key            VARCHAR(255) UNIQUE FK → tenant
+├── external_customer_id  VARCHAR(255) UNIQUE    -- Stripe cus_xxx
+├── billing_email         VARCHAR(255)           -- finance contact, no system access required
+├── company_name          VARCHAR(255)
+├── billing_address       JSONB                  -- street, city, country, postal_code
+├── tax_id                VARCHAR(100)           -- VAT/GST number for B2B compliance
+├── tax_id_type           VARCHAR(50)            -- Stripe enum: eu_vat, gb_vat, au_abn, etc.
+├── currency              VARCHAR(3)             -- ISO 4217, default USD
+├── profile_owner_id      UUID                   -- Soft ref to IAM users.id (nullable)
+├── created_at            TIMESTAMP
+└── updated_at            TIMESTAMP
+```
+
+**Single-Tenant Mode (`user_billing_settings`):**
+
+```sql
+user_billing_settings
+├── id                    UUID PK
+├── user_id               UUID UNIQUE FK → user
+├── external_customer_id  VARCHAR(255) UNIQUE    -- Stripe cus_xxx
+├── billing_email         VARCHAR(255)
+├── company_name          VARCHAR(255)
+├── billing_address       JSONB
+├── tax_id                VARCHAR(100)
+├── tax_id_type           VARCHAR(50)
+├── currency              VARCHAR(3)
+├── created_at            TIMESTAMP
+└── updated_at            TIMESTAMP
+```
+
+**Subscription Model:**
+
+```sql
+subscriptions
+├── id                        UUID PK
+├── tenant_key                VARCHAR(255)
+├── external_subscription_id  VARCHAR(255) UNIQUE    -- Stripe sub_xxx
+├── external_customer_id      VARCHAR(255)           -- Stripe cus_xxx
+├── status                    VARCHAR(50)            -- active | past_due | canceled | unpaid | trialing
+├── plan_id                   VARCHAR(255)           -- Stripe price ID
+├── current_period_start      TIMESTAMP
+├── current_period_end        TIMESTAMP
+├── cancel_at_period_end      BOOLEAN
+├── canceled_at               TIMESTAMP
+├── subject_type              VARCHAR(50)            -- TENANT | USER
+├── subject_key               VARCHAR(255)           -- tenantKey or userId
+├── created_at                TIMESTAMP
+└── updated_at                TIMESTAMP
+```
+
+**Plan Catalog:**
+
+```sql
+plans
+├── id              UUID PK
+├── plan_code       VARCHAR(100) UNIQUE
+├── display_name    VARCHAR(255)
+├── billing_period  VARCHAR(50)            -- MONTHLY | ANNUAL
+├── price_minor     INTEGER                -- Price in cents
+├── currency        VARCHAR(3)
+├── feature_set     JSONB                  -- Feature flags and limits
+├── scope           VARCHAR(50)            -- TENANT | USER
+├── active          BOOLEAN
+├── created_at      TIMESTAMP
+└── updated_at      TIMESTAMP
 ```
 
 **Key Design Decisions:**
 
-- Auto-created on tenant provisioning with registration defaults
-- Decoupled from IAM users for billing independence
-- VAT/GST details flow directly into Stripe invoices
+- Auto-created on `tenant.created` event with registration defaults
+- Decoupled from IAM users for billing independence (soft reference only)
+- VAT/GST details flow directly into Stripe invoices via metadata sync
 - Supports both tenant-scoped and user-scoped billing models
-- Outbox pattern ensures reliable Stripe synchronization
+- Local subscription cache eliminates Stripe API calls for reads
+- Webhook idempotency via `webhook_log` table prevents duplicate processing
+- Subject-aware event publishing for consistent entitlement evaluation
 
 ---
 
@@ -280,15 +356,19 @@ public class MyBatisSchemaInterceptor implements Interceptor {
 
 Asynchronous communication and tenant provisioning via RabbitMQ with durable queues and dead letter handling:
 
-| Exchange      | Routing Key                     | Consumer            | Purpose                           |
-| ------------- | ------------------------------- | ------------------- | --------------------------------- |
-| `iqkv.events` | `tenant.provisioning.requested` | Provisioning Worker | Create schema, run migrations     |
-| `iqkv.events` | `tenant.provisioned`            | Billing Service     | Create Stripe customer            |
-| `iqkv.events` | `tenant.provisioning.failed`    | Monitoring/Alerts   | Handle provisioning failures      |
-| `iqkv.events` | `tenant.suspended`              | Billing Service     | Mark billing profile inactive     |
-| `iqkv.events` | `user.invited`                  | Extensions          | Invitation notifications          |
-| `iqkv.events` | `user.removed`                  | Extensions          | Membership removal cleanup        |
-| `iqkv.events` | `subscription.cancelled`        | IAM Service         | Suspend tenant on payment failure |
+| Exchange      | Routing Key                     | Consumer            | Purpose                                 |
+| ------------- | ------------------------------- | ------------------- | --------------------------------------- |
+| `iqkv.events` | `tenant.provisioning.requested` | Provisioning Worker | Create schema, run migrations           |
+| `iqkv.events` | `tenant.provisioned`            | Billing Service     | Create Stripe customer, init settings   |
+| `iqkv.events` | `tenant.provisioning.failed`    | Monitoring/Alerts   | Handle provisioning failures            |
+| `iqkv.events` | `tenant.suspended`              | Billing Service     | Mark billing profile inactive           |
+| `iqkv.events` | `user.invited`                  | Extensions          | Invitation notifications                |
+| `iqkv.events` | `user.removed`                  | Extensions          | Membership removal cleanup              |
+| `iqkv.events` | `subscription.created`          | IAM/Extensions      | Subscription activation handling        |
+| `iqkv.events` | `subscription.cancelled`        | IAM Service         | Suspend tenant on payment failure       |
+| `iqkv.events` | `invoice.paid`                  | Extensions          | Payment success notifications           |
+| `iqkv.events` | `payment.failed`                | Extensions          | Payment failure handling                |
+| `iqkv.events` | `notification.billing.email`    | Notification Svc    | Async email delivery for billing events |
 
 **Event Processing Patterns:**
 

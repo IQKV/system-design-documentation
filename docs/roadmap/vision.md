@@ -9,7 +9,7 @@ Goal: all four components running on a public demo host with enough UI to evalua
 - [ ] IAM — registration, login, JWT RS256, tenant lifecycle, RBAC, email verification, password reset, brute-force lockout, token revocation, JWKS endpoint
 - [x] IAM — platform rollout mode config (`platform.rolloutMode: MULTI_TENANT | SINGLE_TENANT`); single-tenant provisions default tenant at startup via bootstrap strategy
 - [ ] API Gateway — JWT validation, tenant resolution, routing
-- [ ] Billing — Stripe Connect integration, webhook handling, lifecycle events
+- [x] Billing — Stripe Connect wrapper, webhook handling (5 event types), lifecycle events, email notifications (9 types), plan catalog, multi-mode support
 - [ ] UI — React + Mantine, deployed as static build behind the Gateway
 
 **UI screens required for demo**

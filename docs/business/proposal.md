@@ -33,11 +33,13 @@ A complete SaaS infrastructure platform consisting of three microservices:
 
 ### Billing Service
 
-- Stripe integration for customer and subscription management
+- Stripe Connect wrapper for customer and subscription management
 - Plan catalog with tenant/user scoped billing models
-- Webhook processing with signature verification
-- Local subscription caching for fast reads
+- Webhook processing with signature verification and idempotency
+- Local subscription caching for fast reads without Stripe API calls
+- Email notification publishing (9 types) via RabbitMQ
 - Support for both multi-tenant and single-tenant billing
+- Scheduled jobs for trial ending and payment overdue notifications
 
 ### UI Application
 

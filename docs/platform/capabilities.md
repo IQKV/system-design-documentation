@@ -56,22 +56,28 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 
 ## Billing
 
-Stripe integration layer with plan catalog and subscription management. Handles tenant-to-customer mapping, webhook processing, and entitlement evaluation.
+Stripe Connect wrapper with plan catalog and subscription management. Acts as the single point of integration with Stripe — no custom billing logic. Handles tenant-to-customer mapping, webhook processing, lifecycle event publishing, and email notifications.
 
-| Capability         | Notes                                                                                                     | Status |
-| ------------------ | --------------------------------------------------------------------------------------------------------- | ------ |
-| Plan catalog       | Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER); CRUD via REST API     | ✅     |
-| Plan eligibility   | Validates plan scope matches rollout mode (tenant vs user scoped plans)                                   | ✅     |
-| Billing settings   | Per-tenant settings: Stripe customer ID, billing email, company info, tax ID, billing address             | ✅     |
-| User billing       | Per-user billing settings for single-tenant mode; auto-created on first access                            | ✅     |
-| Subscription cache | Local cache of Stripe subscription state; updated via webhooks for fast reads                             | ✅     |
-| Entitlement eval   | Evaluates active subscriptions and plan features for authorization decisions                              | ✅     |
-| Stripe integration | Customer provisioning, webhook processing with signature verification, outbox pattern for reliability     | ✅     |
-| Multi-mode support | Supports both multi-tenant (tenant-scoped) and single-tenant (user-scoped) billing models                 | ✅     |
-| Webhook processing | Idempotent Stripe webhook handling; processes subscription lifecycle events safely                        | ✅     |
-| REST API           | Complete API for plans, settings, subscriptions with JWT auth and tenant isolation                        | ✅     |
-| Lifecycle events   | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` via RabbitMQ | ✅     |
-| Tax compliance     | Tax ID/VAT/GST storage and Stripe sync for B2B invoicing                                                  | 🚧     |
+| Capability          | Notes                                                                                                                                                | Status |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Stripe integration  | Customer provisioning on `tenant.created` events; webhook processing with signature verification; subscription state caching for fast reads          | ✅     |
+| Plan catalog        | Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER); CRUD via REST API for platform operators                         | ✅     |
+| Plan eligibility    | Validates plan scope matches rollout mode (tenant vs user scoped plans); enforced at subscription creation                                           | ✅     |
+| Billing settings    | Per-tenant settings: Stripe customer ID, billing email, company info, tax ID, billing address; auto-created on tenant provisioning                   | ✅     |
+| User billing        | Per-user billing settings for single-tenant mode; auto-created on first access; separate table from tenant settings                                  | ✅     |
+| Subscription cache  | Local cache of Stripe subscription state; updated via webhooks for fast reads without Stripe API calls                                               | ✅     |
+| Subject resolution  | Strategy pattern for mode-aware subscription handling; resolves TENANT vs USER subject based on rollout mode                                         | ✅     |
+| Entitlement eval    | Evaluates active subscriptions and plan features for authorization decisions; subject-aware evaluation                                               | ✅     |
+| Multi-mode support  | Supports both multi-tenant (tenant-scoped) and single-tenant (user-scoped) billing models with separate data tables                                  | ✅     |
+| Webhook processing  | Idempotent Stripe webhook handling; processes 5 event types: subscription created/updated/deleted, invoice paid, payment failed                      | ✅     |
+| REST API            | Complete API for plans, settings, subscriptions with JWT auth and tenant isolation; supports both tenant-specific and "me" endpoints                 | ✅     |
+| Lifecycle events    | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed` via RabbitMQ with subject context                       | ✅     |
+| Email notifications | Publishes 9 notification types to RabbitMQ: subscription activated/updated/cancelled, trial ending, payment overdue, invoice paid, payment failed... | ✅     |
+| Scheduled jobs      | ShedLock-protected jobs for trial ending notifications (9 AM UTC) and payment overdue reminders (10 AM UTC)                                          | ✅     |
+| Tax compliance      | Tax ID/VAT/GST storage and Stripe metadata sync for B2B invoicing; supports multiple tax ID types                                                    | ✅     |
+| Webhook idempotency | `webhook_log` table tracks processed events; prevents duplicate processing; status tracking (RECEIVED/PROCESSED/FAILED)                              | ✅     |
+| Email resolution    | Multi-tenant: uses `billing_settings.billingEmail`; Single-tenant: uses `user_billing_settings.billingEmail`; fallback chain for missing emails      | ✅     |
+| Observability       | Prometheus metrics, structured JSON logging with correlation IDs, health checks, actuator endpoints                                                  | ✅     |
 
 ---
 
