@@ -109,15 +109,15 @@ Excluded from coverage (do not add coverage for these):
 ### Base Package
 
 ```
-com.iqscaffold.{service-name}
+com.iqkv.{service-name}
 ```
 
-Example: `com.iqscaffold.contactservice`
+Example: `com.iqkv.contactservice`
 
 ### Top-Level Package Layout
 
 ```
-com.iqscaffold.{service}/
+com.iqkv.{service}/
 ├── {DomainEntity}/               # Feature module (vertical slice)
 │   ├── {Entity}.java             # domain model (plain Java class)
 │   ├── {Entity}Repository.java   # Spring Data repository
@@ -272,7 +272,7 @@ public interface ContactMapper {
 
 ```xml
 <!-- ContactMapper.xml -->
-<mapper namespace="com.iqscaffold.contactservice.contact.ContactMapper">
+<mapper namespace="com.iqkv.contactservice.contact.ContactMapper">
 
   <resultMap id="ContactResultMap" type="Contact">
     <id property="id" column="id"/>
@@ -837,7 +837,7 @@ Redis key conventions:
 Each service has its own `JwtClaimNames` in its `security/` package. All copies must be identical. This is a known duplication accepted until a shared library is introduced.
 
 ```java
-package com.iqscaffold.{service}.security;
+package com.iqkv.{service}.security;
 
 public final class JwtClaimNames {
   private JwtClaimNames() {
@@ -2485,8 +2485,8 @@ ij_java_imports_layout = $*, |, jakarta.**, java.**, javax.**, |, *
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.iqscaffold.contactservice.contact.Contact;
-import com.iqscaffold.contactservice.contact.ContactRepository;
+import com.iqkv.contactservice.contact.Contact;
+import com.iqkv.contactservice.contact.ContactRepository;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import java.time.LocalDateTime;
@@ -2501,7 +2501,7 @@ import org.springframework.transaction.annotation.Transactional;
 ```java
 import static org.assertj.core.api.Assertions.assertThat; // static not first
 
-import com.iqscaffold.contactservice.contact.Contact;
+import com.iqkv.contactservice.contact.Contact;
 import java.time.LocalDateTime;
 import java.util.*; // wildcard — forbidden
 import java.util.List;
