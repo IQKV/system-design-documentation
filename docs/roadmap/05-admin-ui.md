@@ -38,12 +38,12 @@ The Platform Admin UI is a dedicated administrative interface for platform opera
 
 **User Administration:**
 
-- `GET /api/v1/iam/admin/users` - List users with pagination
-- `GET /api/v1/iam/admin/users/{id}` - Get user details
-- `POST /api/v1/iam/admin/users` - Create user with temp password
-- `PUT /api/v1/iam/admin/users/{id}` - Full user update
-- `PATCH /api/v1/iam/admin/users/{id}` - Partial user update
-- `DELETE /api/v1/iam/admin/users/{id}` - Delete user (cascade)
+- `GET /api/v1/iam/operator/users` - List users with pagination
+- `GET /api/v1/iam/operator/users/{id}` - Get user details
+- `POST /api/v1/iam/operator/users` - Create user with temp password
+- `PUT /api/v1/iam/operator/users/{id}` - Full user update
+- `PATCH /api/v1/iam/operator/users/{id}` - Partial user update
+- `DELETE /api/v1/iam/operator/users/{id}` - Delete user (cascade)
 
 **Tenant Management:**
 
@@ -80,40 +80,40 @@ The Platform Admin UI is a dedicated administrative interface for platform opera
 
 **User Admin Actions:**
 
-- `POST /api/v1/iam/admin/users/{id}/ban` - Ban user (PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/users/{id}/unban` - Unban user (PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/users/{id}/impersonate` - Impersonate user (PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/users/{id}/unlock` - Unlock account (PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/users/{id}/verify-email` - Verify email (PLATFORM_OPERATOR)
-- `GET /api/v1/iam/admin/users/{id}/memberships` - Get memberships (PLATFORM_OPERATOR)
-- `GET /api/v1/iam/admin/users/{id}/activity` - Get activity log (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/users/{id}/ban` - Ban user (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/users/{id}/unban` - Unban user (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/users/{id}/impersonate` - Impersonate user (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/users/{id}/unlock` - Unlock account (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/users/{id}/verify-email` - Verify email (PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/users/{id}/memberships` - Get memberships (PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/users/{id}/activity` - Get activity log (PLATFORM_OPERATOR)
 
 **Tenant Admin Actions:**
 
-- `GET /api/v1/iam/admin/tenants` - List all tenants (paginated, PLATFORM_OPERATOR)
-- `GET /api/v1/iam/admin/tenants/{tenantKey}` - Get tenant (platform operator view, PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/tenants/{tenantKey}/suspend` - Suspend tenant (PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/tenants/{tenantKey}/unsuspend` - Unsuspend tenant (PLATFORM_OPERATOR)
-- `DELETE /api/v1/iam/admin/tenants/{tenantKey}` - Delete tenant (PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/tenants/{tenantKey}/transfer-ownership` - Transfer ownership (PLATFORM_OPERATOR)
-- `GET /api/v1/iam/admin/tenants/{tenantKey}/export` - Export data (GDPR, PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/tenants` - List all tenants (paginated, PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/tenants/{tenantKey}` - Get tenant (platform operator view, PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/tenants/{tenantKey}/suspend` - Suspend tenant (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/tenants/{tenantKey}/unsuspend` - Unsuspend tenant (PLATFORM_OPERATOR)
+- `DELETE /api/v1/iam/operator/tenants/{tenantKey}` - Delete tenant (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/tenants/{tenantKey}/transfer-ownership` - Transfer ownership (PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/tenants/{tenantKey}/export` - Export data (GDPR, PLATFORM_OPERATOR)
 
 **Subscription Admin Actions:**
 
-- `GET /api/v1/billing/admin/subscriptions` - List all subscriptions (PLATFORM_OPERATOR)
-- `POST /api/v1/billing/admin/subscriptions/{id}/change-plan` - Change plan (PLATFORM_OPERATOR)
-- `POST /api/v1/billing/admin/subscriptions/{id}/cancel` - Cancel subscription (PLATFORM_OPERATOR)
-- `POST /api/v1/billing/admin/subscriptions/{id}/reactivate` - Reactivate (PLATFORM_OPERATOR)
-- `POST /api/v1/billing/admin/subscriptions/{id}/apply-discount` - Apply discount (PLATFORM_OPERATOR)
-- `POST /api/v1/billing/admin/subscriptions/{id}/extend-trial` - Extend trial (PLATFORM_OPERATOR)
+- `GET /api/v1/billing/operator/subscriptions` - List all subscriptions (PLATFORM_OPERATOR)
+- `POST /api/v1/billing/operator/subscriptions/{id}/change-plan` - Change plan (PLATFORM_OPERATOR)
+- `POST /api/v1/billing/operator/subscriptions/{id}/cancel` - Cancel subscription (PLATFORM_OPERATOR)
+- `POST /api/v1/billing/operator/subscriptions/{id}/reactivate` - Reactivate (PLATFORM_OPERATOR)
+- `POST /api/v1/billing/operator/subscriptions/{id}/apply-discount` - Apply discount (PLATFORM_OPERATOR)
+- `POST /api/v1/billing/operator/subscriptions/{id}/extend-trial` - Extend trial (PLATFORM_OPERATOR)
 
 **System Administration:**
 
-- `GET /api/v1/iam/admin/dashboard/metrics` - Platform metrics (PLATFORM_OPERATOR)
-- `GET /api/v1/iam/admin/audit-log` - Audit trail (PLATFORM_OPERATOR)
-- `GET /api/v1/iam/admin/system/health` - Service health (PLATFORM_OPERATOR)
-- `GET /api/v1/iam/admin/system/jobs` - Background jobs (PLATFORM_OPERATOR)
-- `POST /api/v1/iam/admin/system/jobs/{jobName}/trigger` - Trigger job (PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/dashboard/metrics` - Platform metrics (PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/audit-log` - Audit trail (PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/system/health` - Service health (PLATFORM_OPERATOR)
+- `GET /api/v1/iam/operator/system/jobs` - Background jobs (PLATFORM_OPERATOR)
+- `POST /api/v1/iam/operator/system/jobs/{jobName}/trigger` - Trigger job (PLATFORM_OPERATOR)
 
 ---
 
@@ -220,7 +220,7 @@ The Platform Admin UI is a dedicated administrative interface for platform opera
 
 - **Customizable Widgets:** Drag-and-drop dashboard widgets
 - **Date Range Selector:** Quick filters (today, last 7/30/90 days, custom range)
-- **Real-time Updates:** SSE-based live metrics (Phase 4 — requires backend `/api/v1/iam/admin/dashboard/metrics/stream` endpoint)
+- **Real-time Updates:** SSE-based live metrics (Phase 4 — requires backend `/api/v1/iam/operator/dashboard/metrics/stream` endpoint)
 - **Export Capabilities:** Export any widget data to CSV/Excel/PDF
 - **Saved Views:** Save custom dashboard configurations
 - **Comparison Mode:** Compare metrics across different time periods
@@ -352,9 +352,9 @@ The Platform Admin UI is a dedicated administrative interface for platform opera
 
 **Platform Operator Actions (Current Implementation):**
 
-- **Delete Account:** Permanently deletes user and all memberships (cascade) - `DELETE /api/v1/iam/admin/users/{id}`
-- **Create User:** Create user with random temporary password - `POST /api/v1/iam/admin/users`
-- **Update User:** Full or partial profile update - `PUT/PATCH /api/v1/iam/admin/users/{id}`
+- **Delete Account:** Permanently deletes user and all memberships (cascade) - `DELETE /api/v1/iam/operator/users/{id}`
+- **Create User:** Create user with random temporary password - `POST /api/v1/iam/operator/users`
+- **Update User:** Full or partial profile update - `PUT/PATCH /api/v1/iam/operator/users/{id}`
 
 **Platform Operator Actions (To Be Implemented):**
 
@@ -763,7 +763,7 @@ Authorization Check Flow:
 - `PLATFORM_OPERATOR` authority required for plan catalog mutations (POST/PUT/DELETE)
 - `TENANT_OWNER` authority required for tenant management endpoints (when not platform operator)
 - `TENANT_OWNER` or `ADMIN` authority required for invitation management (when not platform operator)
-- User admin endpoints (`/api/v1/iam/admin/users`) should be secured with `PLATFORM_OPERATOR` authority
+- User admin endpoints (`/api/v1/iam/operator/users`) should be secured with `PLATFORM_OPERATOR` authority
 - Tenant context validation enforced via JWT claims and path variable matching **for non-platform users**
 
 **Planned Enhancement - Platform Authority Bypass:**
@@ -846,12 +846,12 @@ if (hasPlatformOperatorAuthority(jwt)) {
 **IAM Service - User Admin:**
 
 ```
-GET    /api/v1/iam/admin/users                    # List users (paginated)
-GET    /api/v1/iam/admin/users/{id}               # Get user by ID
-POST   /api/v1/iam/admin/users                    # Create user
-PUT    /api/v1/iam/admin/users/{id}               # Replace user (full update)
-PATCH  /api/v1/iam/admin/users/{id}               # Partial update user
-DELETE /api/v1/iam/admin/users/{id}               # Delete user
+GET    /api/v1/iam/operator/users                    # List users (paginated)
+GET    /api/v1/iam/operator/users/{id}               # Get user by ID
+POST   /api/v1/iam/operator/users                    # Create user
+PUT    /api/v1/iam/operator/users/{id}               # Replace user (full update)
+PATCH  /api/v1/iam/operator/users/{id}               # Partial update user
+DELETE /api/v1/iam/operator/users/{id}               # Delete user
 ```
 
 **IAM Service - Tenant Management:**
@@ -902,49 +902,49 @@ DELETE /api/v1/billing/plans/{planCode}           # Deactivate plan (PLATFORM_OP
 
 ```
 # Dashboard & Metrics
-GET    /api/v1/iam/admin/dashboard/metrics        # Platform-wide metrics
+GET    /api/v1/iam/operator/dashboard/metrics        # Platform-wide metrics
 
 # User Admin Actions (extend existing)
-POST   /api/v1/iam/admin/users/{id}/ban           # Ban user
-POST   /api/v1/iam/admin/users/{id}/unban         # Unban user
-POST   /api/v1/iam/admin/users/{id}/impersonate   # Impersonate user
-POST   /api/v1/iam/admin/users/{id}/unlock        # Unlock account
-POST   /api/v1/iam/admin/users/{id}/verify-email  # Manually verify email
-GET    /api/v1/iam/admin/users/{id}/memberships   # Get user's org memberships
-GET    /api/v1/iam/admin/users/{id}/activity      # Get user activity log
+POST   /api/v1/iam/operator/users/{id}/ban           # Ban user
+POST   /api/v1/iam/operator/users/{id}/unban         # Unban user
+POST   /api/v1/iam/operator/users/{id}/impersonate   # Impersonate user
+POST   /api/v1/iam/operator/users/{id}/unlock        # Unlock account
+POST   /api/v1/iam/operator/users/{id}/verify-email  # Manually verify email
+GET    /api/v1/iam/operator/users/{id}/memberships   # Get user's org memberships
+GET    /api/v1/iam/operator/users/{id}/activity      # Get user activity log
 
 # Organization Admin (extend existing)
-GET    /api/v1/iam/admin/tenants                  # List all tenants (paginated)
-GET    /api/v1/iam/admin/tenants/{tenantKey}      # Get tenant details (platform operator view)
-POST   /api/v1/iam/admin/tenants/{tenantKey}/suspend      # Suspend organization
-POST   /api/v1/iam/admin/tenants/{tenantKey}/unsuspend    # Unsuspend organization
-DELETE /api/v1/iam/admin/tenants/{tenantKey}      # Delete organization
-POST   /api/v1/iam/admin/tenants/{tenantKey}/transfer-ownership  # Transfer ownership
-GET    /api/v1/iam/admin/tenants/{tenantKey}/export       # Export org data (GDPR)
-GET    /api/v1/iam/admin/tenants/{tenantKey}/members      # List org members
-GET    /api/v1/iam/admin/tenants/{tenantKey}/activity     # Get org activity log
+GET    /api/v1/iam/operator/tenants                  # List all tenants (paginated)
+GET    /api/v1/iam/operator/tenants/{tenantKey}      # Get tenant details (platform operator view)
+POST   /api/v1/iam/operator/tenants/{tenantKey}/suspend      # Suspend organization
+POST   /api/v1/iam/operator/tenants/{tenantKey}/unsuspend    # Unsuspend organization
+DELETE /api/v1/iam/operator/tenants/{tenantKey}      # Delete organization
+POST   /api/v1/iam/operator/tenants/{tenantKey}/transfer-ownership  # Transfer ownership
+GET    /api/v1/iam/operator/tenants/{tenantKey}/export       # Export org data (GDPR)
+GET    /api/v1/iam/operator/tenants/{tenantKey}/members      # List org members
+GET    /api/v1/iam/operator/tenants/{tenantKey}/activity     # Get org activity log
 
 # Subscription Admin (extend existing)
-GET    /api/v1/billing/admin/subscriptions        # List all subscriptions (paginated)
-GET    /api/v1/billing/admin/subscriptions/{id}   # Get subscription details
-POST   /api/v1/billing/admin/subscriptions/{id}/change-plan    # Change plan
-POST   /api/v1/billing/admin/subscriptions/{id}/cancel         # Cancel subscription
-POST   /api/v1/billing/admin/subscriptions/{id}/reactivate     # Reactivate subscription
-POST   /api/v1/billing/admin/subscriptions/{id}/apply-discount # Apply discount
-POST   /api/v1/billing/admin/subscriptions/{id}/extend-trial   # Extend trial
+GET    /api/v1/billing/operator/subscriptions        # List all subscriptions (paginated)
+GET    /api/v1/billing/operator/subscriptions/{id}   # Get subscription details
+POST   /api/v1/billing/operator/subscriptions/{id}/change-plan    # Change plan
+POST   /api/v1/billing/operator/subscriptions/{id}/cancel         # Cancel subscription
+POST   /api/v1/billing/operator/subscriptions/{id}/reactivate     # Reactivate subscription
+POST   /api/v1/billing/operator/subscriptions/{id}/apply-discount # Apply discount
+POST   /api/v1/billing/operator/subscriptions/{id}/extend-trial   # Extend trial
 
 # System Administration
-GET    /api/v1/iam/admin/audit-log                # Global audit trail
-GET    /api/v1/iam/admin/system/health            # Service health status
-GET    /api/v1/iam/admin/system/jobs              # Background job status
-POST   /api/v1/iam/admin/system/jobs/{jobName}/trigger  # Trigger job manually
+GET    /api/v1/iam/operator/audit-log                # Global audit trail
+GET    /api/v1/iam/operator/system/health            # Service health status
+GET    /api/v1/iam/operator/system/jobs              # Background job status
+POST   /api/v1/iam/operator/system/jobs/{jobName}/trigger  # Trigger job manually
 
 # Operator Preferences
-GET    /api/v1/iam/admin/operators/me/preferences # Get operator preferences (locale, UI settings)
-PATCH  /api/v1/iam/admin/operators/me/preferences # Save operator preferences
+GET    /api/v1/iam/operator/operators/me/preferences # Get operator preferences (locale, UI settings)
+PATCH  /api/v1/iam/operator/operators/me/preferences # Save operator preferences
 
 # Dashboard Streaming (Phase 4)
-GET    /api/v1/iam/admin/dashboard/metrics/stream # SSE stream for live metric updates (EventSource)
+GET    /api/v1/iam/operator/dashboard/metrics/stream # SSE stream for live metric updates (EventSource)
 ```
 
 ### UI Components (Mantine)
@@ -1106,7 +1106,7 @@ function UserList() {
 localStorage.setItem("admin-locale", "ru");
 
 // Store in backend (operator preferences — planned, Phase 2)
-// PATCH /api/v1/iam/admin/operators/me/preferences
+// PATCH /api/v1/iam/operator/operators/me/preferences
 // { "locale": "ru" }
 // Note: this endpoint is in the planned API list and not yet implemented.
 // Until available, localStorage is the sole persistence mechanism.
@@ -1410,7 +1410,7 @@ export default {
 
 **Completed:**
 
-- ✅ User admin CRUD API (`/api/v1/iam/admin/users`)
+- ✅ User admin CRUD API (`/api/v1/iam/operator/users`)
 - ✅ Tenant management API (get, status update, retry provisioning)
 - ✅ Invitation management API (send, list, revoke, accept)
 - ✅ Subscription query API (local cache, tenant-scoped)

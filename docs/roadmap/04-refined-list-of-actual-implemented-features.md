@@ -231,7 +231,7 @@
 - `GET /me`, `PATCH /me`, `DELETE /me` — `@PreAuthorize("isAuthenticated()")`
 - `POST /tenants` — credential-gated tenant discovery (no JWT)
 
-**`UserAdminRestResource`** — `@RestController /api/v1/iam/admin/users`
+**`UserOperatorRestResource`** — `@RestController /api/v1/iam/operator/users`
 
 - `GET /` (paginated), `GET /{id}`, `POST /`, `PUT /{id}`, `PATCH /{id}`, `DELETE /{id}`
 
@@ -775,7 +775,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 - `DELETE /me` — remove own membership from current tenant
 - `POST /tenants` — credential-gated tenant discovery (no JWT required)
 
-**`UserAdminRestResource`** — `@RestController` at `/api/v1/iam/admin/users`
+**`UserOperatorRestResource`** — `@RestController` at `/api/v1/iam/operator/users`
 
 - `GET /` — paginated list (page, size params, max 100)
 - `GET /{id}` — get by UUID
