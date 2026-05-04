@@ -544,8 +544,8 @@ Platform-level operational authorities:
 
 Tenant/user authorities (existing and mode-aware use):
 
-- `TENANT_OWNER`, `ADMIN`, `MEMBER` remain tenant-scoped IAM authorities.
-- In `MULTI`, subscription operations may require `TENANT_OWNER`/`ADMIN` for tenant-subject subscriptions.
+- `TENANT_OWNER`, `PLAFORM_OPERATOR`, `MEMBER` remain tenant-scoped IAM authorities.
+- In `MULTI`, subscription operations may require `TENANT_OWNER`/`PLAFORM_OPERATOR` for tenant-subject subscriptions.
 - In `SINGLE`, end-user subscription actions are user-subject; tenant owner authority is not mandatory for every user.
 
 Strict authority rules:

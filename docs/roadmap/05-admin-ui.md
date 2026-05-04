@@ -781,7 +781,7 @@ public TenantResponse getTenant(@PathVariable String tenantKey) {
 **Security Notes:**
 
 - **Platform Authority:** `PLATFORM_OPERATOR` bypasses tenant isolation for all administrative operations
-- **Tenant-Scoped Authorities:** `TENANT_OWNER`, `ADMIN`, `MEMBER` are restricted to their tenant context
+- **Tenant-Scoped Authorities:** `TENANT_OWNER`, `PLAFORM_OPERATOR`, `MEMBER` are restricted to their tenant context
 - **Cross-Tenant Protection:** Non-platform users cannot access other tenants' data (enforced via `TenantContextMismatchException`)
 - **Audit Trail:** All platform-level operations must be logged with operator identity for compliance
 - **JWT Claims:** Platform operators have special JWT claims indicating their elevated privileges
