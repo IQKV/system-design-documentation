@@ -504,6 +504,165 @@ Rules:
 
 ---
 
+## Page Titles — `@dr.pogodin/react-helmet`
+
+Every page must set a descriptive `<title>` using `@dr.pogodin/react-helmet`. Titles follow a **breadcrumb pattern** — they mirror the navigation hierarchy so users can orient themselves from the browser tab or history alone.
+
+### Format
+
+```
+<Leaf Page Name> | <Parent Section> | <App Name>
+```
+
+- Segments are separated by `|`.
+- The app name is always the rightmost segment.
+- The leaf (most specific) page is always the leftmost segment.
+- Dynamic values (entity names, IDs) are included when available; fall back to a generic label while loading.
+
+### App Name Constants
+
+```ts
+// src/shared/lib/page-title/constants.ts
+export const APP_TITLE = "IQKV";
+export const ADMIN_TITLE = "Key Value Admin";
+```
+
+Use `APP_TITLE` for the tenant-facing app and `ADMIN_TITLE` for the `/operator/*` surface.
+
+### `usePageTitle` Hook
+
+Centralize title construction in a single hook so the separator and app name are never duplicated:
+
+```ts
+// src/shared/lib/page-title/use-page-title.ts
+import { useEffect } from "react";
+import { Helmet } from "@dr.pogodin/react-helmet";
+
+/**
+ * Sets the document title using a breadcrumb pattern.
+ *
+ * @param segments - Title segments from most-specific (leaf) to least-specific (section).
+ *                   The app name is appended automatically.
+ * @param appTitle - Override the rightmost app-name segment (defaults to APP_TITLE).
+ *
+ * @example
+ * // Renders: "Edit Profile | Account Settings | IQKV"
+ * usePageTitle(["Edit Profile", "Account Settings"]);
+ */
+export function usePageTitle(segments: string[], appTitle = APP_TITLE): void {
+  const title = [...segments, appTitle].join(" | ");
+  // Helmet is rendered declaratively; this hook is a thin wrapper for convenience.
+  // Use <PageTitle> component in JSX instead when you need conditional rendering.
+  document.title = title; // fallback for non-Helmet contexts
+}
+```
+
+For JSX usage, prefer the `<PageTitle>` component:
+
+```tsx
+// src/shared/lib/page-title/page-title.tsx
+import { Helmet } from "@dr.pogodin/react-helmet";
+import { APP_TITLE } from "./constants";
+
+interface PageTitleProps {
+  /** Title segments from most-specific (leaf) to least-specific (section). */
+  segments: string[];
+  /** Override the rightmost app-name segment. */
+  appTitle?: string;
+}
+
+export function PageTitle({ segments, appTitle = APP_TITLE }: PageTitleProps) {
+  const title = [...segments, appTitle].join(" | ");
+  return (
+    <Helmet>
+      <title>{title}</title>
+    </Helmet>
+  );
+}
+```
+
+Export both from the public API:
+
+```ts
+// src/shared/lib/page-title/index.ts
+export { PageTitle } from "./page-title";
+export { usePageTitle } from "./use-page-title";
+export { APP_TITLE, ADMIN_TITLE } from "./constants";
+```
+
+### Title Map — Tenant App (`app.iqkv.site`)
+
+| Route                      | Title segments (leaf → section)               | Rendered title                                      |
+| -------------------------- | --------------------------------------------- | --------------------------------------------------- |
+| `/`                        | `["Dashboard"]`                               | `Dashboard \| IQKV`                                 |
+| `/account/settings`        | `["Settings", "Account"]`                     | `Settings \| Account \| IQKV`                       |
+| `/account/profile`         | `["Profile", "Account"]`                      | `Profile \| Account \| IQKV`                        |
+| `/account/billing`         | `["Billing", "Account"]`                      | `Billing \| Account \| IQKV`                        |
+| `/account/members`         | `["Members", "Account"]`                      | `Members \| Account \| IQKV`                        |
+| `/account/invitations`     | `["Invitations", "Account"]`                  | `Invitations \| Account \| IQKV`                    |
+| `/account/invitations/$id` | `[invitationLabel, "Invitations", "Account"]` | `Invitation #abc \| Invitations \| Account \| IQKV` |
+
+### Title Map — Operator App (`/operator/*`)
+
+| Route                                         | Title segments (leaf → section)                                      | Rendered title                                              |
+| --------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `/operator`                                   | `["Dashboard"]`                                                      | `Dashboard \| Key Value Admin`                              |
+| `/operator/users`                             | `["Users"]`                                                          | `Users \| Key Value Admin`                                  |
+| `/operator/users/$id`                         | `[userName \|\| "User Details", "Users"]`                            | `Alice Smith \| Users \| Key Value Admin`                   |
+| `/operator/users/$id/memberships`             | `["Memberships", userName \|\| "User Details", "Users"]`             | `Memberships \| Alice Smith \| Users \| Key Value Admin`    |
+| `/operator/users/$id/activity`                | `["Activity", userName \|\| "User Details", "Users"]`                | `Activity \| Alice Smith \| Users \| Key Value Admin`       |
+| `/operator/organizations`                     | `["Organizations"]`                                                  | `Organizations \| Key Value Admin`                          |
+| `/operator/organizations/$tenantKey`          | `[orgName \|\| "Organization Details", "Organizations"]`             | `Acme Corp \| Organizations \| Key Value Admin`             |
+| `/operator/organizations/$tenantKey/members`  | `["Members", orgName \|\| "Organization Details", "Organizations"]`  | `Members \| Acme Corp \| Organizations \| Key Value Admin`  |
+| `/operator/organizations/$tenantKey/billing`  | `["Billing", orgName \|\| "Organization Details", "Organizations"]`  | `Billing \| Acme Corp \| Organizations \| Key Value Admin`  |
+| `/operator/organizations/$tenantKey/activity` | `["Activity", orgName \|\| "Organization Details", "Organizations"]` | `Activity \| Acme Corp \| Organizations \| Key Value Admin` |
+| `/operator/subscriptions`                     | `["Subscriptions"]`                                                  | `Subscriptions \| Key Value Admin`                          |
+| `/operator/subscriptions/$id`                 | `[subLabel \|\| "Subscription Details", "Subscriptions"]`            | `sub_xxx \| Subscriptions \| Key Value Admin`               |
+| `/operator/plans`                             | `["Plans", "Billing"]`                                               | `Plans \| Billing \| Key Value Admin`                       |
+| `/operator/plans/$planCode`                   | `[planName \|\| "Plan Details", "Plans", "Billing"]`                 | `Pro Monthly \| Plans \| Billing \| Key Value Admin`        |
+| `/operator/system`                            | `["System"]`                                                         | `System \| Key Value Admin`                                 |
+| `/operator/system/health`                     | `["Health", "System"]`                                               | `Health \| System \| Key Value Admin`                       |
+| `/operator/system/jobs`                       | `["Jobs", "System"]`                                                 | `Jobs \| System \| Key Value Admin`                         |
+| `/operator/audit-log`                         | `["Audit Log"]`                                                      | `Audit Log \| Key Value Admin`                              |
+
+### Rules
+
+1. **Every page component must render `<PageTitle>`** — no page may leave the title as the app default.
+2. **Dynamic segments use loaded data.** While data is loading, use a generic fallback (`"User Details"`, `"Organization Details"`, etc.). Replace it once the entity name resolves.
+3. **i18n.** Wrap all static segments in `_(msg\`...\`)`or`<Trans>` so they are extracted by Lingui. Dynamic values (entity names) are not translated.
+4. **Operator surface uses `ADMIN_TITLE`.** Pass `appTitle={ADMIN_TITLE}` to `<PageTitle>` on all `/operator/*` routes, or set it as the default in a layout-level wrapper.
+5. **Tabs within a detail view are segments.** If a detail page has tabs (Profile, Memberships, Activity), the active tab name is the leftmost segment.
+6. **Keep segments concise.** Prefer `"Settings"` over `"Account Settings Page"`. The hierarchy provides context.
+7. **No trailing separators.** Never produce `" | IQKV"` with an empty leading segment.
+8. **Architecture enforcement.** `PageTitle` and `usePageTitle` live in `shared/lib/page-title/` and are exported through `shared/lib/index.ts`. Page files import them via `@/shared/lib`.
+
+### Usage Example
+
+```tsx
+// src/pages/operator/users/$id/memberships.tsx
+import { PageTitle } from "@/shared/lib";
+import { ADMIN_TITLE } from "@/shared/lib/page-title";
+import { Trans, useLingui } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+
+export function UserMembershipsPage() {
+  const { _ } = useLingui();
+  const { data: user } = useUserQuery(userId);
+
+  return (
+    <>
+      <PageTitle
+        segments={[_(msg`Memberships`), user?.displayName ?? _(msg`User Details`), _(msg`Users`)]}
+        appTitle={ADMIN_TITLE}
+      />
+      {/* page content */}
+    </>
+  );
+}
+```
+
+---
+
 ## Provider Composition
 
 The full provider stack in `src/app/app.tsx` (outermost → innermost):
