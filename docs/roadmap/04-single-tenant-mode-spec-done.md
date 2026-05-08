@@ -257,7 +257,7 @@ Plans are platform-managed and pre-provisioned before user registration starts.
 Rules:
 
 - no end-user plan CRUD in IAM/Gateway/Billing UIs,
-- platform operators manage catalog lifecycle,
+- platform admins manage catalog lifecycle,
 - subscription assignment allowed to valid subject scope only.
 
 Subject scope:
@@ -312,7 +312,7 @@ Additional requirement:
 
 Billing-facing behavior:
 
-- plan catalog endpoints are operator-only (or internal-only).
+- plan catalog endpoints are platfrom admin-only (or internal-only).
 - end-user endpoints allow selecting from existing plans only.
 - no endpoint for end-user plan creation/update/deletion.
 
@@ -513,7 +513,7 @@ Current code facts used:
 Required strict restrictions:
 
 - **BIL-R1:** tenant lifecycle consumption must be owner-agnostic (owner fields optional).
-- **BIL-R2:** plan catalog is operator-managed only (no user plan CRUD).
+- **BIL-R2:** plan catalog is platform admin-managed only (no user plan CRUD).
 - **BIL-R3:** subscription records must include explicit subject scope.
 - **BIL-R4:** billing mode behavior must be determined from rollout mode, not inferred ad hoc from payload shape.
 
@@ -539,13 +539,13 @@ Required Billing components:
 
 Platform-level operational authorities:
 
-- **`PLATFORM_OPERATOR`** (recommended new authority, not tenant-scoped)
+- **`PLATFORM_ADMIN`** (recommended new authority, not tenant-scoped)
   - manages rollout mode migrations and plan catalog administration.
 
 Tenant/user authorities (existing and mode-aware use):
 
-- `TENANT_OWNER`, `PLAFORM_OPERATOR`, `MEMBER` remain tenant-scoped IAM authorities.
-- In `MULTI`, subscription operations may require `TENANT_OWNER`/`PLAFORM_OPERATOR` for tenant-subject subscriptions.
+- `TENANT_OWNER`, `PLATFORM_ADMIN`, `MEMBER` remain tenant-scoped IAM authorities.
+- In `MULTI`, subscription operations may require `TENANT_OWNER`/`PLATFORM_ADMIN` for tenant-subject subscriptions.
 - In `SINGLE`, end-user subscription actions are user-subject; tenant owner authority is not mandatory for every user.
 
 Strict authority rules:
@@ -617,20 +617,20 @@ This checklist converts sections 3-14 into executable delivery items.
   - update `TenantEventConsumer` to treat owner fields as optional,
   - add `BillingContactResolver` fallback chain,
   - add subscription subject model (`subject_type`, `subject_key`),
-  - introduce operator-managed `plan_catalog`,
+  - introduce platform admin-managed `plan_catalog`,
   - add `SubscriptionSubjectResolver`, `PlanEligibilityPolicy`, `EntitlementEvaluator`,
   - add `user_billing_settings` for single-mode user-subject billing.
 - **Acceptance criteria:**
   - `TENANT_CREATED` without owner email is processed successfully,
   - in `MULTI`, subscriptions always evaluated by tenant subject,
   - in `SINGLE`, subscriptions always evaluated by user subject,
-  - non-operators cannot mutate plan catalog.
+  - non-platform-admins cannot mutate plan catalog.
 
 ### 15.5 Security/authority checklist
 
 - **Owner:** IAM + Security architecture
 - **Tasks:**
-  - define platform-level authorities (`PLATFORM_OPERATOR`),
+  - define platform-level authorities (`PLATFORM_ADMIN`),
   - enforce strict separation between platform authorities and tenant roles,
   - map endpoint-level authority policy for each service and mode,
   - add audit logging for authority-sensitive operations.

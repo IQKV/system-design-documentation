@@ -17,7 +17,7 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 | Token revocation     | JTI denylist (single session) + global signout timestamp; both access and refresh tokens validated against denylist; automatic cleanup of expired denylist entries                                          | ✅     |
 | JWKS endpoint        | `/.well-known/jwks.json` — gateway and downstream services validate RS256 tokens locally; public key rotation support                                                                                       | ✅     |
 | Organizations        | Create, update, suspend, delete; async provisioning via RabbitMQ with ShedLock-guarded reaper for stuck tenants; automatic retry mechanism for failed provisioning                                          | ✅     |
-| RBAC                 | Authorities: `TENANT_OWNER`, `PLAFORM_OPERATOR`, `MEMBER`; per-tenant membership with independent roles across organizations; authority-based endpoint protection                                           | ✅     |
+| RBAC                 | Authorities: `TENANT_OWNER`, `PLATFORM_ADMIN`, `MEMBER`; per-tenant membership with independent roles across organizations; authority-based endpoint protection                                             | ✅     |
 | Invitations          | Email invite with 72h expiring token; `authority` defaults to `MEMBER`; new users created on accept (email pre-verified); existing users verified by password; ShedLock-guarded reaper expires stale tokens | ✅     |
 | Multi-org            | One user can belong to multiple organizations with different authorities; tenant discovery by credentials; cross-tenant user context switching                                                              | ✅     |
 | Rollout mode         | `MULTI_TENANT` (default) or `SINGLE_TENANT` — configured via `platform.rolloutMode`; single-tenant provisions one default tenant at startup; mode consistency enforced across services                      | ✅     |
@@ -61,7 +61,7 @@ Stripe Connect wrapper with plan catalog and subscription management. Acts as th
 | Capability          | Notes                                                                                                                                                | Status |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | Stripe integration  | Customer provisioning on `tenant.created` events; webhook processing with signature verification; subscription state caching for fast reads          | ✅     |
-| Plan catalog        | Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER); CRUD via REST API for platform operators                         | ✅     |
+| Plan catalog        | Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER); CRUD via REST API for platform admins                         | ✅     |
 | Plan eligibility    | Validates plan scope matches rollout mode (tenant vs user scoped plans); enforced at subscription creation                                           | ✅     |
 | Billing settings    | Per-tenant settings: Stripe customer ID, billing email, company info, tax ID, billing address; auto-created on tenant provisioning                   | ✅     |
 | User billing        | Per-user billing settings for single-tenant mode; auto-created on first access; separate table from tenant settings                                  | ✅     |

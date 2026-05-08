@@ -228,7 +228,7 @@ That’s a strong model, and it actually simplifies a lot: **catalog-managed bil
 
 ## What this means
 
-- Plans are defined by platform operators **before onboarding**.
+- Plans are defined by platform admins **before onboarding**.
 - End users cannot create/edit/delete plans.
 - Billing UI becomes “select/subscribe/view status,” not “manage plans.”
 - Works for both:
@@ -364,7 +364,7 @@ What is now up-to-date:
   - fail readiness on mixed/missing/invalid mode,
   - startup validation + recommended cross-service handshake.
 - Billing/domain model updated for **pre-provisioned plan catalog**:
-  - plans are operator-managed only,
+  - plans are platform admin-managed only,
   - no user plan CRUD.
 - Subscription model updated to **subject scope**:
   - `TENANT` subject in multi mode,
@@ -507,6 +507,6 @@ Agreed — that’s over-segmented for now. I’ll simplify the spec to a single
 
 Updated — removed `PLATFORM_BILLING_OPERATOR` and standardized on just:
 
-- `PLATFORM_OPERATOR`
+- `PLATFORM_ADMIN`
 
 Also adjusted the implementation checklist task to reflect a single platform-level authority model.

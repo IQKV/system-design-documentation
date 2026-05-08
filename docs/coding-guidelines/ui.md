@@ -527,7 +527,7 @@ export const APP_TITLE = "IQKV";
 export const ADMIN_TITLE = "Key Value Admin";
 ```
 
-Use `APP_TITLE` for the tenant-facing app and `ADMIN_TITLE` for the `/operator/*` surface.
+Use `APP_TITLE` for the tenant-facing app and `ADMIN_TITLE` for the `/admin/*` surface.
 
 ### `usePageTitle` Hook
 
@@ -602,35 +602,35 @@ export { APP_TITLE, ADMIN_TITLE } from "./constants";
 | `/account/invitations`     | `["Invitations", "Account"]`                  | `Invitations \| Account \| IQKV`                    |
 | `/account/invitations/$id` | `[invitationLabel, "Invitations", "Account"]` | `Invitation #abc \| Invitations \| Account \| IQKV` |
 
-### Title Map — Operator App (`/operator/*`)
+### Title Map — Admin App (`/admin/*`)
 
-| Route                                         | Title segments (leaf → section)                                      | Rendered title                                              |
-| --------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `/operator`                                   | `["Dashboard"]`                                                      | `Dashboard \| Key Value Admin`                              |
-| `/operator/users`                             | `["Users"]`                                                          | `Users \| Key Value Admin`                                  |
-| `/operator/users/$id`                         | `[userName \|\| "User Details", "Users"]`                            | `Alice Smith \| Users \| Key Value Admin`                   |
-| `/operator/users/$id/memberships`             | `["Memberships", userName \|\| "User Details", "Users"]`             | `Memberships \| Alice Smith \| Users \| Key Value Admin`    |
-| `/operator/users/$id/activity`                | `["Activity", userName \|\| "User Details", "Users"]`                | `Activity \| Alice Smith \| Users \| Key Value Admin`       |
-| `/operator/organizations`                     | `["Organizations"]`                                                  | `Organizations \| Key Value Admin`                          |
-| `/operator/organizations/$tenantKey`          | `[orgName \|\| "Organization Details", "Organizations"]`             | `Acme Corp \| Organizations \| Key Value Admin`             |
-| `/operator/organizations/$tenantKey/members`  | `["Members", orgName \|\| "Organization Details", "Organizations"]`  | `Members \| Acme Corp \| Organizations \| Key Value Admin`  |
-| `/operator/organizations/$tenantKey/billing`  | `["Billing", orgName \|\| "Organization Details", "Organizations"]`  | `Billing \| Acme Corp \| Organizations \| Key Value Admin`  |
-| `/operator/organizations/$tenantKey/activity` | `["Activity", orgName \|\| "Organization Details", "Organizations"]` | `Activity \| Acme Corp \| Organizations \| Key Value Admin` |
-| `/operator/subscriptions`                     | `["Subscriptions"]`                                                  | `Subscriptions \| Key Value Admin`                          |
-| `/operator/subscriptions/$id`                 | `[subLabel \|\| "Subscription Details", "Subscriptions"]`            | `sub_xxx \| Subscriptions \| Key Value Admin`               |
-| `/operator/plans`                             | `["Plans", "Billing"]`                                               | `Plans \| Billing \| Key Value Admin`                       |
-| `/operator/plans/$planCode`                   | `[planName \|\| "Plan Details", "Plans", "Billing"]`                 | `Pro Monthly \| Plans \| Billing \| Key Value Admin`        |
-| `/operator/system`                            | `["System"]`                                                         | `System \| Key Value Admin`                                 |
-| `/operator/system/health`                     | `["Health", "System"]`                                               | `Health \| System \| Key Value Admin`                       |
-| `/operator/system/jobs`                       | `["Jobs", "System"]`                                                 | `Jobs \| System \| Key Value Admin`                         |
-| `/operator/audit-log`                         | `["Audit Log"]`                                                      | `Audit Log \| Key Value Admin`                              |
+| Route                                      | Title segments (leaf → section)                                      | Rendered title                                              |
+| ------------------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `/admin`                                   | `["Dashboard"]`                                                      | `Dashboard \| Key Value Admin`                              |
+| `/admin/users`                             | `["Users"]`                                                          | `Users \| Key Value Admin`                                  |
+| `/admin/users/$id`                         | `[userName \|\| "User Details", "Users"]`                            | `Alice Smith \| Users \| Key Value Admin`                   |
+| `/admin/users/$id/memberships`             | `["Memberships", userName \|\| "User Details", "Users"]`             | `Memberships \| Alice Smith \| Users \| Key Value Admin`    |
+| `/admin/users/$id/activity`                | `["Activity", userName \|\| "User Details", "Users"]`                | `Activity \| Alice Smith \| Users \| Key Value Admin`       |
+| `/admin/organizations`                     | `["Organizations"]`                                                  | `Organizations \| Key Value Admin`                          |
+| `/admin/organizations/$tenantKey`          | `[orgName \|\| "Organization Details", "Organizations"]`             | `Acme Corp \| Organizations \| Key Value Admin`             |
+| `/admin/organizations/$tenantKey/members`  | `["Members", orgName \|\| "Organization Details", "Organizations"]`  | `Members \| Acme Corp \| Organizations \| Key Value Admin`  |
+| `/admin/organizations/$tenantKey/billing`  | `["Billing", orgName \|\| "Organization Details", "Organizations"]`  | `Billing \| Acme Corp \| Organizations \| Key Value Admin`  |
+| `/admin/organizations/$tenantKey/activity` | `["Activity", orgName \|\| "Organization Details", "Organizations"]` | `Activity \| Acme Corp \| Organizations \| Key Value Admin` |
+| `/admin/subscriptions`                     | `["Subscriptions"]`                                                  | `Subscriptions \| Key Value Admin`                          |
+| `/admin/subscriptions/$id`                 | `[subLabel \|\| "Subscription Details", "Subscriptions"]`            | `sub_xxx \| Subscriptions \| Key Value Admin`               |
+| `/admin/plans`                             | `["Plans", "Billing"]`                                               | `Plans \| Billing \| Key Value Admin`                       |
+| `/admin/plans/$planCode`                   | `[planName \|\| "Plan Details", "Plans", "Billing"]`                 | `Pro Monthly \| Plans \| Billing \| Key Value Admin`        |
+| `/admin/system`                            | `["System"]`                                                         | `System \| Key Value Admin`                                 |
+| `/admin/system/health`                     | `["Health", "System"]`                                               | `Health \| System \| Key Value Admin`                       |
+| `/admin/system/jobs`                       | `["Jobs", "System"]`                                                 | `Jobs \| System \| Key Value Admin`                         |
+| `/admin/audit-log`                         | `["Audit Log"]`                                                      | `Audit Log \| Key Value Admin`                              |
 
 ### Rules
 
 1. **Every page component must render `<PageTitle>`** — no page may leave the title as the app default.
 2. **Dynamic segments use loaded data.** While data is loading, use a generic fallback (`"User Details"`, `"Organization Details"`, etc.). Replace it once the entity name resolves.
 3. **i18n.** Wrap all static segments in `_(msg\`...\`)`or`<Trans>` so they are extracted by Lingui. Dynamic values (entity names) are not translated.
-4. **Operator surface uses `ADMIN_TITLE`.** Pass `appTitle={ADMIN_TITLE}` to `<PageTitle>` on all `/operator/*` routes, or set it as the default in a layout-level wrapper.
+4. **Operator surface uses `ADMIN_TITLE`.** Pass `appTitle={ADMIN_TITLE}` to `<PageTitle>` on all `/admin/*` routes, or set it as the default in a layout-level wrapper.
 5. **Tabs within a detail view are segments.** If a detail page has tabs (Profile, Memberships, Activity), the active tab name is the leftmost segment.
 6. **Keep segments concise.** Prefer `"Settings"` over `"Account Settings Page"`. The hierarchy provides context.
 7. **No trailing separators.** Never produce `" | IQKV"` with an empty leading segment.
@@ -639,7 +639,7 @@ export { APP_TITLE, ADMIN_TITLE } from "./constants";
 ### Usage Example
 
 ```tsx
-// src/pages/operator/users/$id/memberships.tsx
+// src/pages/admin/users/$id/memberships.tsx
 import { PageTitle } from "@/shared/lib";
 import { ADMIN_TITLE } from "@/shared/lib/page-title";
 import { Trans, useLingui } from "@lingui/react/macro";

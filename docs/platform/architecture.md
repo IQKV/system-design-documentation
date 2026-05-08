@@ -68,7 +68,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Tenant lifecycle: create, suspend, delete, retry provisioning
 - Async tenant provisioning via RabbitMQ with ShedLock-guarded reaper for stuck tenants
 - Multi-tenant membership: one user can belong to multiple organizations
-- RBAC with authorities: `TENANT_OWNER`, `PLAFORM_OPERATOR`, `MEMBER`
+- RBAC with authorities: `TENANT_OWNER`, `PLATFORM_ADMIN`, `MEMBER`
 - Cross-tenant user context switching and tenant discovery
 
 **Invitation System:**
@@ -156,7 +156,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 - Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER)
 - Plan eligibility policy validates scope matches rollout mode
-- CRUD API for platform operators to manage catalog
+- CRUD API for platform admins to manage catalog
 - Feature-based entitlement evaluation for authorization decisions
 
 **Multi-Mode Architecture:**

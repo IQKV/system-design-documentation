@@ -231,7 +231,7 @@
 - `GET /me`, `PATCH /me`, `DELETE /me` — `@PreAuthorize("isAuthenticated()")`
 - `POST /tenants` — credential-gated tenant discovery (no JWT)
 
-**`UserOperatorRestResource`** — `@RestController /api/v1/iam/operator/users`
+**`UserAdminRestResource`** — `@RestController /api/v1/iam/admin/users`
 
 - `GET /` (paginated), `GET /{id}`, `POST /`, `PUT /{id}`, `PATCH /{id}`, `DELETE /{id}`
 
@@ -354,9 +354,9 @@
 
 - `GET /` — list active plans (any authenticated user)
 - `GET /{planCode}` — get by planCode (any authenticated user)
-- `POST /` — `@PreAuthorize("hasAuthority('PLATFORM_OPERATOR')")` — create
-- `PUT /{planCode}` — `PLATFORM_OPERATOR` — replace
-- `DELETE /{planCode}` — `PLATFORM_OPERATOR` — soft-delete (`active=false`)
+- `POST /` — `@PreAuthorize("hasAuthority('PLATFORM_ADMIN')")` — create
+- `PUT /{planCode}` — `PLATFORM_ADMIN` — replace
+- `DELETE /{planCode}` — `PLATFORM_ADMIN` — soft-delete (`active=false`)
 
 **`PlanEligibilityPolicyImpl`** — `@Service`: validates plan `scope` matches `SubjectType` (TENANT plan → TENANT subject only); throws `PlanScopeMismatchException` on mismatch
 
@@ -775,7 +775,7 @@ Here is the complete, thorough breakdown of every file read across all three ser
 - `DELETE /me` — remove own membership from current tenant
 - `POST /tenants` — credential-gated tenant discovery (no JWT required)
 
-**`UserOperatorRestResource`** — `@RestController` at `/api/v1/iam/operator/users`
+**`UserAdminRestResource`** — `@RestController` at `/api/v1/iam/admin/users`
 
 - `GET /` — paginated list (page, size params, max 100)
 - `GET /{id}` — get by UUID
@@ -944,9 +944,9 @@ Here is the complete, thorough breakdown of every file read across all three ser
 
 - `GET /` — list all active plans (any authenticated user)
 - `GET /{planCode}` — get by planCode (any authenticated user)
-- `POST /` — `@PreAuthorize("hasAuthority('PLATFORM_OPERATOR')")` — create plan
-- `PUT /{planCode}` — `@PreAuthorize("hasAuthority('PLATFORM_OPERATOR')")` — replace plan
-- `DELETE /{planCode}` — `@PreAuthorize("hasAuthority('PLATFORM_OPERATOR')")` — soft-delete (sets `active=false`)
+- `POST /` — `@PreAuthorize("hasAuthority('PLATFORM_ADMIN')")` — create plan
+- `PUT /{planCode}` — `@PreAuthorize("hasAuthority('PLATFORM_ADMIN')")` — replace plan
+- `DELETE /{planCode}` — `@PreAuthorize("hasAuthority('PLATFORM_ADMIN')")` — soft-delete (sets `active=false`)
 
 **`PlanEligibilityPolicy`** — interface: `validatePlanEligibility(planCode, subjectType)` — throws `PlanNotFoundException` or `PlanScopeMismatchException`
 
