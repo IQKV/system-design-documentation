@@ -45,7 +45,7 @@ A complete SaaS infrastructure platform consisting of three microservices:
 
 - React SPA with Mantine UI components
 - Authentication flows (signup, login, password reset)
-- Organization management (create, invite members, manage roles)
+- Organization management (create, invite members, manage authortities)
 - Account settings and profile management
 - Billing portal integration with Stripe
 

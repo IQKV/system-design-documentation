@@ -16,8 +16,8 @@ Goal: all four components running on a public demo host with enough UI to evalua
 
 - [ ] Sign up / login / password reset
 - [ ] Dashboard (org overview, active members, subscription status)
-- [ ] Users grid (list members, roles, invite status)
-- [ ] User edit page (change role, revoke access)
+- [ ] Users grid (list members, authortities, invite status)
+- [ ] User edit page (change authority, revoke access)
 - [ ] Billing portal link (Stripe-hosted)
 
 **Infrastructure**

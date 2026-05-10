@@ -69,7 +69,7 @@ The original six competitors plus notable additions discovered since the initial
 
 **[BoxyHQ Enterprise SaaS Starter Kit](https://github.com/boxyhq/saas-starter-kit)** — Free, Apache-2.0. Next.js, teams, SAML SSO via Jackson, directory sync, audit logs, webhooks. The most enterprise-feature-complete free boilerplate in the Next.js space. Still a monolith, shared DB, no infrastructure.
 
-**[Laravel Starter Kits](https://laravel.com/starter-kits) / [Laravel Jetstream](https://jetstream.laravel.com) / [Laravel Spark](https://spark.laravel.com)** — Laravel monoliths. The base starter kits ship with Inertia (React/Vue/Svelte) or Livewire stacks and optional WorkOS AuthKit. Jetstream adds teams, roles, and API tokens. Spark layers Stripe/Paddle subscription billing on top. No K8s, no schema isolation.
+**[Laravel Starter Kits](https://laravel.com/starter-kits) / [Laravel Jetstream](https://jetstream.laravel.com) / [Laravel Spark](https://spark.laravel.com)** — Laravel monoliths. The base starter kits ship with Inertia (React/Vue/Svelte) or Livewire stacks and optional WorkOS AuthKit. Jetstream adds teams, authortities, and API tokens. Spark layers Stripe/Paddle subscription billing on top. No K8s, no schema isolation.
 
 **[SaaSykit Tenancy](https://saasykit.com/multi-tenancy)** — Laravel, ~$299. The most serious multi-tenancy option in the Laravel ecosystem — uses `stancl/tenancy` to support schema-per-tenant or database-per-tenant isolation. Seat-based billing with Stripe, Paddle, and Lemon Squeezy. No infrastructure layer, no K8s, no async provisioning. Closest competitor on data isolation, but application-only.
 
@@ -117,7 +117,7 @@ No open-source, infrastructure-first, language-agnostic option exists between in
 Every team building a B2B product has to solve the same four problems before they can write a single line of their actual product:
 
 1. **Who are you?** — login, accounts, password reset
-2. **Which company do you belong to?** — organizations, teams, roles
+2. **Which company do you belong to?** — organizations, teams, authortities
 3. **Are you paying?** — subscriptions, invoices, billing
 4. **Can you talk to the system?** — a front door that checks all of the above on every request
 

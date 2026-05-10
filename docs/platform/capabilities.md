@@ -17,7 +17,7 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 | Token revocation     | JTI denylist (single session) + global signout timestamp; both access and refresh tokens validated against denylist; automatic cleanup of expired denylist entries                                          | ✅     |
 | JWKS endpoint        | `/.well-known/jwks.json` — gateway and downstream services validate RS256 tokens locally; public key rotation support                                                                                       | ✅     |
 | Organizations        | Create, update, suspend, delete; async provisioning via RabbitMQ with ShedLock-guarded reaper for stuck tenants; automatic retry mechanism for failed provisioning                                          | ✅     |
-| RBAC                 | Authorities: `TENANT_OWNER`, `PLATFORM_ADMIN`, `MEMBER`; per-tenant membership with independent roles across organizations; authority-based endpoint protection                                             | ✅     |
+| RBAC                 | Authorities: `TENANT_OWNER`, `PLATFORM_ADMIN`, `MEMBER`; per-tenant membership with independent authortities across organizations; authority-based endpoint protection                                             | ✅     |
 | Invitations          | Email invite with 72h expiring token; `authority` defaults to `MEMBER`; new users created on accept (email pre-verified); existing users verified by password; ShedLock-guarded reaper expires stale tokens | ✅     |
 | Multi-org            | One user can belong to multiple organizations with different authorities; tenant discovery by credentials; cross-tenant user context switching                                                              | ✅     |
 | Rollout mode         | `MULTI_TENANT` (default) or `SINGLE_TENANT` — configured via `platform.rolloutMode`; single-tenant provisions one default tenant at startup; mode consistency enforced across services                      | ✅     |
@@ -90,8 +90,8 @@ React + Mantine SPA. All requests go through the API Gateway — no direct acces
 | Sign up / login    | Email/password, email verification flow                    | 🚧     |
 | Password reset     | Token-based recovery flow                                  | 🚧     |
 | Dashboard          | Org overview, active members, subscription status          | 🚧     |
-| Organization setup | Create org, invite members, assign roles                   | 🚧     |
-| Member management  | List members, change roles, revoke access                  | 🚧     |
+| Organization setup | Create org, invite members, assign authortities                   | 🚧     |
+| Member management  | List members, change authortities, revoke access                  | 🚧     |
 | Account settings   | Profile, password change                                   | 🚧     |
 | Billing portal     | Link to Stripe-hosted dashboard for subscriptions/invoices | 🚧     |
 

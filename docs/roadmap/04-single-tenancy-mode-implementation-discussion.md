@@ -68,7 +68,7 @@ Recommended shape:
 - `TenantBootstrapStrategy`
   - `MultiTenantBootstrapStrategy` (no-op or existing behavior)
   - `SingleTenantBootstrapStrategy` (ensure default tenant exists/provisioned)
-- optional: `TenantAuthorizationPolicy` if role logic diverges by mode
+- optional: `TenantAuthorizationPolicy` if authority logic diverges by mode
 
 Then a small factory/resolver:
 
@@ -160,8 +160,8 @@ Best approach: **make Billing tenant-event handling owner-agnostic and idempoten
 
 - One Billing code path supports both multi and single tenancy.
 - No fake “tenant owner” is required just to satisfy Billing bootstrap.
-- Lower coupling between IAM role semantics and billing identity.
-- Future-proof: if roles evolve again, Billing contract stays stable.
+- Lower coupling between IAM authority semantics and billing identity.
+- Future-proof: if authortities evolve again, Billing contract stays stable.
 
 ## Practical recommendation
 
@@ -401,7 +401,7 @@ It now defines:
 - IAM-specific restrictions/gates/components aligned with current filter/auth/signup behavior,
 - Gateway-specific restrictions/gates/components for mode consistency and subject resolution,
 - Billing-specific restrictions/gates/components aligned with current `TenantEventConsumer` and tenant context enforcement,
-- authority boundaries (recommended platform-level authorities + strict separation from tenant-scoped roles),
+- authority boundaries (recommended platform-level authorities + strict separation from tenant-scoped authortities),
 - non-negotiable invariants for runtime safety.
 
 If you want, I can next convert section 14 into a concise “Implementation Checklist” with owner-by-service and acceptance criteria per gate.
@@ -503,7 +503,7 @@ PLATFORM_BILLING_OPERATOR is too much
 
 **Cursor**
 
-Agreed — that’s over-segmented for now. I’ll simplify the spec to a single platform-level authority and remove the extra billing-specific operator role.
+Agreed — that’s over-segmented for now. I’ll simplify the spec to a single platform-level authority and remove the extra billing-specific operator authority.
 
 Updated — removed `PLATFORM_BILLING_OPERATOR` and standardized on just:
 

@@ -135,7 +135,7 @@ Refactor `UserServiceImpl.registerUser(...)`:
 
 - branch by tenancy mode:
   - `MULTI`: existing logic.
-  - `SINGLE`: skip tenant creation and owner role grant; attach to default tenant.
+  - `SINGLE`: skip tenant creation and owner authority grant; attach to default tenant.
 
 DTO/API adjustment:
 
@@ -365,7 +365,7 @@ Rollback:
 
 1. Should invitations be disabled entirely in single mode, or remain optional?
 2. Should billing require a configured default billing email in single mode?
-3. Should single-mode users ever receive `ADMIN`, or only `MEMBER` plus platform-level super-admin outside tenant roles?
+3. Should single-mode users ever receive `ADMIN`, or only `MEMBER` plus platform-level super-admin outside tenant authortities?
 
 ## 13. Global Platform Rollout Mode Contract (AIO requirement)
 
@@ -446,7 +446,7 @@ Current code facts used:
 
 - tenant context is enforced through `TenantExtractionFilter`,
 - signup currently bypasses tenant header checks,
-- role checks already enforce `TENANT_OWNER` for tenant lifecycle endpoints.
+- authority checks already enforce `TENANT_OWNER` for tenant lifecycle endpoints.
 
 Required strict restrictions:
 
@@ -535,7 +535,7 @@ Required Billing components:
 - `PlanEligibilityPolicy`
 - `EntitlementEvaluator`
 
-### 14.7 Authorities and role boundaries
+### 14.7 Authorities and authority boundaries
 
 Platform-level operational authorities:
 
@@ -551,8 +551,8 @@ Tenant/user authorities (existing and mode-aware use):
 Strict authority rules:
 
 - **A1:** no tenant-scoped authority should implicitly grant platform-operator capabilities.
-- **A2:** platform-operator authorities must not be minted from tenant membership roles.
-- **A3:** gateway and billing trust JWT authorities but must enforce subject-scope policy independently of role naming.
+- **A2:** platform-operator authorities must not be minted from tenant membership authortities.
+- **A3:** gateway and billing trust JWT authorities but must enforce subject-scope policy independently of authority naming.
 
 ### 14.8 Non-negotiable invariants
 
@@ -631,11 +631,11 @@ This checklist converts sections 3-14 into executable delivery items.
 - **Owner:** IAM + Security architecture
 - **Tasks:**
   - define platform-level authorities (`PLATFORM_ADMIN`),
-  - enforce strict separation between platform authorities and tenant roles,
+  - enforce strict separation between platform authorities and tenant authortities,
   - map endpoint-level authority policy for each service and mode,
   - add audit logging for authority-sensitive operations.
 - **Acceptance criteria:**
-  - tenant roles cannot perform platform-operator actions,
+  - tenant authortities cannot perform platform-operator actions,
   - platform-operator actions are auditable with actor identity and timestamp,
   - authority model documented and tested across both rollout modes.
 

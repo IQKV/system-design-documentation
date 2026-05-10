@@ -279,7 +279,7 @@ plans
 **Feature Coverage:**
 
 - **Authentication Flows:** Sign up, login, password reset, email verification
-- **Organization Management:** Create org, invite members, manage roles, tenant switching
+- **Organization Management:** Create org, invite members, manage authortities, tenant switching
 - **Account Settings:** Profile management, password change, user preferences
 - **Billing Portal:** Integration with Stripe-hosted dashboard for subscriptions and invoices
 
