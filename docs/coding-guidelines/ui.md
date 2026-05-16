@@ -12,7 +12,7 @@
 | Language          | TypeScript                 | ~5.9.3             |
 | Runtime           | React                      | ^19.2.4            |
 | Build             | Vite + SWC                 | ^7.3.1 / ^4.3.0    |
-| Package manager   | pnpm                       | 11.0.8            |
+| Package manager   | pnpm                       | 11.0.8             |
 | UI library        | Mantine                    | ^8.3.16            |
 | Routing           | TanStack Router            | ^1.166.7           |
 | Data fetching     | TanStack Query             | ^5.90.21           |

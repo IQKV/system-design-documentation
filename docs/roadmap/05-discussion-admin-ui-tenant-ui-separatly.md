@@ -51,25 +51,26 @@ Focus on: security boundaries, what a tenant user could vs could not access, and
 
 All routes live under `/admin/*` and are protected by a `beforeLoad` guard. The full route tree:
 
-| Route | File | Purpose |
-|---|---|---|
-| `/` | `pages/index.tsx` | Root redirect |
-| `/sign-in` | `pages/sign-in.tsx` | Login form |
-| `/unauthorized` | `pages/unauthorized.tsx` | 403 landing |
-| `/404`, `/500` | error pages | Error pages |
-| `/admin` | `pages/admin.tsx` | **Auth guard + layout wrapper** |
-| `/admin/` | `pages/admin/index.tsx` | Dashboard (3 stat cards) |
-| `/admin/users` | `pages/admin/users.tsx` | User list |
-| `/admin/users/$userId` | `pages/admin/users.$userId.tsx` | User detail |
-| `/admin/organizations` | `pages/admin/organizations.index.tsx` | Tenant list |
+| Route                             | File                                       | Purpose                                 |
+| --------------------------------- | ------------------------------------------ | --------------------------------------- |
+| `/`                               | `pages/index.tsx`                          | Root redirect                           |
+| `/sign-in`                        | `pages/sign-in.tsx`                        | Login form                              |
+| `/unauthorized`                   | `pages/unauthorized.tsx`                   | 403 landing                             |
+| `/404`, `/500`                    | error pages                                | Error pages                             |
+| `/admin`                          | `pages/admin.tsx`                          | **Auth guard + layout wrapper**         |
+| `/admin/`                         | `pages/admin/index.tsx`                    | Dashboard (3 stat cards)                |
+| `/admin/users`                    | `pages/admin/users.tsx`                    | User list                               |
+| `/admin/users/$userId`            | `pages/admin/users.$userId.tsx`            | User detail                             |
+| `/admin/organizations`            | `pages/admin/organizations.index.tsx`      | Tenant list                             |
 | `/admin/organizations/$tenantKey` | `pages/admin/organizations.$tenantKey.tsx` | Tenant detail (Overview + Members tabs) |
-| `/admin/subscriptions` | `pages/admin/subscriptions.tsx` | Subscription list |
+| `/admin/subscriptions`            | `pages/admin/subscriptions.tsx`            | Subscription list                       |
 
 ### API Calls & Query Keys
 
 All calls go through a single Axios instance (`httpClient`) with `baseURL = /api` (dev proxy) or `VITE_API_SERVER_URL` (prod).
 
 **IAM API (`/v1/iam/admin/*`):**
+
 - `GET /v1/iam/admin/users/count` — query key `["admin","count","users"]`
 - `GET /v1/iam/admin/users` — query key `["admin","users", page, search, status, sortBy, sortDir]`
 - `GET /v1/iam/admin/users/:id`
@@ -84,6 +85,7 @@ All calls go through a single Axios instance (`httpClient`) with `baseURL = /api
 - `DELETE /v1/iam/admin/tenants/:tenantKey`
 
 **Billing API (`/v1/billing/admin/*`):**
+
 - `GET /v1/billing/admin/subscriptions/count` — query key `["admin","count","subscriptions"]`
 - `GET /v1/billing/admin/subscriptions` — query key `["admin","subscriptions", ...]`
 - `GET /v1/billing/admin/subscriptions/:id`
@@ -91,6 +93,7 @@ All calls go through a single Axios instance (`httpClient`) with `baseURL = /api
 - `DELETE /v1/billing/admin/subscriptions/:id`
 
 **Auth API:**
+
 - `POST /v1/iam/auth/admin/signin` — login (no tenant header)
 - `POST /v1/iam/auth/admin/refresh` — silent refresh
 - `POST /v1/iam/auth/signout` — revoke token
@@ -100,16 +103,19 @@ All calls go through a single Axios instance (`httpClient`) with `baseURL = /api
 **Token acquisition:** `POST /v1/iam/auth/admin/signin` — a dedicated platform-admin endpoint that requires no `X-Tenant-ID` header. The issued JWT carries `tenant_id: null` and loads authorities exclusively from `platform_authorities`. Returns 403 if the user has no platform-level authorities.
 
 **Token storage:**
+
 - Access token: in-memory only (Zustand store, cleared on page reload)
 - Refresh token: `sessionStorage` under key `iqkv_refresh_token` (survives page reload, cleared on tab close)
 
 **Route guard (`/admin` `beforeLoad`):**
+
 1. No token → attempt silent refresh via `POST /v1/iam/auth/admin/refresh`
 2. Refresh succeeds → decode JWT, check `hasPlatformAdmin()` (looks for `PLATFORM_ADMIN` in `authorities` claim)
 3. No `PLATFORM_ADMIN` → redirect `/sign-in?reason=forbidden`
 4. Token already in store → decode and check authority without a network call
 
 **Axios interceptors:**
+
 - Request: attaches `Authorization: Bearer <token>` to all non-auth requests
 - Response 401: attempts one silent refresh, replays original request
 - Response 403 on `/iam/admin/*`: clears session, redirects to `/sign-in?reason=forbidden`
@@ -119,6 +125,7 @@ All calls go through a single Axios instance (`httpClient`) with `baseURL = /api
 ### Navigation Structure
 
 `AdminLayout` uses Mantine `AppShell` with a 56px header and a 220px sidebar. The sidebar (`AdminNav`) has four items under a "Platform" section label:
+
 - Dashboard → `/admin/`
 - Users → `/admin/users`
 - Organizations → `/admin/organizations`
@@ -140,72 +147,72 @@ The sidebar includes a search input that filters nav items client-side.
 
 #### Authentication (`/api/v1/iam/auth/*`) — all public except signout/validate
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| POST | `/auth/signup` | Public | Register user + create tenant (TENANT_OWNER membership) |
-| POST | `/auth/signin` | Public | Tenant-scoped sign-in (requires `X-Tenant-ID`) |
-| POST | `/auth/admin/signin` | Public | Platform admin sign-in (no tenant header) |
-| POST | `/auth/admin/refresh` | Public | Platform admin token refresh |
-| POST | `/auth/refresh` | Public | Tenant-scoped token refresh |
-| POST | `/auth/signout` | Bearer | Revoke current token (JTI denylist) |
-| POST | `/auth/signout-all` | Bearer | Revoke all sessions (sets `last_global_signout_at`) |
-| POST | `/auth/validate` | Public | Token introspection for API gateway |
+| Method | Path                  | Auth   | Description                                             |
+| ------ | --------------------- | ------ | ------------------------------------------------------- |
+| POST   | `/auth/signup`        | Public | Register user + create tenant (TENANT_OWNER membership) |
+| POST   | `/auth/signin`        | Public | Tenant-scoped sign-in (requires `X-Tenant-ID`)          |
+| POST   | `/auth/admin/signin`  | Public | Platform admin sign-in (no tenant header)               |
+| POST   | `/auth/admin/refresh` | Public | Platform admin token refresh                            |
+| POST   | `/auth/refresh`       | Public | Tenant-scoped token refresh                             |
+| POST   | `/auth/signout`       | Bearer | Revoke current token (JTI denylist)                     |
+| POST   | `/auth/signout-all`   | Bearer | Revoke all sessions (sets `last_global_signout_at`)     |
+| POST   | `/auth/validate`      | Public | Token introspection for API gateway                     |
 
 #### User — self-service (`/api/v1/iam/users/*`)
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/users/me` | `isAuthenticated()` | Get own profile |
-| PATCH | `/users/me` | `isAuthenticated()` | Update own profile |
-| DELETE | `/users/me` | `isAuthenticated()` | Remove own tenant membership |
-| POST | `/users/tenants` | Public | Credential-gated tenant discovery (no JWT) |
-| POST | `/users/email/verify` | Public | Verify email token |
-| POST | `/users/email/resend-verification` | Public | Resend verification email |
-| POST | `/users/password/forgot` | Public | Request password reset |
-| POST | `/users/password/reset` | Public | Complete password reset |
+| Method | Path                               | Auth                | Description                                |
+| ------ | ---------------------------------- | ------------------- | ------------------------------------------ |
+| GET    | `/users/me`                        | `isAuthenticated()` | Get own profile                            |
+| PATCH  | `/users/me`                        | `isAuthenticated()` | Update own profile                         |
+| DELETE | `/users/me`                        | `isAuthenticated()` | Remove own tenant membership               |
+| POST   | `/users/tenants`                   | Public              | Credential-gated tenant discovery (no JWT) |
+| POST   | `/users/email/verify`              | Public              | Verify email token                         |
+| POST   | `/users/email/resend-verification` | Public              | Resend verification email                  |
+| POST   | `/users/password/forgot`           | Public              | Request password reset                     |
+| POST   | `/users/password/reset`            | Public              | Complete password reset                    |
 
 #### User — admin (`/api/v1/iam/admin/users/*`) — all require `PLATFORM_ADMIN`
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/admin/users` | Paginated user list (all tenants) |
-| GET | `/admin/users/count` | Total user count |
-| GET | `/admin/users/:id` | Get user by UUID |
-| POST | `/admin/users` | Create user (random temp password) |
-| PUT | `/admin/users/:id` | Replace firstName/lastName |
-| PATCH | `/admin/users/:id` | Partial update (name, status) |
-| DELETE | `/admin/users/:id` | Delete user + cascade memberships |
+| Method | Path                 | Description                        |
+| ------ | -------------------- | ---------------------------------- |
+| GET    | `/admin/users`       | Paginated user list (all tenants)  |
+| GET    | `/admin/users/count` | Total user count                   |
+| GET    | `/admin/users/:id`   | Get user by UUID                   |
+| POST   | `/admin/users`       | Create user (random temp password) |
+| PUT    | `/admin/users/:id`   | Replace firstName/lastName         |
+| PATCH  | `/admin/users/:id`   | Partial update (name, status)      |
+| DELETE | `/admin/users/:id`   | Delete user + cascade memberships  |
 
 #### Tenant — self-service (`/api/v1/iam/tenants/*`) — require `TENANT_OWNER`
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/tenants/:tenantKey` | Get own tenant |
-| PATCH | `/tenants/:tenantKey/status` | Update tenant status |
-| POST | `/tenants/:tenantKey/retry-provisioning` | Retry failed provisioning |
+| Method | Path                                     | Description               |
+| ------ | ---------------------------------------- | ------------------------- |
+| GET    | `/tenants/:tenantKey`                    | Get own tenant            |
+| PATCH  | `/tenants/:tenantKey/status`             | Update tenant status      |
+| POST   | `/tenants/:tenantKey/retry-provisioning` | Retry failed provisioning |
 
 #### Tenant — admin (`/api/v1/iam/admin/tenants/*`) — all require `PLATFORM_ADMIN`
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/admin/tenants` | Paginated tenant list |
-| GET | `/admin/tenants/count` | Total tenant count |
-| GET | `/admin/tenants/:tenantKey` | Get tenant by key |
-| PUT | `/admin/tenants/:tenantKey` | Rename tenant |
-| PATCH | `/admin/tenants/:tenantKey` | Partial update (name, status) |
-| DELETE | `/admin/tenants/:tenantKey` | Delete tenant + cascade |
-| GET | `/admin/tenants/:tenantKey/members` | Paginated member list |
-| GET | `/admin/tenants/:tenantKey/members/count` | Member count |
+| Method | Path                                      | Description                   |
+| ------ | ----------------------------------------- | ----------------------------- |
+| GET    | `/admin/tenants`                          | Paginated tenant list         |
+| GET    | `/admin/tenants/count`                    | Total tenant count            |
+| GET    | `/admin/tenants/:tenantKey`               | Get tenant by key             |
+| PUT    | `/admin/tenants/:tenantKey`               | Rename tenant                 |
+| PATCH  | `/admin/tenants/:tenantKey`               | Partial update (name, status) |
+| DELETE | `/admin/tenants/:tenantKey`               | Delete tenant + cascade       |
+| GET    | `/admin/tenants/:tenantKey/members`       | Paginated member list         |
+| GET    | `/admin/tenants/:tenantKey/members/count` | Member count                  |
 
 #### Invitations (`/api/v1/iam/invitations/*` and `/api/v1/iam/tenants/:tenantKey/invitations/*`)
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| POST | `/tenants/:tenantKey/invitations` | `TENANT_OWNER` or `ADMIN` | Send invitation |
-| GET | `/tenants/:tenantKey/invitations` | `TENANT_OWNER` or `ADMIN` | List pending invitations |
-| DELETE | `/tenants/:tenantKey/invitations/:id` | `TENANT_OWNER` or `ADMIN` | Revoke invitation |
-| GET | `/invitations/:token` | Public | Preview invitation |
-| POST | `/invitations/:token/accept` | Public | Accept invitation |
+| Method | Path                                  | Auth                      | Description              |
+| ------ | ------------------------------------- | ------------------------- | ------------------------ |
+| POST   | `/tenants/:tenantKey/invitations`     | `TENANT_OWNER` or `ADMIN` | Send invitation          |
+| GET    | `/tenants/:tenantKey/invitations`     | `TENANT_OWNER` or `ADMIN` | List pending invitations |
+| DELETE | `/tenants/:tenantKey/invitations/:id` | `TENANT_OWNER` or `ADMIN` | Revoke invitation        |
+| GET    | `/invitations/:token`                 | Public                    | Preview invitation       |
+| POST   | `/invitations/:token/accept`          | Public                    | Accept invitation        |
 
 #### JWKS (`/.well-known/*`) — public
 
@@ -216,6 +223,7 @@ Exposes the RSA public key for downstream JWT verification.
 The `SecurityConfig` uses Spring Security's OAuth2 Resource Server with a locally-loaded RSA public key (no JWKS endpoint dependency). The `JwtAuthenticationConverter` reads authorities from a custom `authorities` claim (not the standard `scope`). A custom `JwtAuthenticationFilter` runs before the standard `BearerTokenAuthenticationFilter`.
 
 **URL-level rules (in order):**
+
 1. `/actuator/**`, `/api-docs/**`, `/swagger-ui/**`, `/.well-known/**` → `permitAll`
 2. All public auth/signup/password/email endpoints → `permitAll`
 3. `/api/v1/iam/admin/**` → `hasAuthority("PLATFORM_ADMIN")`
@@ -246,6 +254,7 @@ User {
 Two distinct authority systems:
 
 **Platform authorities** (`platform_authorities` table) — assigned directly to a user, independent of any tenant:
+
 ```
 PlatformAuthority {
   userId: UUID
@@ -256,6 +265,7 @@ PlatformAuthority {
 ```
 
 **Tenant membership authorities** (`tenant_member_authorities` table) — scoped to a specific tenant membership:
+
 ```
 TenantMembership {
   userId: UUID
@@ -269,6 +279,7 @@ TenantMemberAuthority {
 ```
 
 **JWT token structure:**
+
 - Admin token: `authorities = [PLATFORM_ADMIN, ...]`, `tenant_id = null`
 - Tenant token: `authorities = [TENANT_OWNER | ADMIN | MEMBER]`, `tenant_id = <tenantKey>`
 
@@ -288,55 +299,56 @@ A user can belong to multiple tenants. Each membership has its own set of author
 
 #### Plan Catalog (`/api/v1/billing/plans/*`)
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/plans` | Any authenticated | List all active plans |
-| GET | `/plans/:planCode` | Any authenticated | Get plan by code |
-| POST | `/plans` | `PLATFORM_ADMIN` | Create plan |
-| PUT | `/plans/:planCode` | `PLATFORM_ADMIN` | Update plan |
-| DELETE | `/plans/:planCode` | `PLATFORM_ADMIN` | Soft-delete plan (sets `active=false`) |
+| Method | Path               | Auth              | Description                            |
+| ------ | ------------------ | ----------------- | -------------------------------------- |
+| GET    | `/plans`           | Any authenticated | List all active plans                  |
+| GET    | `/plans/:planCode` | Any authenticated | Get plan by code                       |
+| POST   | `/plans`           | `PLATFORM_ADMIN`  | Create plan                            |
+| PUT    | `/plans/:planCode` | `PLATFORM_ADMIN`  | Update plan                            |
+| DELETE | `/plans/:planCode` | `PLATFORM_ADMIN`  | Soft-delete plan (sets `active=false`) |
 
 #### Subscriptions — tenant self-service (`/api/v1/billing/subscriptions/*`)
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/subscriptions/:tenantKey/active` | `TENANT_OWNER` | Get active subscription for tenant |
-| GET | `/subscriptions/:tenantKey` | `TENANT_OWNER` | Get all subscriptions for tenant |
-| GET | `/subscriptions/me/active` | `TENANT_OWNER` or `MEMBER` | Get active subscription for current subject |
-| GET | `/subscriptions/me` | `TENANT_OWNER` or `MEMBER` | Get all subscriptions for current subject |
+| Method | Path                               | Auth                       | Description                                 |
+| ------ | ---------------------------------- | -------------------------- | ------------------------------------------- |
+| GET    | `/subscriptions/:tenantKey/active` | `TENANT_OWNER`             | Get active subscription for tenant          |
+| GET    | `/subscriptions/:tenantKey`        | `TENANT_OWNER`             | Get all subscriptions for tenant            |
+| GET    | `/subscriptions/me/active`         | `TENANT_OWNER` or `MEMBER` | Get active subscription for current subject |
+| GET    | `/subscriptions/me`                | `TENANT_OWNER` or `MEMBER` | Get all subscriptions for current subject   |
 
 The `/:tenantKey` endpoints enforce ownership: the JWT's `tenant_id` claim must match the path variable, throwing 403 (`TenantContextMismatchException`) on mismatch.
 
 #### Subscriptions — admin (`/api/v1/billing/admin/subscriptions/*`) — all require `PLATFORM_ADMIN`
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/admin/subscriptions` | Paginated subscription list (all tenants) |
-| GET | `/admin/subscriptions/count` | Total subscription count |
-| GET | `/admin/subscriptions/:id` | Get subscription by UUID |
-| PATCH | `/admin/subscriptions/:id` | Partial update (status, period end, cancel flag) |
-| DELETE | `/admin/subscriptions/:id` | Delete subscription record |
+| Method | Path                         | Description                                      |
+| ------ | ---------------------------- | ------------------------------------------------ |
+| GET    | `/admin/subscriptions`       | Paginated subscription list (all tenants)        |
+| GET    | `/admin/subscriptions/count` | Total subscription count                         |
+| GET    | `/admin/subscriptions/:id`   | Get subscription by UUID                         |
+| PATCH  | `/admin/subscriptions/:id`   | Partial update (status, period end, cancel flag) |
+| DELETE | `/admin/subscriptions/:id`   | Delete subscription record                       |
 
 #### Billing Settings — tenant self-service (`/api/v1/billing/settings/*`)
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/settings/:tenantKey` | `TENANT_OWNER` | Get billing settings |
-| PATCH | `/settings/:tenantKey` | `TENANT_OWNER` | Update billing settings |
+| Method | Path                   | Auth           | Description             |
+| ------ | ---------------------- | -------------- | ----------------------- |
+| GET    | `/settings/:tenantKey` | `TENANT_OWNER` | Get billing settings    |
+| PATCH  | `/settings/:tenantKey` | `TENANT_OWNER` | Update billing settings |
 
 Both enforce tenant ownership via JWT claim comparison.
 
 #### Webhooks (`/api/v1/billing/webhooks/*`) — public (Stripe signature verification)
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| POST | `/webhooks/stripe` | Public (Stripe-Signature header) | Receive Stripe webhook events |
+| Method | Path               | Auth                             | Description                   |
+| ------ | ------------------ | -------------------------------- | ----------------------------- |
+| POST   | `/webhooks/stripe` | Public (Stripe-Signature header) | Receive Stripe webhook events |
 
 ### Security Config
 
 Same pattern as IAM: locally-loaded RSA public key, custom `authorities` claim converter, stateless sessions.
 
 **URL-level rules:**
+
 1. `/actuator/**`, `/api-docs/**`, `/swagger-ui/**` → `permitAll`
 2. `POST /api/v1/billing/webhooks/stripe` → `permitAll` (secured by Stripe signature)
 3. `/api/v1/billing/admin/**` → `hasAuthority("PLATFORM_ADMIN")`
@@ -349,6 +361,7 @@ A `TenantExtractionFilter` (same pattern as IAM) reads `X-Tenant-ID` for schema 
 ### Subscription / Plan Model
 
 **Plan:**
+
 ```
 Plan {
   id: UUID
@@ -364,6 +377,7 @@ Plan {
 ```
 
 **Subscription:**
+
 ```
 Subscription {
   id: UUID
@@ -381,6 +395,7 @@ Subscription {
 ```
 
 The `subjectType`/`subjectKey` pair supports two rollout modes:
+
 - **Multi-tenant mode:** subscription is owned by a `TENANT` (subjectKey = tenantKey)
 - **Single-tenant mode:** subscription is owned by a `USER` (subjectKey = userId)
 
@@ -394,17 +409,17 @@ The tenant-user-accessible endpoints (`/subscriptions/:tenantKey/*`, `/settings/
 
 ## Security Boundaries Summary
 
-| Capability | `PLATFORM_ADMIN` | `TENANT_OWNER` | `MEMBER` |
-|---|---|---|---|
-| List/manage all users (IAM) | ✅ | ❌ | ❌ |
-| List/manage all tenants (IAM) | ✅ | ❌ | ❌ |
-| View own tenant (IAM) | ❌ (uses admin endpoint) | ✅ | ❌ |
-| Invite members to tenant | ❌ | ✅ | ❌ |
-| List/manage all subscriptions (billing) | ✅ | ❌ | ❌ |
-| View own tenant's subscription | ❌ | ✅ | ✅ (me/ only) |
-| Manage billing settings | ❌ | ✅ | ❌ |
-| Create/update/delete plans | ✅ | ❌ | ❌ |
-| Read plan catalog | ✅ | ✅ | ✅ |
+| Capability                              | `PLATFORM_ADMIN`         | `TENANT_OWNER` | `MEMBER`      |
+| --------------------------------------- | ------------------------ | -------------- | ------------- |
+| List/manage all users (IAM)             | ✅                       | ❌             | ❌            |
+| List/manage all tenants (IAM)           | ✅                       | ❌             | ❌            |
+| View own tenant (IAM)                   | ❌ (uses admin endpoint) | ✅             | ❌            |
+| Invite members to tenant                | ❌                       | ✅             | ❌            |
+| List/manage all subscriptions (billing) | ✅                       | ❌             | ❌            |
+| View own tenant's subscription          | ❌                       | ✅             | ✅ (me/ only) |
+| Manage billing settings                 | ❌                       | ✅             | ❌            |
+| Create/update/delete plans              | ✅                       | ❌             | ❌            |
+| Read plan catalog                       | ✅                       | ✅             | ✅            |
 
 **Key design point:** The admin UI uses a completely separate sign-in endpoint (`/auth/admin/signin`) that issues a token with `tenant_id: null`. This token cannot be used against tenant-scoped endpoints (they require a non-null `tenant_id` claim). Conversely, a tenant token cannot access `/admin/**` endpoints. The two personas are cleanly separated at the token level.
 
@@ -421,7 +436,6 @@ The tenant-user-accessible endpoints (`/subscriptions/:tenantKey/*`, `/settings/
 5. **Navigation and layout:** The sidebar would need tenant-specific sections (e.g., "My Subscription", "Team Members", "Settings") in addition to or instead of the platform-admin sections.
 
 6. **No cross-tenant data leakage:** Tenant-user API calls must always be scoped to their own `tenantKey`. The backend enforces this, but the UI must never pass a different tenant's key in path params.
-
 
 Let me explore all three projects in parallel to gather the key structural information efficiently.
 
@@ -461,7 +475,7 @@ None of this is rocket science. A few days of work.
 Right now the admin app is a closed surface — one sign-in endpoint, one authority check, one Axios instance. If you merge, every new tenant-facing feature you add is one more place where a bug could accidentally expose admin-level data. The backend enforces the boundary, but the UI becomes a larger attack surface for logic errors (wrong `tenantKey` in a path param, wrong client instance used, wrong guard applied to a new route).
 
 **2. The two UIs have fundamentally different information architectures.**
-The admin UI is a cross-tenant operator console — it sees everything, filters by tenant as a dimension. The tenant UI is GitHub-style — the tenant is the *context*, not a filter. These are opposite mental models. Trying to serve both from one nav/layout leads to a confusing hybrid that serves neither persona well. GitHub doesn't put "manage all GitHub users" in the same app as "manage your repo."
+The admin UI is a cross-tenant operator console — it sees everything, filters by tenant as a dimension. The tenant UI is GitHub-style — the tenant is the _context_, not a filter. These are opposite mental models. Trying to serve both from one nav/layout leads to a confusing hybrid that serves neither persona well. GitHub doesn't put "manage all GitHub users" in the same app as "manage your repo."
 
 **3. Bundle and dependency bloat.**
 Tenant users would download all the admin UI code (and vice versa). Code-splitting helps but doesn't eliminate it. More importantly, admin-specific dependencies (bulk data tables, cross-tenant analytics) end up in the tenant bundle.
@@ -487,14 +501,14 @@ The shared investment goes into a **component library** (`foundation-ui-kit` or 
 
 ## Verdict
 
-| Concern | Single app | Two apps |
-|---|---|---|
-| Implementation effort (initial) | Lower | Higher (but one-time) |
-| Security isolation | Weaker | Strong |
-| UX clarity per persona | Compromised | Clean |
-| Long-term maintenance | Harder | Easier |
-| Deployment flexibility | Constrained | Full |
-| Code-split complexity | High | None |
+| Concern                         | Single app  | Two apps              |
+| ------------------------------- | ----------- | --------------------- |
+| Implementation effort (initial) | Lower       | Higher (but one-time) |
+| Security isolation              | Weaker      | Strong                |
+| UX clarity per persona          | Compromised | Clean                 |
+| Long-term maintenance           | Harder      | Easier                |
+| Deployment flexibility          | Constrained | Full                  |
+| Code-split complexity           | High        | None                  |
 
 Build two apps, share a component library. The backend is already designed for it — the dual sign-in endpoints and clean `PLATFORM_ADMIN` vs tenant authority separation are a strong signal that the original design intent was separate surfaces.
 
@@ -522,6 +536,7 @@ Impersonation = a `PLATFORM_ADMIN` temporarily acts as a specific tenant user, s
 ### What the backend currently has
 
 From the IAM service analysis:
+
 - `PLATFORM_ADMIN` can read any user's profile and tenant memberships via `/admin/users/:id`
 - There is **no impersonation endpoint** — no `POST /admin/users/:id/impersonate` that issues a scoped tenant token on behalf of another user
 - The two token types are hard-separated: admin token has `tenant_id: null`, tenant token has a real `tenant_id` and tenant authorities
@@ -537,6 +552,7 @@ So impersonation is a **backend gap first**, UI second.
 ### Backend (IAM service)
 
 **New endpoint:**
+
 ```
 POST /api/v1/iam/admin/users/:id/impersonate
   Auth: PLATFORM_ADMIN
@@ -545,6 +561,7 @@ POST /api/v1/iam/admin/users/:id/impersonate
 ```
 
 The issued token should carry:
+
 ```json
 {
   "sub": "<target-user-id>",
@@ -572,6 +589,7 @@ The trigger point is the user detail page (`/admin/users/$userId`). Add an "Impe
 3. Opens the tenant app in a **new tab** with the token passed via a short-lived handoff mechanism (not URL params — that leaks tokens in history/logs)
 
 The handoff options:
+
 - **`sessionStorage` + `postMessage`** — admin app writes token to a named `sessionStorage` key, opens tenant app tab, tenant app reads it on load. Clean, no token in URL.
 - **One-time code** — backend issues a short-lived opaque code (30s TTL), tenant app exchanges it for the token on load. More secure, requires another backend endpoint.
 
@@ -610,12 +628,12 @@ Admin UI has its own "view as tenant" pages that replicate the tenant UI's key s
 
 ## Summary of what to build
 
-| Layer | Work |
-|---|---|
-| IAM backend | `POST /admin/users/:id/impersonate` endpoint, short-TTL token with `act` claim, audit log table |
-| Admin UI | "Impersonate" button on user detail page, tenant picker if multi-tenant, token handoff to new tab |
-| Tenant UI | Boot-time impersonation detection, persistent banner component, optional write-block guard |
-| Shared | `act`/`impersonation` claim types in shared type definitions |
+| Layer       | Work                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| IAM backend | `POST /admin/users/:id/impersonate` endpoint, short-TTL token with `act` claim, audit log table   |
+| Admin UI    | "Impersonate" button on user detail page, tenant picker if multi-tenant, token handoff to new tab |
+| Tenant UI   | Boot-time impersonation detection, persistent banner component, optional write-block guard        |
+| Shared      | `act`/`impersonation` claim types in shared type definitions                                      |
 
 The backend endpoint is the critical path. Once that exists, the UI work on both sides is straightforward — a few hours each. The audit logging is non-negotiable for a platform product; without it impersonation is a liability.
 
@@ -636,21 +654,25 @@ The admin UI already has the read side covered for investigation — you can loo
 The gaps worth closing before impersonation becomes necessary:
 
 **User investigation**
+
 - Reset password / force password reset (send email) — currently no action, just read
 - Lock / unlock / suspend account — status is visible but PATCH is not wired to a UI action yet
 - Revoke all sessions (`POST /auth/signout-all` equivalent triggered by admin) — useful when an account is compromised
 - See which tenants a user belongs to with their authority in each, not just organization names as strings
 
 **Tenant investigation**
+
 - Retry provisioning (`POST /tenants/:tenantKey/retry-provisioning`) — currently no admin equivalent exposed
 - See tenant's billing settings, not just subscriptions
 - Member list already exists but no ability to remove a member or change their authority
 
 **Subscription investigation**
+
 - The PATCH on subscriptions is wired in the API but not in the UI — no way to manually correct a stuck subscription status
 - No way to see the raw Stripe IDs and link out to the Stripe dashboard for the customer/subscription
 
 **Audit / activity**
+
 - No audit log surface at all currently — this is probably the single highest-value addition for support cases. Every PATCH/DELETE in the admin endpoints should be logged, and the admin UI should be able to filter by user, tenant, or time range.
 
 Once those are in place, the realistic support workflow becomes: user reports a problem → admin looks up the user → sees their tenant memberships, subscription state, recent activity, can unlock/reset/correct data directly. That covers 90% of support cases without needing to see what the user sees, which is what impersonation is really for.
@@ -678,6 +700,7 @@ The tenant UI starting point is straightforward given what exists:
 **Auth:** `POST /auth/signin` with `X-Tenant-ID` header — needs a tenant discovery step first (`POST /users/tenants` with credentials, returns which tenants the user belongs to, then user picks one or it auto-selects if only one)
 
 **Core pages to scaffold:**
+
 - Sign in (with tenant discovery)
 - Dashboard — own subscription status, team size
 - Team — member list, invite flow, remove member
@@ -742,14 +765,15 @@ Both sign with RS256 using the same RSA private key. Expiry comes from `AuthConf
 
 **They are the same code path** — both call `jwtTokenGenerator.generateAccessToken(user, tenantKey, authorities)` and `generateRefreshToken(user, tenantKey)`. The only differences are:
 
-| | Tenant signin | Admin signin |
-|---|---|---|
-| `tenantKey` arg | from `TenantContext` (X-Tenant-ID header) | **`null`** |
+|                      | Tenant signin                                          | Admin signin                                                        |
+| -------------------- | ------------------------------------------------------ | ------------------------------------------------------------------- |
+| `tenantKey` arg      | from `TenantContext` (X-Tenant-ID header)              | **`null`**                                                          |
 | `authorities` source | `membershipService.getAuthorities(membership.getId())` | `platformAuthorityMapper.findAuthorityValuesByUserId(user.getId())` |
-| Tenant validation | Yes (checks SUSPENDED/DELETED/PROVISIONING_FAILED) | None |
-| Membership check | Yes | No — checks `platformAuthorities.isEmpty()` instead |
+| Tenant validation    | Yes (checks SUSPENDED/DELETED/PROVISIONING_FAILED)     | None                                                                |
+| Membership check     | Yes                                                    | No — checks `platformAuthorities.isEmpty()` instead                 |
 
 So the **only discriminator** between admin and tenant tokens is:
+
 - `tenant_id` claim is `null` for admin tokens, a tenant key string for tenant tokens
 - `authorities` values differ (e.g. `PLATFORM_ADMIN` vs `TENANT_OWNER`, `TENANT_MEMBER`, etc.)
 
@@ -782,12 +806,14 @@ JwtClaimNames constants:
 ## 4. Refresh Token Endpoints
 
 **Tenant refresh** (`POST /api/v1/iam/auth/refresh`):
+
 - Decodes token, validates `type == "refresh"`
 - Validates `tenant_id` claim matches `TenantContext.getCurrentTenant()` — throws `TenantContextMismatchException` if not
 - Re-fetches membership + authorities from DB
 - Issues new access + refresh token pair with current tenant
 
 **Admin refresh** (`POST /api/v1/iam/auth/admin/refresh`):
+
 - Decodes token, validates `type == "refresh"`
 - **No tenant context check** (no X-Tenant-ID required)
 - Re-fetches `platformAuthorities` from DB; throws `NoPlatformAuthorityException` if empty
@@ -798,6 +824,7 @@ JwtClaimNames constants:
 ## 5. `JwtAuthenticationConverter` (resource server side)
 
 Defined inline in `SecurityConfig`:
+
 ```java
 converter.setJwtGrantedAuthoritiesConverter(jwt -> {
     List<String> authorities = jwt.getClaimAsStringList(JwtClaimNames.AUTHORITIES);
@@ -808,9 +835,11 @@ converter.setJwtGrantedAuthoritiesConverter(jwt -> {
         .toList();
 });
 ```
+
 Reads the `authorities` claim directly as `SimpleGrantedAuthority` objects — no `ROLE_` prefix, no scope mapping. The authority strings (e.g. `PLATFORM_ADMIN`, `TENANT_OWNER`) are used as-is.
 
-There is also a **pre-filter** (`JwtAuthenticationFilter extends OncePerRequestFilter`) that runs *before* Spring Security's `BearerTokenAuthenticationFilter` and handles two revocation checks:
+There is also a **pre-filter** (`JwtAuthenticationFilter extends OncePerRequestFilter`) that runs _before_ Spring Security's `BearerTokenAuthenticationFilter` and handles two revocation checks:
+
 1. JTI in `token_denylist` table (regular signout)
 2. Token `iat <= users.last_global_signout_at` (signout-all)
 
@@ -837,10 +866,10 @@ There is also a **pre-filter** (`JwtAuthenticationFilter extends OncePerRequestF
 **Token type discriminator?** No dedicated discriminator beyond `tenant_id == null`. There's no `is_platform_admin`, `scope`, or `token_kind` claim. Admin tokens are identified by `tenant_id` being null and having platform-level authority strings.
 
 **What differs between admin and tenant access tokens?**
+
 - `tenant_id`: `null` vs tenant key string
 - `authorities`: platform roles vs tenant membership roles
 - Everything else (`sub`, `userId`, `email`, `firstName`, `lastName`, `email_verified`, `type`, `jti`, `iss`, `iat`, `exp`) is identical in structure
-
 
 Let me explore the foundation-iam-service structure first.
 
@@ -862,7 +891,7 @@ The design is intentional and the code is clean. Both token types flow through t
 // Tenant signin
 jwtTokenGenerator.generateAccessToken(user, tenantKey, membershipAuthorities)
 
-// Admin signin  
+// Admin signin
 jwtTokenGenerator.generateAccessToken(user, null, platformAuthorities)
 ```
 
@@ -923,6 +952,7 @@ public static final String SCOPE_TENANT = "tenant";
 ```
 
 Admin tokens get `token_scope: "platform"`, tenant tokens get `token_scope: "tenant"`. Then:
+
 - Admin refresh validates `token_scope == "platform"` in the incoming refresh token
 - Tenant refresh validates `token_scope == "tenant"`
 - The `SecurityConfig` admin rule could optionally add a second check
@@ -941,13 +971,13 @@ if (tokenTenantId != null) {
 
 ## Summary
 
-| Aspect | Current state | Assessment |
-|---|---|---|
-| Code duplication | None — single `JwtTokenGenerator` | ✅ Good |
-| Token format | Identical structure, different claim values | ✅ Good |
-| Admin discriminator | Implicit (`tenant_id == null`) | ⚠️ Fragile |
-| Admin refresh guard | Missing `tenant_id == null` check | 🐛 Real gap |
-| Tenant refresh guard | Correct — validates tenant context match | ✅ Good |
+| Aspect               | Current state                                       | Assessment     |
+| -------------------- | --------------------------------------------------- | -------------- |
+| Code duplication     | None — single `JwtTokenGenerator`                   | ✅ Good        |
+| Token format         | Identical structure, different claim values         | ✅ Good        |
+| Admin discriminator  | Implicit (`tenant_id == null`)                      | ⚠️ Fragile     |
+| Admin refresh guard  | Missing `tenant_id == null` check                   | 🐛 Real gap    |
+| Tenant refresh guard | Correct — validates tenant context match            | ✅ Good        |
 | Future impersonation | Would require explicit `token_scope` or `act` claim | 📋 Planned gap |
 
 The design is solid and not duplicated. The gap is narrow but real: the admin refresh endpoint should explicitly reject tenant-scoped refresh tokens, and adding an explicit `token_scope` claim would make the intent self-documenting and the guards unambiguous.
