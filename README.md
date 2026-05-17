@@ -51,13 +51,13 @@ helm install foundation-ui-service ./helm/ui -f ui-values.yaml
 
 ## Docs
 
-| Audience             | Document                                                                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Founders / CEO       | [Business proposal](docs/business/proposal.md)                                                                                              |
-| CTO / Architect      | [Architecture](docs/platform/architecture.md) · [Capabilities](docs/platform/capabilities.md)                                               |
-| Compliance review    | [Compliance](docs/business/compliance.md)                                                                                                   |
-| Competitive analysis | [Comparison](docs/business/comparison.md)                                                                                                   |
-| Contributors         | [Roadmap](docs/roadmap/vision.md) · [Backend guidelines](docs/coding-guidelines/backend.md) · [UI guidelines](docs/coding-guidelines/ui.md) |
+| Audience          | Document                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Founders / CEO    | [Business proposal](docs/business/proposal.md) · [SaaS Metrics](docs/business/saas-metrics.md)                                              |
+| CTO / Architect   | [Architecture](docs/platform/architecture.md) · [Capabilities](docs/platform/capabilities.md)                                               |
+| Compliance review | [Compliance](docs/business/compliance.md)                                                                                                   |
+| Market & Strategy | [Comparison](docs/business/comparison.md) · [Market Review](docs/business/market-review.md)                                                 |
+| Contributors      | [Roadmap](docs/roadmap/vision.md) · [Backend guidelines](docs/coding-guidelines/backend.md) · [UI guidelines](docs/coding-guidelines/ui.md) |
 
 ---
 
