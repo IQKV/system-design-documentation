@@ -4,17 +4,29 @@ K8s-native microservices foundation for multi-tenant B2B SaaS. Three open-source
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg)](https://www.iqkv.site)
 
-> Early stage. Not production-ready yet. Architecture and APIs are subject to change.
+---
+
+## Status: v0.2 — Administration & Self-Service
+
+The platform has completed its initial demo phase (v0.1) and is currently focusing on **Administration & Self-Service (v0.2)**.
+
+- **Completed:** Core microservices (IAM, Gateway, Billing), basic UI auth flows, tenant lifecycle, and Stripe integration.
+- **In Progress:** Platform administration UI, cross-tenant management tools, and tenant billing self-service.
+
+For a detailed breakdown of what's built and what's next, see the [Implemented Features Review](docs/roadmap/06-implemented-features.md) and [Roadmap](docs/roadmap/vision.md).
 
 ---
 
 ## Services
 
-- **IAM** — registration, JWT auth, account recovery, organizations, RBAC, invitations
-- **API Gateway** — JWT validation, tenant resolution, request routing
-- **Billing** — Stripe wrapper integration; subscriptions and invoices managed on Stripe's side
-- **UI** — React + Mantine UI app covering auth flows, org management, and billing portal
+- **IAM** (`foundation-iam-service`) — registration, JWT auth, account recovery, organizations, RBAC, invitations
+- **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing
+- **Billing** (`foundation-billing-service`) — Stripe wrapper integration; subscriptions and invoices managed on Stripe's side
+- **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, and billing
+- **Platform Admin** (`foundation-ui-platform-admin`) — Operator interface for global user, organization, and plan management
+- **Landing Kit** (`foundation-ui-saas-landing-kit`) — Production-ready landing page template with integrated auth redirects
 
 ---
 
