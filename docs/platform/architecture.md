@@ -290,7 +290,7 @@ plans
 - Multi-tenant: shows organization switcher and management features
 - Single-tenant: hides tenancy concepts, focuses on workspace features
 
-**Tech Stack:** React 18, Mantine UI, TypeScript, Vite (build tool), Nginx (static hosting)
+**Tech Stack:** React 19, Mantine UI, TypeScript, Vite (build tool), Nginx (static hosting)
 
 ---
 

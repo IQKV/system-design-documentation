@@ -148,7 +148,7 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 ### Technology Stack
 
 - **Backend**: Java 25, Spring Boot 4.0, MyBatis, PostgreSQL 17
-- **Frontend**: React 18, TypeScript, Mantine UI, Vite
+- **Frontend**: React 19, TypeScript, Mantine UI, Vite
 - **Infrastructure**: Kubernetes, Helm, Docker, RabbitMQ
 - **Security**: JJWT (RS256), Spring Security OAuth2
 - **Monitoring**: Micrometer, Prometheus, structured logging
