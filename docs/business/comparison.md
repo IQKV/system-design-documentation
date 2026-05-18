@@ -42,20 +42,37 @@ The original six competitors plus notable additions discovered since the initial
 
 ### Enterprise tier
 
-| Capability         | [Entando](https://entando.com) | This platform              |
-| ------------------ | ------------------------------ | -------------------------- |
-| Price              | Enterprise                     | Free / OSS                 |
-| License            | Proprietary                    | Apache-2.0                 |
-| Stack              | Java / Angular                 | Java 25 + React            |
-| Multi-tenancy      | Yes                            | Schema-per-tenant (hybrid) |
-| Data isolation     | Logical                        | Schema-level               |
-| Infrastructure     | K8s (opinionated)              | K8s + Helm                 |
-| Microservices      | Micro-frontend                 | IAM + Gateway + Billing    |
-| Async provisioning | No                             | RabbitMQ                   |
-| API Gateway        | No                             | Yes                        |
-| Billing            | No                             | Stripe Connect             |
-| Self-hosted        | Partial                        | Yes                        |
-| Vendor lock-in     | Entando Cloud                  | None                       |
+| Capability         | [Liferay DXP](https://liferay.com) | [dotCMS](https://dotcms.com) | [Entando](https://entando.com) | This platform              |
+| ------------------ | ---------------------------------- | ---------------------------- | ------------------------------ | -------------------------- |
+| Price              | Enterprise                         | Enterprise / Free            | Enterprise                     | Free / OSS                 |
+| License            | Proprietary / LGPL                 | Proprietary / GPL            | Proprietary                    | Apache-2.0                 |
+| Stack              | Java / OSGi                        | Java / OSGi                  | Java / Angular                 | Java 25 + React            |
+| Multi-tenancy      | Virtual Instances                  | Sites / Hosts                | Yes                            | Schema-per-tenant (hybrid) |
+| Data isolation     | Logical / DB-level                 | Logical                      | Logical                        | Schema-level               |
+| Infrastructure     | K8s / Cloud                        | K8s / Cloud                  | K8s (opinionated)              | K8s + Helm                 |
+| Microservices      | OSGi Bundles                       | OSGi Bundles                 | Micro-frontend                 | IAM + Gateway + Billing    |
+| Async provisioning | Yes                                | Yes                          | No                             | RabbitMQ                   |
+| API Gateway        | No (uses reverse proxy)            | No                           | No                             | Yes                        |
+| Billing            | No                                 | No                           | No                             | Stripe Connect             |
+| Self-hosted        | Yes                                | Yes                          | Partial                        | Yes                        |
+| Vendor lock-in     | High (Liferay Cloud)               | Medium                       | Entando Cloud                  | None                       |
+
+### Cloud-Native & Platform Engineering Tier
+
+| Capability         | [Kubermatic](https://kubermatic.com) | [Platform Stack (Argo/Crossplane/Backstage)](https://backstage.io) | This platform              |
+| ------------------ | ------------------------------------ | ------------------------------------------------------------------ | -------------------------- |
+| Price              | Enterprise / Free                    | Free / OSS                                                         | Free / OSS                 |
+| License            | Apache-2.0                           | Apache-2.0                                                         | Apache-2.0                 |
+| Focus              | Multi-cluster K8s mgmt               | Internal Developer Portal (IDP)                                    | SaaS Product Foundation    |
+| Multi-tenancy      | Project/Cluster isolation            | Namespace / Resource isolation                                     | Schema-per-tenant (hybrid) |
+| Data isolation     | Infrastructure-level                 | Infrastructure-level                                               | Schema-level               |
+| Infrastructure     | K8s Operator-driven                  | GitOps (Argo) + IaC (Crossplane)                                   | K8s + Helm                 |
+| Microservices      | No                                   | No (Infrastructure only)                                           | IAM + Gateway + Billing    |
+| Async provisioning | Yes                                  | Yes (via ArgoCD/Crossplane)                                        | RabbitMQ                   |
+| API Gateway        | No                                   | No                                                                 | Yes                        |
+| Billing            | No                                   | No                                                                 | Stripe Connect             |
+| Self-hosted        | Yes                                  | Yes                                                                | Yes                        |
+| Vendor lock-in     | None                                 | Low (Cloud provider via Crossplane)                                | None                       |
 
 ---
 
@@ -80,6 +97,14 @@ The original six competitors plus notable additions discovered since the initial
 **[BlazorPlate](https://blazorplate.net)** — .NET 10 + Blazor WASM, ~$499. Supports dedicated DB per tenant, shared DB, or single-tenant mode — switchable without code changes. Clean Architecture, CQRS via MediatR, real-time notifications. No K8s, no async provisioning, no API Gateway. Interesting for .NET teams that need isolation options, but proprietary and no infrastructure story.
 
 **[Entando](https://entando.com)** — Enterprise micro-frontend platform on K8s. Solves composable portal composition, not SaaS tenant provisioning. Java-based, vendor-managed, high TCO.
+
+**[Liferay DXP](https://liferay.com)** — The "heavyweight" champion of Java portals. Highly flexible through OSGi, supports complex multi-tenancy (Virtual Instances). However, it is a massive monolith with high complexity and licensing costs. IQKV provides the multi-tenancy power without the OSGi/DXP overhead.
+
+**[dotCMS](https://dotcms.com)** — Java-based hybrid CMS with multi-site/multi-tenant support. Like Liferay, it's focused on content delivery rather than SaaS application plumbing. Great for websites, overkill for products.
+
+**[Kubermatic Kubernetes Platform (KKP)](https://kubermatic.com)** — Focuses on the "Infrastructure as a Product" layer. Excellent for managing multi-cluster/multi-tenant K8s, but stops at the cluster/namespace level. IQKV picks up where KKP leaves off by providing the _application_ layer tenancy (IAM, Billing).
+
+**[ArgoCD + Crossplane + Backstage](https://backstage.io)** — The modern "Platform Engineering" gold standard. This stack creates an Internal Developer Platform (IDP). Crossplane manages cloud resources, ArgoCD handles GitOps, and Backstage provides the UI. While IQKV uses some of these patterns (K8s, async events), its goal is to be the _product_ foundation for external customers, whereas this stack is for _internal_ developer enablement.
 
 ---
 
