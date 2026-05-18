@@ -42,20 +42,20 @@ The original six competitors plus notable additions discovered since the initial
 
 ### Enterprise tier
 
-| Capability         | [Liferay DXP](https://liferay.com) | [dotCMS](https://dotcms.com) | [Entando](https://entando.com) | This platform              |
-| ------------------ | ---------------------------------- | ---------------------------- | ------------------------------ | -------------------------- |
-| Price              | Enterprise                         | Enterprise / Free            | Enterprise                     | Free / OSS                 |
-| License            | Proprietary / LGPL                 | Proprietary / GPL            | Proprietary                    | Apache-2.0                 |
-| Stack              | Java / OSGi                        | Java / OSGi                  | Java / Angular                 | Java 25 + React            |
-| Multi-tenancy      | Virtual Instances                  | Sites / Hosts                | Yes                            | Schema-per-tenant (hybrid) |
-| Data isolation     | Logical / DB-level                 | Logical                      | Logical                        | Schema-level               |
-| Infrastructure     | K8s / Cloud                        | K8s / Cloud                  | K8s (opinionated)              | K8s + Helm                 |
-| Microservices      | OSGi Bundles                       | OSGi Bundles                 | Micro-frontend                 | IAM + Gateway + Billing    |
-| Async provisioning | Yes                                | Yes                          | No                             | RabbitMQ                   |
-| API Gateway        | No (uses reverse proxy)            | No                           | No                             | Yes                        |
-| Billing            | No                                 | No                           | No                             | Stripe Connect             |
-| Self-hosted        | Yes                                | Yes                          | Partial                        | Yes                        |
-| Vendor lock-in     | High (Liferay Cloud)               | Medium                       | Entando Cloud                  | None                       |
+| Capability         | [Liferay DXP](https://liferay.com) | [dotCMS](https://dotcms.com) | [Entando](https://entando.com) | [Helical Insight](https://www.helicalinsight.com) | [Spree Commerce](https://spreecommerce.org) | This platform              |
+| ------------------ | ---------------------------------- | ---------------------------- | ------------------------------ | ------------------------------------------------- | ------------------------------------------- | -------------------------- |
+| Price              | Enterprise                         | Enterprise / Free            | Enterprise                     | Enterprise / Community                            | Free / OSS                                  | Free / OSS                 |
+| License            | Proprietary / LGPL                 | Proprietary / GPL            | Proprietary                    | Proprietary / Apache-2.0                          | BSD-3-Clause                                | Apache-2.0                 |
+| Stack              | Java / OSGi                        | Java / OSGi                  | Java / Angular                 | Java / React                                      | Ruby on Rails / React                       | Java 25 + React            |
+| Multi-tenancy      | Virtual Instances                  | Sites / Hosts                | Yes                            | Organization-level                                | Storefront-based                            | Schema-per-tenant (hybrid) |
+| Data isolation     | Logical / DB-level                 | Logical                      | Logical                        | Logical / Schema-level                            | Logical                                     | Schema-level               |
+| Infrastructure     | K8s / Cloud                        | K8s / Cloud                  | K8s (opinionated)              | VM / Docker                                       | K8s / Cloud                                 | K8s + Helm                 |
+| Microservices      | OSGi Bundles                       | OSGi Bundles                 | Micro-frontend                 | No (Monolithic)                                   | Headless API                                | IAM + Gateway + Billing    |
+| Async provisioning | Yes                                | Yes                          | No                             | No                                                | No                                          | RabbitMQ                   |
+| API Gateway        | No (uses reverse proxy)            | No                           | No                             | No                                                | No                                          | Yes                        |
+| Billing            | No                                 | No                           | No                             | No                                                | Yes (Payment Gateways)                      | Stripe Wrapper             |
+| Self-hosted        | Yes                                | Yes                          | Partial                        | Yes                                               | Yes                                         | Yes                        |
+| Vendor lock-in     | High (Liferay Cloud)               | Medium                       | Entando Cloud                  | Low                                               | Low                                         | None                       |
 
 ### Cloud-Native & Platform Engineering Tier
 
@@ -101,6 +101,10 @@ The original six competitors plus notable additions discovered since the initial
 **[Liferay DXP](https://liferay.com)** — The "heavyweight" champion of Java portals. Highly flexible through OSGi, supports complex multi-tenancy (Virtual Instances). However, it is a massive monolith with high complexity and licensing costs. IQKV provides the multi-tenancy power without the OSGi/DXP overhead.
 
 **[dotCMS](https://dotcms.com)** — Java-based hybrid CMS with multi-site/multi-tenant support. Like Liferay, it's focused on content delivery rather than SaaS application plumbing. Great for websites, overkill for products.
+
+**[Helical Insight](https://www.helicalinsight.com)** — Java-based Open Source Business Intelligence (BI) platform. Offers organization-level multi-tenancy and support for schema-level isolation. While it solves the analytics layer, it doesn't provide the SaaS application foundation (IAM/Gateway/Billing) that this platform offers.
+
+**[Spree Commerce](https://spreecommerce.org)** — Ruby on Rails headless e-commerce platform. While it has multi-store/multi-tenant capabilities, it is highly specialized for commerce. This platform is a more general-purpose foundation for any B2B SaaS product.
 
 **[Kubermatic Kubernetes Platform (KKP)](https://kubermatic.com)** — Focuses on the "Infrastructure as a Product" layer. Excellent for managing multi-cluster/multi-tenant K8s, but stops at the cluster/namespace level. IQKV picks up where KKP leaves off by providing the _application_ layer tenancy (IAM, Billing).
 
