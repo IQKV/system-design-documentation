@@ -169,11 +169,9 @@ The `foundation-audit-service` follows the platform's standard Tactical DDD layo
     - `persistence/` — MyBatis Mapper interfaces and XMLs
     - `messaging/` — RabbitMQ Consumers (binding to `iqkv.events`)
   - `audit/` — Core Bounded Context
-    - `domain/` — `AuditRecord` entity, `AuditStore` port
-    - `application/` — `AuditLogService` (orchestration), `AuditSearchQuery`
-    - `adapter/`
-      - `in/rest/` — `AuditSearchController` (for Admin UI)
-      - `out/persistence/` — MyBatis implementation of `AuditStore`
+    - `AuditRecord` entity, `AuditStore` port
+    - `AuditLogService` (orchestration), `AuditSearchQuery`
+    - `AuditSearchRestResource` (for Admin UI)
 
 #### `foundation-audit-model` (Shared Library)
 
@@ -252,6 +250,32 @@ iqkv:
 - Advanced search/filtering API.
 - Elasticsearch provider for high-volume logs.
 - Automated retention and archiving.
+
+### Detailed Implementation Tasks
+
+#### 1. Shared Library Development
+
+- [ ] **`foundation-audit-model`**: Initialize with `AuditEvent`, `AuditActor` records and standard enums (`ActivitySeverity`, `ActivityAction`, `EntityType`).
+- [ ] **Model Enforcement**: Ensure all services strictly leverage `foundation-audit-model` for any audit-related data structures to prevent schema drift.
+- [ ] **`foundation-audit-spi`**: Define the `AuditProvider` interface for decoupled storage implementations.
+- [ ] **Common Logic**: Implement `AuditContextHolder` and `AuditContextInterceptor` for cross-service context propagation.
+
+#### 2. Gateway Service Enhancements
+
+- [ ] **Context Extraction**: Update `foundation-gateway-service` filters to capture `X-Audit-IP` and `X-Audit-UA`.
+- [ ] **Header Propagation**: Ensure technical context headers are forwarded to all downstream services.
+
+#### 3. Domain Service Integration
+
+- [ ] **Event Enrichment**: Update the shared `MessagingService` to automatically decorate outbound events with `AuditContext` data.
+- [ ] **High-Sensitivity Auditing**: Encourage services to publish a standard `AuditEvent` (from the shared model) in addition to their domain-specific events for high-sensitivity actions (e.g., security settings changes, data exports).
+
+#### 4. `foundation-audit-service` Implementation
+
+- [ ] **Project Setup**: Bootstrap the service using the platform's standard Tactical DDD layout.
+- [ ] **Event Consumption**: Implement RabbitMQ Topic listeners for `iqkv.events` (wildcard bindings for `user.#`, `tenant.#`, etc.).
+- [ ] **Persistence**: Set up MyBatis with PostgreSQL, including JSONB type handlers for dynamic event details.
+- [ ] **Admin API**: Create secured REST endpoints for audit log searching and filtering (restricted to `PLATFORM_ADMIN`).
 
 ---
 
