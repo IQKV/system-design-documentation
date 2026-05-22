@@ -16,102 +16,150 @@ The key principle is **"No Vendor Lock-in"** — consistent with the overall phi
 
 ## Proposed Architecture
 
-### 1. Two New Repositories
+### 1. New Repositories & Modules
 
 - **`foundation-audit-spi`** — Service Provider Interface (contracts)
 - **`foundation-audit-model`** — Shared neutral data models, events, and enums
+- **`foundation-audit-starter`** — Spring Boot Starter for active auditing (optional)
+- **`foundation-audit-service`** — Centralized microservice for event consumption and storage
 
 ### 2. High-Level Design
 
 ```mermaid
 graph TD
-    IAM[foundation-iam-service] -->|publishes| AuditEvent
-    Billing[foundation-billing-service] -->|publishes| AuditEvent
-    Other[Future Services] -->|publishes| AuditEvent
+    subgraph "Domain Services"
+        IAM[foundation-iam-service]
+        Billing[foundation-billing-service]
+    end
+
+    subgraph "Event Bus"
+        EB[RabbitMQ / iqkv.events]
+    end
+
+    subgraph "Centralized Audit"
+        AS[foundation-audit-service]
+        Store[(Audit Store)]
+    end
+
+    IAM -->|publishes BusinessEvent| EB
+    Billing -->|publishes BusinessEvent| EB
     
-    AuditEvent --> AuditEventPublisher
-    AuditEventPublisher --> AuditLogService
+    EB -->|consumes| AS
+    AS --> Store
     
-    AuditLogService --> DefaultProvider[Default Implementation]
-    AuditLogService --> CustomProvider1[Custom Provider 1]
-    AuditLogService --> CustomProvider2[Custom Provider 2]
-    
-    DefaultProvider --> Database[(Audit Database)]
-    CustomProvider1 --> Elasticsearch
-    CustomProvider2 --> ExternalSIEM
+    subgraph "Active Auditing (Optional)"
+        Starter[foundation-audit-starter]
+        IAM -.-> Starter
+        Starter -.->|publishes AuditEvent| EB
+    end
 ```
 
-### 3. Package Structure
+### 3. The "Service-Centric" Approach (Recommended)
+
+Creating a dedicated `foundation-audit-service` to "grab" RabbitMQ events is the most lightweight and non-intrusive way to implement auditing across the platform.
+
+#### How it works:
+1. **Passive Observation**: The `foundation-audit-service` acts as a platform-wide observer. It binds its own queues to the existing `iqkv.events` exchange.
+2. **Event Transformation**: When it receives a `UserEvent` or `InvoiceEvent`, it maps the domain-specific data into a generic `AuditRecord`.
+3. **Storage Isolation**: The audit service maintains its own database (PostgreSQL by default, potentially Elasticsearch later), ensuring that audit logs never compete for resources with business transactions.
+
+#### Comparison: Starter vs. Service
+
+| Feature | Audit Starter (AOP) | Audit Service (Event-Driven) |
+| :--- | :--- | :--- |
+| **Intrusiveness** | Low (requires annotation/dependency) | **Zero** (no changes to domain services) |
+| **Visibility** | Captures internal method calls | Captures public business events |
+| **Context** | Full technical context (IP, Agent) | Limited to what's in the event payload |
+| **Complexity** | Distributed across services | Centralized in one service |
+
+### 4. Hybrid Strategy
+
+To achieve a complete audit trail, we will use a hybrid approach:
+
+1. **Primary (Audit Service)**: Consumes existing business events for 80% of audit needs (signups, payments, settings changes).
+2. **Secondary (Audit Starter)**: Used only for high-sensitivity actions that don't trigger business events (e.g., "Admin viewed customer credit card last 4 digits" or "Exported user list").
+
+### 4. Enriched Audit Event Model
+
+The `AuditEvent` in `foundation-audit-model` should follow a structured format:
+
+```java
+public record AuditEvent(
+    UUID id,
+    String action,          // e.g., USER_LOGIN, INVOICE_PAID
+    String entityType,      // e.g., USER, TENANT, INVOICE
+    String entityId,
+    Actor actor,            // userId, email, ipAddress, userAgent
+    String tenantKey,
+    ActivitySeverity severity, // INFO, WARN, CRITICAL
+    Map<String, Object> details, // Flexible payload
+    Instant occurredAt,
+    String traceId
+) {}
+```
+
+### 5. Messaging Pipeline (RabbitMQ)
+
+- **Exchange**: `iqkv.audit.events` (Topic)
+- **Routing Key**: `audit.[service-name].[action]`
+- **Reliability**: Use the Outbox Pattern in microservices to ensure `AuditEvent` is published even if RabbitMQ is temporarily down.
+
+### 6. Package Structure
 
 #### `foundation-audit-spi`
-
 - `com.iqkv.foundation.audit.spi`
-  - `AuditLogService.java` (main interface)
-  - `AuditEventPublisher.java`
-  - `AuditProvider.java` (marker)
-  - `ActivityLogRepository.java` (optional)
+  - `AuditStore.java` (Interface for persistence)
+  - `AuditLogService.java` (High-level API)
+  - `AuditProvider.java`
 
 #### `foundation-audit-model`
-
 - `com.iqkv.foundation.audit.model`
-  - `event/` — Domain events
-  - `record/` — Persistent log entries
-  - `enum/` — ActivityAction, EntityType, etc.
-  - `actor/`, `context/`, `dto/`
+  - `event/AuditEvent.java`
+  - `record/AuditRecord.java`
+  - `enum/Action.java`, `enum/Severity.java`
 
-### 4. Core Interfaces
+#### `foundation-audit-service`
+- `com.iqkv.foundation.audit.service`
+  - `consumer/BusinessEventConsumer.java` (Consumes IAM/Billing events)
+  - `api/AuditSearchController.java` (For Admin UI)
+  - `repository/AuditRecordRepository.java`
 
-**AuditLogService** (in SPI)
-```java
-public interface AuditLogService {
-    void log(AuditEvent event);
-    void log(String action, String entityType, String entityId, Object details);
-    
-    Page<ActivityLogEntry> search(ActivityLogFilter filter);
-    void purgeOldLogs(Duration olderThan);
-}
-```
-
-**AuditEventPublisher** (used by IAM, Billing, etc.)
-```java
-public interface AuditEventPublisher {
-    void publish(AuditEvent event);
-}
-```
-
-### 5. Configuration
+### 7. Configuration
 
 ```yaml
 iqkv:
   audit:
-    enabled: true
-    provider: default          # default | elasticsearch | custom | none
-    retention-days: 365
+    service:
+      enabled: true
+      storage-type: postgres     # postgres | elasticsearch
+    starter:
+      enabled: false             # Only enable if AOP auditing is needed
 ```
 
 ### Benefits
 
-- **Flexibility**: Users can replace the audit backend without changing business logic.
-- **Consistency**: All services use the same event vocabulary.
-- **Extensibility**: Easy to add new providers.
-- **Performance**: Async event publishing (RabbitMQ).
-- **Future-proof**: Ready for compliance (GDPR, SOC2, etc.).
+- **Zero-Touch for Core Logic**: No code changes needed in IAM or Billing for basic auditing.
+- **Decoupled**: Services don't care how or where audit logs are stored.
+- **Scalable**: Audit processing doesn't steal CPU/Memory from checkout or login flows.
+- **Compliance Ready**: Centralized place to implement GDPR "right to be forgotten" or retention policies.
 
 ### Implementation Roadmap
 
 **Phase 1 (v0.3)**
-- Create `foundation-audit-spi` and `foundation-audit-model` external libs
-- Implement default provider (MyBatis + PostgreSQL)
-- Integrate into IAM service (key actions)
-- Integrate into Billing service (key actions)
+- Define `foundation-audit-model` (Neutral event structures).
+- Create `foundation-audit-service` (The central consumer).
+- Implement IAM event listeners in Audit Service (Logins, Signup).
+- Basic PostgreSQL storage.
 
 **Phase 2**
-- Add RabbitMQ event consumption
-- Implement Activity Log tab in Platform Admin UI
-- Add more providers (example: Elasticsearch)
+- Implement Billing event listeners in Audit Service (Payments, Subscriptions).
+- Create `foundation-audit-starter` for `@Auditable` support (Active Auditing).
+- Add "Audit Log" tab to Platform Admin UI.
 
 **Phase 3**
-- Advanced features (export, retention policies, alerts)
+- Advanced search/filtering API.
+- Elasticsearch provider for high-volume logs.
+- Automated retention and archiving.
 
 ---
 
