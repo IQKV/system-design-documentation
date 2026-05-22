@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document proposes the design for a flexible, extensible audit logging system for the IQKV platform. 
+This document proposes the design for a flexible, extensible audit logging system for the IQKV platform.
 
 The key principle is **"No Vendor Lock-in"** — consistent with the overall philosophy of the platform (inspired by Magento/Oro flexibility). The audit system should allow different implementations while providing a solid default.
 
@@ -43,10 +43,10 @@ graph TD
 
     IAM -->|publishes BusinessEvent| EB
     Billing -->|publishes BusinessEvent| EB
-    
+
     EB -->|consumes| AS
     AS --> Store
-    
+
     subgraph "Active Auditing (Optional)"
         Starter[foundation-audit-starter]
         IAM -.-> Starter
@@ -59,18 +59,19 @@ graph TD
 Creating a dedicated `foundation-audit-service` to "grab" RabbitMQ events is the most lightweight and non-intrusive way to implement auditing across the platform.
 
 #### How it works:
+
 1. **Passive Observation**: The `foundation-audit-service` acts as a platform-wide observer. It binds its own queues to the existing `iqkv.events` exchange.
 2. **Event Transformation**: When it receives a `UserEvent` or `InvoiceEvent`, it maps the domain-specific data into a generic `AuditRecord`.
 3. **Storage Isolation**: The audit service maintains its own database (PostgreSQL by default, potentially Elasticsearch later), ensuring that audit logs never compete for resources with business transactions.
 
 #### Comparison: Starter vs. Service
 
-| Feature | Audit Starter (AOP) | Audit Service (Event-Driven) |
-| :--- | :--- | :--- |
+| Feature           | Audit Starter (AOP)                  | Audit Service (Event-Driven)             |
+| :---------------- | :----------------------------------- | :--------------------------------------- |
 | **Intrusiveness** | Low (requires annotation/dependency) | **Zero** (no changes to domain services) |
-| **Visibility** | Captures internal method calls | Captures public business events |
-| **Context** | Full technical context (IP, Agent) | Limited to what's in the event payload |
-| **Complexity** | Distributed across services | Centralized in one service |
+| **Visibility**    | Captures internal method calls       | Captures public business events          |
+| **Context**       | Full technical context (IP, Agent)   | Limited to what's in the event payload   |
+| **Complexity**    | Distributed across services          | Centralized in one service               |
 
 ### 4. Hybrid Strategy
 
@@ -107,18 +108,21 @@ public record AuditEvent(
 ### 6. Package Structure
 
 #### `foundation-audit-spi`
+
 - `com.iqkv.foundation.audit.spi`
   - `AuditStore.java` (Interface for persistence)
   - `AuditLogService.java` (High-level API)
   - `AuditProvider.java`
 
 #### `foundation-audit-model`
+
 - `com.iqkv.foundation.audit.model`
   - `event/AuditEvent.java`
   - `record/AuditRecord.java`
   - `enum/Action.java`, `enum/Severity.java`
 
 #### `foundation-audit-service`
+
 - `com.iqkv.foundation.audit.service`
   - `consumer/BusinessEventConsumer.java` (Consumes IAM/Billing events)
   - `api/AuditSearchController.java` (For Admin UI)
@@ -131,9 +135,9 @@ iqkv:
   audit:
     service:
       enabled: true
-      storage-type: postgres     # postgres | elasticsearch
+      storage-type: postgres # postgres | elasticsearch
     starter:
-      enabled: false             # Only enable if AOP auditing is needed
+      enabled: false # Only enable if AOP auditing is needed
 ```
 
 ### Benefits
@@ -146,17 +150,20 @@ iqkv:
 ### Implementation Roadmap
 
 **Phase 1 (v0.3)**
+
 - Define `foundation-audit-model` (Neutral event structures).
 - Create `foundation-audit-service` (The central consumer).
 - Implement IAM event listeners in Audit Service (Logins, Signup).
 - Basic PostgreSQL storage.
 
 **Phase 2**
+
 - Implement Billing event listeners in Audit Service (Payments, Subscriptions).
 - Create `foundation-audit-starter` for `@Auditable` support (Active Auditing).
 - Add "Audit Log" tab to Platform Admin UI.
 
 **Phase 3**
+
 - Advanced search/filtering API.
 - Elasticsearch provider for high-volume logs.
 - Automated retention and archiving.
@@ -191,15 +198,16 @@ com.iqkv.foundation.audit
 ├── provider/                     # Default Implementation
 │   ├── internal/
 │   │   ├── DefaultAuditLogService.java
-│   │   └── InMemoryAuditRepository.java   # 
+│   │   └── InMemoryAuditRepository.java   #
 │   └── config/
 │       └── DefaultAuditAutoConfiguration.java
 │
 └── dto/                          # API transfer objects
 ```
+
 ---
+
 **Status**: Proposal  
 **Author**: [Your Name]  
 **Date**: May 22, 2026  
 **Version**: 1.0
-
