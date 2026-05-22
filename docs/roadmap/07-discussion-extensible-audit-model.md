@@ -80,9 +80,51 @@ To achieve a complete audit trail, we will use a hybrid approach:
 1. **Primary (Audit Service)**: Consumes existing business events for 80% of audit needs (signups, payments, settings changes).
 2. **Secondary (Audit Starter)**: Used only for high-sensitivity actions that don't trigger business events (e.g., "Admin viewed customer credit card last 4 digits" or "Exported user list").
 
-### 4. Enriched Audit Event Model
+### 5. Context Capture Strategy: Gateway-First Approach
 
-The `AuditEvent` in `foundation-audit-model` should follow a structured format:
+The `foundation-gateway-service` serves as the single entry point for all client requests. This makes it the ideal place to capture and normalize technical context before it reaches downstream services.
+
+#### Gateway Responsibilities:
+
+1.  **Context Extraction**: The gateway extracts the client's IP address (`X-Forwarded-For`), User-Agent, and any existing Correlation ID.
+2.  **Header Normalization**: It injects a set of standardized headers into the downstream request:
+    - `X-Correlation-ID`: Trace ID for cross-service tracking.
+    - `X-Audit-IP`: The original client IP.
+    - `X-Audit-UA`: The client's User Agent.
+    - `X-Audit-Source`: Identifies the entry point (e.g., `web-gateway`, `mobile-gateway`).
+3.  **JWT Propagation**: As already implemented in `JwtContextPropagationFilter`, it passes user and tenant identity via `X-User-ID` and `X-Tenant-ID`.
+
+### 6. Event Enrichment Flow (Downstream Services)
+
+By moving context capture to the Gateway, downstream services (like `foundation-iam-service`) remain lightweight and focused on business logic.
+
+#### Enrichment Flow:
+
+1.  **Request Interception**: A common `AuditContextInterceptor` in the microservice (provided via a shared library or starter) reads the `X-Audit-*` headers.
+2.  **Context Storage**: These values are stored in a `ThreadLocal` `AuditContextHolder`.
+3.  **Automatic Enrichment**: When a service publishes a domain event (e.g., via `MessagingService`), it automatically merges the data from `AuditContextHolder` into the event payload.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant IAM
+    participant RabbitMQ
+    participant AuditService
+
+    Client->>Gateway: POST /api/v1/users (Login)
+    Note over Gateway: Captures IP, UA, CorrelationID
+    Gateway->>IAM: POST /api/v1/users (with X-Audit headers)
+    Note over IAM: Interceptor populates AuditContextHolder
+    IAM->>IAM: Process Business Logic
+    IAM->>RabbitMQ: Publish UserLoggedInEvent (Enriched with AuditContext)
+    RabbitMQ->>AuditService: Consume Event
+    AuditService->>Store: Persist AuditRecord
+```
+
+### 7. Enriched Audit Event Model
+
+The `AuditEvent` in `foundation-audit-model` should follow a structured format that supports both domain data and enriched context:
 
 ```java
 public record AuditEvent(
@@ -90,45 +132,88 @@ public record AuditEvent(
     String action,          // e.g., USER_LOGIN, INVOICE_PAID
     String entityType,      // e.g., USER, TENANT, INVOICE
     String entityId,
-    Actor actor,            // userId, email, ipAddress, userAgent
+    AuditActor actor,       // Enriched: userId, email, ipAddress, userAgent
     String tenantKey,
-    ActivitySeverity severity, // INFO, WARN, CRITICAL
-    Map<String, Object> details, // Flexible payload
+    ActivitySeverity severity,
+    Map<String, Object> details,
     Instant occurredAt,
     String traceId
 ) {}
+
+public record AuditActor(
+    String id,             // Subject ID (user id)
+    String type,           // USER, SYSTEM, ANONYMOUS
+    String email,
+    String ipAddress,
+    String userAgent,
+    String impersonatorId  // If an admin is acting on behalf of a user
+) {}
 ```
 
-### 5. Messaging Pipeline (RabbitMQ)
+### 8. Messaging Pipeline (RabbitMQ)
 
 - **Exchange**: `iqkv.audit.events` (Topic)
 - **Routing Key**: `audit.[service-name].[action]`
 - **Reliability**: Use the Outbox Pattern in microservices to ensure `AuditEvent` is published even if RabbitMQ is temporarily down.
 
-### 6. Package Structure
+### 9. Package Structure (Tactical DDD)
 
-#### `foundation-audit-spi`
-
-- `com.iqkv.foundation.audit.spi`
-  - `AuditStore.java` (Interface for persistence)
-  - `AuditLogService.java` (High-level API)
-  - `AuditProvider.java`
-
-#### `foundation-audit-model`
-
-- `com.iqkv.foundation.audit.model`
-  - `event/AuditEvent.java`
-  - `record/AuditRecord.java`
-  - `enum/Action.java`, `enum/Severity.java`
+The `foundation-audit-service` follows the platform's standard Tactical DDD layout, ensuring consistency with `foundation-iam-service` and other microservices.
 
 #### `foundation-audit-service`
 
-- `com.iqkv.foundation.audit.service`
-  - `consumer/BusinessEventConsumer.java` (Consumes IAM/Billing events)
-  - `api/AuditSearchController.java` (For Admin UI)
-  - `repository/AuditRecordRepository.java`
+- `com.iqkv.foundation.auditservice`
+  - `shared/` — Shared kernel (exceptions, common utilities)
+  - `infrastructure/` — Technical concerns
+    - `config/` — RabbitMQ, Security, MyBatis configurations
+    - `persistence/` — MyBatis Mapper interfaces and XMLs
+    - `messaging/` — RabbitMQ Consumers (binding to `iqkv.events`)
+  - `audit/` — Core Bounded Context
+    - `domain/` — `AuditRecord` entity, `AuditStore` port
+    - `application/` — `AuditLogService` (orchestration), `AuditSearchQuery`
+    - `adapter/`
+      - `in/rest/` — `AuditSearchController` (for Admin UI)
+      - `out/persistence/` — MyBatis implementation of `AuditStore`
 
-### 7. Configuration
+#### `foundation-audit-model` (Shared Library)
+
+- `com.iqkv.foundation.audit.model`
+  - `event/` — `AuditEvent.java`, `AuditActor.java`
+  - `enums/` — `ActivitySeverity.java`, `ActivityAction.java`
+
+#### `foundation-audit-spi` (Contract Library)
+
+- `com.iqkv.foundation.audit.spi`
+  - `AuditProvider.java` — SPI for custom audit backends
+
+### 10. Technical Stack & Implementation Details
+
+The `foundation-audit-service` will leverage the core platform technologies to ensure high performance and maintainability.
+
+#### Technology Stack:
+
+- **Runtime**: Java 25
+- **Framework**: Spring Boot 4.x
+- **Persistence**: MyBatis with PostgreSQL (Liquibase for migrations)
+- **Messaging**: RabbitMQ (Spring AMQP)
+- **API Documentation**: SpringDoc OpenAPI 3
+- **Observability**: Micrometer + Prometheus
+
+#### Key Implementation Patterns:
+
+1.  **Passive Event Consumption**:
+    - The service uses `@RabbitListener` to bind to the `iqkv.events` exchange.
+    - It uses a **Topic Exchange** with wildcard routing keys (e.g., `user.#`, `tenant.#`) to capture relevant business events.
+2.  **MyBatis for Flexible Persistence**:
+    - Uses XML mappers for complex audit log queries (e.g., filtering by dynamic metadata).
+    - Implements custom `TypeHandler` for JSONB fields (storing the `details` map).
+3.  **Outbox Pattern Support**:
+    - While primarily a consumer, the service will support the Outbox Pattern if it needs to publish its own events (e.g., `AuditAlertTriggered`).
+4.  **Security**:
+    - Protected by Spring Security and OAuth2 Resource Server.
+    - Only users with `PLATFORM_ADMIN` authority can access the search API.
+
+### 11. Configuration
 
 ```yaml
 iqkv:
