@@ -39,6 +39,8 @@ Goal: Provide platform administrators with management tools and tenants with bil
 - [x] Organization management (list, view detail, edit metadata)
 - [x] Invitation management (cross-tenant list, propose, revoke)
 - [x] Plan catalog management (create, edit, deactivate plans)
+- [x] Audit service — centralized event-driven audit trail with `foundation-audit-spi`, JSONB storage, `PLATFORM_ADMIN`-restricted search API
+- [x] Audit context propagation — Gateway injects `X-Audit-IP` / `X-Audit-UA`; domain services enrich outbound events via shared `MessagingService`
 - [ ] Platform actions (ban/unban, unlock)
 - [ ] Subscription lifecycle management (change plan, cancel, apply discounts)
 - [ ] System health & background job monitoring
@@ -54,8 +56,9 @@ Goal: Provide platform administrators with management tools and tenants with bil
 
 - [x] Runtime configuration injection (override `VITE_*` without rebuild)
 - [x] Architecture enforcement (FSD boundary tests)
+- [x] SaaS landing kit (`foundation-ui-saas-landing-kit`) — Astro + React + Tailwind CSS + shadcn/ui; static pages, auth-aware nav, React islands
 - [ ] Additional locales compiled and available (RU, IT)
-- [ ] Global audit log
+- [ ] Global audit log (UI surface in Platform Admin)
 
 ---
 
@@ -63,9 +66,15 @@ Goal: Provide platform administrators with management tools and tenants with bil
 
 Items deferred until the core platform is fully manageable:
 
-- User impersonation (admin support tool)
+- Platform Admin UI — ban/unban, unlock, user impersonation (admin support tool)
+- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
+- Platform Admin UI — system health dashboard, background job monitoring, global audit log
+- Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
+- Tenant App — billing self-service (Stripe Customer Portal integration)
+- Tenant App — workspace settings (rename, delete) and member role editing
+- Tenant App — additional locales (RU, IT; infrastructure already in place)
 - SSO / SAML adapter (extension, not core)
-- Rate limiting (per-tenant and per-user)
+- Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain
 - Usage-based billing metering
 - Multi-region support
