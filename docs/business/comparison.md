@@ -19,7 +19,7 @@ The original six competitors plus notable additions discovered since the initial
 | API Gateway        | No                            | No                               | No                                     | No                                                            | No                                                   | Yes                        |
 | Billing            | Stripe wrapper                | Stripe wrapper                   | Stripe wrapper                         | Stripe wrapper                                                | Stripe wrapper                                       | Stripe Wrapper             |
 | SSO / SAML         | No                            | No                               | No                                     | No                                                            | Yes (Jackson)                                        | Planned (extension)        |
-| Audit logs         | No                            | No                               | No                                     | No                                                            | Yes                                                  | Via event bus              |
+| Audit logs         | No                            | No                               | No                                     | No                                                            | Yes                                                  | Centralized service        |
 | Self-hosted        | Partial                       | Partial                          | Partial                                | Yes                                                           | Yes                                                  | Yes                        |
 | Vendor lock-in     | Vercel/Supabase               | Supabase                         | Supabase                               | None                                                          | None                                                 | None                       |
 
@@ -126,7 +126,7 @@ The original six competitors plus notable additions discovered since the initial
 ## Honest gaps vs. the competition
 
 - **SSO / SAML** — BoxyHQ ships it out of the box. This platform has it on the roadmap as a paid extension. Teams that need SAML on day one should look at BoxyHQ or add Jackson themselves.
-- **Audit logs** — BoxyHQ includes structured audit logs. This platform emits events to RabbitMQ which can feed an audit log, but there is no built-in audit log UI or storage.
+- **Audit logs** — BoxyHQ includes structured audit logs. This platform now includes a centralized Audit Service (Phase 1) that consumes events and provides a search API. UI for the global audit log is currently in progress.
 - **Billing flexibility** — SaaSykit Tenancy supports Stripe, Paddle, and Lemon Squeezy. This platform is Stripe Connect only.
 - **Language** — The backend is Java 25. Teams on Node, Python, PHP, or .NET will need to treat the services as black-box infrastructure and build their product services in their own language on top of the event bus. That is by design, but it is a real onboarding cost.
 - **Maturity** — ShipFast, MakerKit, SaaS Pegasus, and SaaSykit all have paying customers, community, and battle-tested codebases. This platform is early-stage.

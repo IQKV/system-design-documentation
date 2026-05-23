@@ -56,7 +56,23 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 | Request logging       | Structured logs with correlation ID filter for request tracing                                                                                  | ✅     |
 | Observability         | Prometheus metrics, health checks, and actuator endpoints on separate management port                                                           | ✅     |
 | Swagger aggregation   | Aggregates API documentation from downstream services (IAM, Billing) in unified Swagger UI                                                      | ✅     |
+| Audit context         | `AuditContextFilter`: extracts `X-Audit-IP` and `X-Audit-UA` from client requests for downstream propagation                                    | ✅     |
 | Metering events       | Publishes `api.request.metered` per request                                                                                                     | 📋     |
+
+---
+
+## Audit
+
+Centralized, event-driven activity logging. Passive observation of platform events.
+
+| Capability          | Notes                                                                                                                                                              | Status |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| Event consumption   | RabbitMQ topic listeners for `user.#`, `tenant.#`, `billing.#`, etc.; automatic normalization into `AuditRecord`                                                   | ✅     |
+| Context propagation | Technical context (IP, User-Agent) captured at Gateway and propagated via headers; `foundation-audit-spi` provides `AuditContextHolder` and `AuditContextEnricher` | ✅     |
+| Search API          | Secured REST endpoints for paginated audit log search; filtered by tenant; restricted to `PLATFORM_ADMIN`                                                          | ✅     |
+| Extensible backends | `AuditProvider` SPI for pluggable storage (PostgreSQL implemented; Elasticsearch planned)                                                                          | ✅     |
+| Metadata support    | JSONB storage for dynamic event details; preserves full domain event payload for deep inspection                                                                   | ✅     |
+| Enrichment          | Domain services automatically decorate outbound events with audit context via shared `MessagingService`                                                            | ✅     |
 
 ---
 
@@ -129,7 +145,7 @@ Separate operator SPA (`PLATFORM_ADMIN` only). Platform-scoped JWT (`tenant_id` 
 | Session security      | Access token in memory; refresh in `sessionStorage`; silent refresh; inactivity sign-out        | ✅     |
 | i18n                  | Lingui with English catalog; locale switcher UI                                                 | ✅     |
 | Platform actions      | Ban/unban, unlock, impersonation                                                                | 📋     |
-| System administration | Health, jobs, global audit log                                                                  | 📋     |
+| System administration | Health, jobs, global audit log                                                                  | 🚧     |
 | Advanced metrics      | MRR/ARR, growth charts on dashboard                                                             | 📋     |
 
 ---

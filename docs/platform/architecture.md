@@ -29,18 +29,18 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
                                   │
                     ┌─────────────┴──────────────┐
                     ▼                            ▼
-                   IAM                        Billing
-              (Spring Boot)              (Spring Boot)
-                    │                            │
-                    ▼                            ▼
-             PostgreSQL (iam)            PostgreSQL (billing)
-            (Schema-per-tenant)          (Stripe integration)
+                   IAM                        Billing                     Audit
+              (Spring Boot)              (Spring Boot)               (Spring Boot)
+                    │                            │                           │
+                    ▼                            ▼                           ▼
+             PostgreSQL (iam)            PostgreSQL (billing)        PostgreSQL (audit)
+            (Schema-per-tenant)          (Stripe integration)        (Centralized logs)
 
-                    └─────────────┬──────────────┘
+                    └─────────────┬──────────────┴───────────────┘
                                   ▼
                               RabbitMQ
-                        (Async tenant provisioning
-                         & lifecycle events)
+                        (Async tenant provisioning,
+                         audit events & lifecycle)
 
   UI (React + Mantine) ──▶ API Gateway (all requests proxied)
                           (JWT validation & context propagation)
@@ -177,6 +177,31 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17, Stripe Java SDK, RabbitMQ, ShedLock 7.x, Thymeleaf (email templates)
 
+---
+
+### Audit Service
+
+**Centralized Event-Driven Auditing Service**
+
+**Core Responsibilities:**
+
+- Acts as a platform-wide observer, consuming events from RabbitMQ to maintain a complete audit trail
+- Normalizes disparate domain events (IAM, Billing, etc.) into a consistent `AuditRecord` format
+- Provides a centralized search API for platform administrators to review activity across all tenants
+- Implements a provider-friendly design, supporting multiple backends (PostgreSQL by default)
+- Captures technical context (IP address, User-Agent) propagated from the API Gateway
+
+**Implementation Details:**
+
+- **Passive Observation**: Binds to `iqkv.events` exchange with wildcard routing keys to capture relevant business events without modifying domain logic
+- **Context Propagation**: Leverages `foundation-audit-spi` to extract `X-Audit-*` headers injected by the Gateway
+- **Persistence**: Uses MyBatis with PostgreSQL JSONB support for storing dynamic event details and metadata
+- **Security**: REST endpoints are secured and restricted to users with `PLATFORM_ADMIN` authority
+
+**Events Consumed:** `user.#`, `tenant.#`, `subscription.#`, `invoice.#`, `audit.#`
+
+**Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17, RabbitMQ, Liquibase
+
 ### Billing Settings
 
 Each tenant (multi-tenant mode) or user (single-tenant mode) has billing settings — the single source of truth for Stripe customer metadata:
@@ -304,6 +329,7 @@ Each service owns its own PostgreSQL database with complete data isolation. No s
 | ------- | -------------------- | ------------------------------------------------------------- |
 | IAM     | `foundation_iam`     | Users, tenants, memberships, authorities, invitations, tokens |
 | Billing | `foundation_billing` | Stripe customer refs, subscription cache, webhook logs, plans |
+| Audit   | `foundation_audit`   | Centralized audit logs, technical context, activity records   |
 
 ### Schema-Per-Tenant Architecture (IAM Database)
 
@@ -369,6 +395,8 @@ Asynchronous communication and tenant provisioning via RabbitMQ with durable que
 | `iqkv.events` | `invoice.paid`                  | Extensions          | Payment success notifications           |
 | `iqkv.events` | `payment.failed`                | Extensions          | Payment failure handling                |
 | `iqkv.events` | `notification.billing.email`    | Notification Svc    | Async email delivery for billing events |
+| `iqkv.events` | `audit.*`                       | Audit Service       | Direct audit events from services       |
+| `iqkv.events` | `user.#`, `tenant.#`            | Audit Service       | Business events consumed for auditing   |
 
 **Event Processing Patterns:**
 
