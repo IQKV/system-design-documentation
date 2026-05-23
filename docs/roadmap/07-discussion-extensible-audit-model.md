@@ -313,10 +313,3 @@ com.iqkv.foundation.audit
 │
 └── dto/                          # API transfer objects
 ```
-
----
-
-**Status**: Proposal  
-**Author**: [Your Name]  
-**Date**: May 22, 2026  
-**Version**: 1.0
