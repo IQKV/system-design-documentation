@@ -12,9 +12,9 @@ The notification logic will be integrated into the `foundation-iam-service`, lev
 - **Persistent Storage**: Notifications stored in a `user_notifications` table within the IAM database.
 - **Real-time Delivery**: Instant updates via WebSockets (STOMP) proxied through the API Gateway.
 - **Internationalization (i18n)**:
-  - User-specific `locale` property (defaulting to `en`).
-  - System events translated via `MessageSource` during persistence.
-  - Multi-lingual site-wide announcements with fallback logic.
+  - User-specific `locale` property stored as a BCP 47 tag (e.g. `en-US`).
+  - System events translated via `MessageSource` at persistence time.
+  - Multi-lingual site-wide announcements with `en-US` mandatory fallback.
 - **Platform Admin Announcements**: Custom endpoints for admins to draft and broadcast messages in multiple languages.
 
 ## Proposed Architecture
@@ -26,7 +26,7 @@ The notification logic will be integrated into the `foundation-iam-service`, lev
   - Persistent storage for notifications.
   - WebSocket broker (STOMP).
   - Multi-lingual announcement drafts and fan-out logic.
-- **`foundation-gateway-service`**: Configured to proxy WebSocket traffic to IAM.
+- **`foundation-gateway-service`**: Proxies WebSocket traffic to IAM via the existing `iam-api` catch-all route (`/api/v1/iam/**`). No dedicated WebSocket route is required.
 - **`foundation-notification-model`**: Shared DTOs and events enriched with `targetUserId` and `locale`.
 
 ### 2. High-Level Design
@@ -53,7 +53,7 @@ graph TD
 
     IAM -->|publishes NotificationEvent| EB
     Billing -->|publishes NotificationEvent| EB
-    IAM -->|Platform Admin Announcement| EB
+    IAM -->|AnnouncementPublishEvent| EB
 
     EB -->|consumes| IAM
     IAM --> DB
@@ -66,7 +66,7 @@ graph TD
 
 #### User Locale
 
-The `users` table will be extended with a `locale` column (VARCHAR(20), default 'en-US'). This column stores BCP 47 language tags (e.g., `en-US`, `ru-RU`), ensuring full compatibility with Spring's `java.util.Locale`.
+The `users` table will be extended with a `locale` column (`VARCHAR(20)`, default `en-US`). This column stores BCP 47 language tags (e.g., `en-US`, `ru-RU`), ensuring full compatibility with Spring's `java.util.Locale`.
 
 #### Global Locales Management
 
@@ -74,35 +74,35 @@ To ensure consistency across the platform and dynamic UI generation, a dedicated
 
 ```sql
 CREATE TABLE locales (
-    code VARCHAR(20) PRIMARY KEY, -- BCP 47 language tag (e.g., 'en-US', 'ru-RU', 'it-IT')
-    name VARCHAR(50) NOT NULL,    -- e.g., 'English (US)'
-    native_name VARCHAR(50),      -- e.g., 'English (US)'
-    is_active BOOLEAN DEFAULT TRUE,
-    is_default BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    code        VARCHAR(20) PRIMARY KEY,          -- BCP 47 tag (e.g. 'en-US', 'ru-RU', 'it-IT')
+    name        VARCHAR(50) NOT NULL,             -- Display name (e.g. 'English (US)')
+    native_name VARCHAR(50),                      -- Native script name (e.g. 'Русский', 'Italiano')
+    is_active   BOOLEAN DEFAULT TRUE,
+    is_default  BOOLEAN DEFAULT FALSE,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-- **API**: `GET /api/v1/iam/locales` returns the list of active locales.
+- **API**: `GET /api/v1/iam/locales` — public, returns all active locales ordered by default first, then name.
 - **UI Impact**: The Announcement creation form and User Profile language switcher will dynamically fetch this list.
 
 #### Notification Persistence
 
-The `user_notifications` table stores the final, localized message for each user.
+The `user_notifications` table stores the final, already-localized message for each user. Locale is captured at creation time so the record is self-contained regardless of future user preference changes.
 
 ```sql
 CREATE TABLE user_notifications (
-    id UUID PRIMARY KEY,
+    id             UUID PRIMARY KEY,
     target_user_id UUID NOT NULL,
-    locale VARCHAR(20) NOT NULL,  -- Captured at the time of creation (e.g., 'en-US')
-    type VARCHAR(50) NOT NULL,
-    severity VARCHAR(20),
-    title VARCHAR(255) NOT NULL,  -- Localized title
-    message TEXT,                 -- Localized message
-    payload JSONB,                -- Metadata for Deep Linking
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    read_at TIMESTAMP WITH TIME ZONE
+    locale         VARCHAR(20) NOT NULL,   -- BCP 47 tag captured at creation time
+    type           VARCHAR(50) NOT NULL,
+    severity       VARCHAR(20),
+    title          VARCHAR(255) NOT NULL,  -- Localized title
+    message        TEXT,                  -- Localized message
+    payload        JSONB,                 -- Deep-linking metadata
+    is_read        BOOLEAN DEFAULT FALSE,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    read_at        TIMESTAMP WITH TIME ZONE
 );
 ```
 
@@ -110,30 +110,45 @@ CREATE TABLE user_notifications (
 
 A dedicated table for managing multi-lingual site-wide announcements before broadcasting.
 
-**Note on Immutability**: Once an announcement is successfully published (status `PUBLISHED`), it becomes read-only. Any modifications must be handled by creating a new announcement.
+**Note on Immutability**: Once an announcement moves past `DRAFT` status it becomes read-only. Specifically, `PENDING`, `PUBLISHING`, and `PUBLISHED` announcements reject updates and deletes. Any modifications must be handled by creating a new announcement. `FAILED` announcements are also immutable — a new announcement must be created to retry.
 
 **Translation Logic**:
 
-- **English (`en-US`) is mandatory**: It serves as the global fallback. The UI must enforce that `en-US` title and message are provided.
+- **English (`en-US`) is mandatory**: It serves as the global fallback. The API rejects requests without an `en-US` translation.
 - **Other Locales are optional**: If a translation field (title or message) for a non-English locale is left empty in the UI, that specific translation record will not be created in the database.
 - **Fallback Mechanism**: During the fan-out process, if a translation for the user's preferred locale is missing, the system will automatically use the `en-US` version.
 
 ```sql
 CREATE TABLE site_announcement (
-    id UUID PRIMARY KEY,
-    type VARCHAR(50),
-    status VARCHAR(20) DEFAULT 'DRAFT', -- DRAFT, PENDING, PUBLISHING, PUBLISHED
+    id         UUID PRIMARY KEY,
+    type       VARCHAR(50),
+    status     VARCHAR(20) DEFAULT 'DRAFT',
+    -- Status lifecycle: DRAFT → PENDING → PUBLISHING → PUBLISHED
+    --                                               ↘ FAILED
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE site_announcement_translations (
     announcement_id UUID REFERENCES site_announcement(id),
-    locale VARCHAR(20) NOT NULL, -- BCP 47 tag
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
+    locale          VARCHAR(20) NOT NULL,  -- BCP 47 tag
+    title           VARCHAR(255) NOT NULL,
+    message         TEXT NOT NULL,
     PRIMARY KEY (announcement_id, locale)
 );
 ```
+
+**Announcement status lifecycle**:
+
+```
+DRAFT ──publish()──► PENDING ──consumer──► PUBLISHING ──success──► PUBLISHED
+                                                       └──failure──► FAILED
+```
+
+- `DRAFT`: Editable. Translations can be added, updated, or removed.
+- `PENDING`: Queued for fan-out. Immutable.
+- `PUBLISHING`: Fan-out in progress. Immutable.
+- `PUBLISHED`: Fan-out complete. Immutable. Visible to users.
+- `FAILED`: Fan-out failed. Immutable. Requires creating a new announcement to retry.
 
 ### 4. Payload Structure (JSONB)
 
@@ -145,13 +160,24 @@ The `payload` field allows for flexible metadata used by the UI for **Deep Linki
 
 ### 5. Integration Flows
 
-#### System Events i18n
+#### System Event Flow (Email + In-App)
 
-1. A service publishes a `NotificationEvent` (e.g., `PASSWORD_CHANGED`).
-2. IAM `NotificationConsumer` receives the event.
-3. IAM fetches the `targetUserId`'s `locale`.
-4. The service uses `MessageSource` with the resolved `locale` to translate the event key into a final string.
-5. The localized notification is saved to `user_notifications`.
+Handles automated events from domain services (e.g. `PASSWORD_CHANGED`, `INVOICE_PAID`).
+
+1. A domain service publishes a `NotificationEvent` to the `iqkv.events` exchange with routing key `notification.iam.email`.
+2. `NotificationConsumer` receives the event from the `iqkv.iam.notifications` queue.
+3. `EmailService` sends a localized email to the recipient.
+4. **Locale resolution** (in priority order):
+   - `locale` field on the `NotificationEvent` if present.
+   - User's `locale` from the `users` table, looked up by `targetUserId` or `recipientEmail`.
+   - System default `en-US` as final fallback.
+5. `MessageSource` translates the event type into a localized title and message using keys:
+   - `notification.{TYPE}.title`
+   - `notification.{TYPE}.message`
+6. The localized `UserNotification` is persisted to `user_notifications`.
+7. A WebSocket message is pushed to the user's personal destination: `/user/queue/notifications`.
+
+Errors are caught and logged without re-throwing — failed messages route to the DLQ (`iqkv.dlq`) via the dead-letter exchange.
 
 ### 6. Background Processing (Fan-out Strategy)
 
@@ -159,53 +185,84 @@ Site-wide announcements will be managed via the `foundation-iam-service`. To ens
 
 #### Processing Steps:
 
-1. **Admin Input**: Platform Admin uses the Admin UI to create an announcement. The UI provides a group of text areas based on supported languages (e.g., `en-US`, `ru-RU`, `it-IT`).
+1. **Admin Input**: Platform Admin uses the Admin UI to create an announcement via `POST /api/v1/iam/admin/announcements`. The UI provides text areas per supported locale (dynamically fetched BCP 47 tags). `en-US` is required.
 2. **Drafting**: Draft is saved to `site_announcement` and `site_announcement_translations`.
-3. **Fan-out Trigger**: Admin triggers "Publish", which updates the status to `PENDING` and sends an internal `AnnouncementPublishEvent` to RabbitMQ.
-4. **Chunked Processing (Background)**:
-   - An async consumer receives the event and transitions the announcement to `PUBLISHING`.
-   - **Streaming**: The system fetches users using **MyBatis `Cursor`**. This allows processing millions of users without loading them all into memory, maintaining a constant memory footprint.
-   - **Chunking**: Users are processed in chunks (e.g., 1,000 users per batch).
-   - **Batch Insert**: For each chunk, the system performs a `Batch Insert` into `user_notifications` with the localized content (mapped based on each user's `locale`, falling back to `en-US` if the specific translation is missing).
-5. **Completion**: Once the cursor is fully consumed, the announcement is marked as `PUBLISHED`. From this point forward, the announcement and its translations are immutable.
-6. **Real-time Push**: As each chunk is persisted, the system triggers WebSocket pushes to active users in that specific chunk.
+3. **Fan-out Trigger**: Admin calls `POST /api/v1/iam/admin/announcements/{id}/publish`. The service validates the announcement is in `DRAFT` status, transitions it to `PENDING`, and publishes an `AnnouncementPublishEvent` to RabbitMQ with routing key `announcement.publish`.
+4. **Guard check**: `AnnouncementConsumer` receives the event and verifies the announcement is still `PENDING`. If not (e.g. redelivery after a prior attempt), the message is silently discarded.
+5. **Chunked Processing (Background)**:
+   - Status is transitioned to `PUBLISHING` via `REQUIRES_NEW` propagation, committing independently of the listener transaction.
+   - **Streaming**: The system fetches active users using **MyBatis `Cursor`** with `fetchSize=1000`. This streams users from PostgreSQL without loading them all into memory, maintaining a constant memory footprint.
+   - **Chunking**: Users are processed in batches of 1,000. For each user, the appropriate translation is selected by matching `user.locale` against the announcement's translation map, falling back to `en-US`. Each batch is persisted via `REQUIRES_NEW`, so each batch commit is independent — a mid-fan-out crash does not roll back already-persisted batches.
+6. **Completion**: After the cursor is fully consumed, a single `AnnouncementBroadcastResponse` is pushed to `/topic/announcements` via WebSocket, then the announcement status is set to `PUBLISHED`.
+7. **Failure handling**: Any exception during streaming/batching sets the status to `FAILED` and re-throws, routing the message to the DLQ. The `PENDING` guard in step 4 prevents redelivery from re-running the fan-out.
+
+#### Notification Lifecycle (REST API)
+
+| Operation                       | Endpoint                                                             | Auth          |
+| ------------------------------- | -------------------------------------------------------------------- | ------------- |
+| Fetch notifications (paginated) | `GET /api/v1/iam/users/notifications?limit=10&offset=0&isRead=false` | Authenticated |
+| Mark one as read                | `PUT /api/v1/iam/users/notifications/{id}/read`                      | Authenticated |
+| Mark all as read                | `PUT /api/v1/iam/users/notifications/read-all`                       | Authenticated |
+| Fetch active announcements      | `GET /api/v1/iam/announcements?locale=en-US`                         | Public        |
+
+The `GET /api/v1/iam/users/notifications` response includes `totalElements`, `unreadCount`, and a paginated `items` list. The `isRead` query parameter is optional — omitting it returns all notifications.
+
+The `GET /api/v1/iam/announcements` endpoint returns only `PUBLISHED` announcements for the requested locale. It is public and unauthenticated, intended for the notification bell's initial load.
 
 ### 7. Real-time Delivery (WebSockets & Gateway)
 
-The `foundation-gateway-service` acts as the entry point and must proxy WebSocket traffic.
+The `foundation-gateway-service` proxies WebSocket traffic via the existing `iam-api` catch-all route (`/api/v1/iam/**`). No dedicated WebSocket route is needed — the SockJS handshake and HTTP upgrade are handled transparently.
 
-#### Gateway Route
+#### Configuration
 
-```yaml
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: iam-websocket
-          uri: ${IAM_SERVICE_WS_URI:ws://localhost:8080}
-          predicates:
-            - Path=/api/v1/iam/ws/**
+`WebSocketConfig` registers a STOMP endpoint at `/api/v1/iam/ws` with SockJS fallback. The in-memory broker handles `/topic` (broadcast) and `/queue` (user-scoped) destinations.
+
+```java
+config.enableSimpleBroker("/topic", "/queue");
+config.setApplicationDestinationPrefixes("/app");
+config.setUserDestinationPrefix("/user");
 ```
 
-#### Handshake & Topics
+#### Topics
 
-- **Security**: JWT passed in the `Authorization` header during handshake.
-- **Topics**:
-  - `/user/queue/notifications`: Personal notifications.
-  - `/topic/announcements`: Global broadcasts.
+| Destination                 | Payload                         | Use case                                    |
+| --------------------------- | ------------------------------- | ------------------------------------------- |
+| `/user/queue/notifications` | `UserNotificationResponse`      | Personal system event notifications         |
+| `/topic/announcements`      | `AnnouncementBroadcastResponse` | Site-wide broadcast after fan-out completes |
 
-### 8. UI Implementation (FSD)
+The `AnnouncementBroadcastResponse` is a dedicated DTO (carrying `announcementId`, `type`, `severity`, `title`, `message`, and `createdAt`) — not a `UserNotification` — so the UI can distinguish broadcast signals from personal notifications.
+
+#### Security Note
+
+The STOMP endpoint uses SockJS. JWT authentication during the WebSocket handshake should be passed in the STOMP `CONNECT` frame headers, not the HTTP `Authorization` header (which SockJS does not reliably forward).
+
+### 8. Admin API
+
+All admin endpoints require `PLATFORM_ADMIN` authority.
+
+| Method   | Endpoint                                       | Description                                   |
+| -------- | ---------------------------------------------- | --------------------------------------------- |
+| `POST`   | `/api/v1/iam/admin/announcements`              | Create a draft announcement with translations |
+| `GET`    | `/api/v1/iam/admin/announcements`              | List all announcements (paginated)            |
+| `GET`    | `/api/v1/iam/admin/announcements/{id}`         | Get announcement by ID                        |
+| `PUT`    | `/api/v1/iam/admin/announcements/{id}`         | Update a `DRAFT` or `FAILED` announcement     |
+| `DELETE` | `/api/v1/iam/admin/announcements/{id}`         | Delete a `DRAFT` or `FAILED` announcement     |
+| `POST`   | `/api/v1/iam/admin/announcements/{id}/publish` | Trigger fan-out (returns `202 Accepted`)      |
+
+### 9. UI Implementation (FSD)
 
 - **`features/notification-bell`**:
-  - `ui/`: Bell icon with unread count, dropdown list.
-  - `model/`: Zustand store for state management and WebSocket lifecycle.
-  - `api/`: TanStack Query hooks for history and "mark as read".
-- **Admin Announcement UI**: Multi-tab or multi-textarea form for entering content in different locales (dynamically fetched BCP 47 tags).
+  - `ui/`: Bell icon with unread count badge, dropdown list of recent notifications.
+  - `model/`: Zustand store for notification state and WebSocket lifecycle management.
+  - `api/`: TanStack Query hooks for history fetch and mark-as-read mutations.
+- **Admin Announcement UI**: Multi-locale form with text areas per supported language. Locale list is fetched dynamically from `GET /api/v1/iam/locales`. `en-US` fields are required; all others are optional.
 
-### 9. Roadmap
+**Polling vs Push**: The UI uses TanStack Query for polling and cache management. WebSocket pushes trigger cache invalidation for immediate updates without replacing the polling strategy.
 
-1. **Phase 1**: Extend `users` table with `locale` (VARCHAR(20)), update `NotificationEvent` with `targetUserId`, and implement the `locales` management table using BCP 47 tags.
-2. **Phase 2**: Implement `user_notifications` storage and localized `MessageSource` processing in IAM, along with the `GET /api/v1/iam/locales` API.
-3. **Phase 3**: Configure Gateway for WebSocket routing.
-4. **Phase 4**: Implement WebSocket (STOMP) in IAM and `NotificationBell` in UI.
-5. **Phase 5**: Implement multi-lingual Announcement drafting and fan-out logic with chunked background processing and BCP 47 fallback.
+### 10. Roadmap
+
+1. **Phase 1**: Extend `users` table with `locale` (BCP 47 `VARCHAR(20)`), update `NotificationEvent` with `targetUserId`, and implement the `locales` management table with `GET /api/v1/iam/locales`.
+2. **Phase 2**: Implement `user_notifications` storage, localized `MessageSource` processing in IAM, and the full system event flow (email + in-app + WebSocket push).
+3. **Phase 3**: Configure Gateway WebSocket proxying via the existing `iam-api` catch-all route.
+4. **Phase 4**: Implement WebSocket (STOMP) broker in IAM and `NotificationBell` in UI.
+5. **Phase 5**: Implement multi-lingual Announcement CRUD + publish API, streaming fan-out with chunked batch insert, `FAILED` status handling, and `AnnouncementBroadcastResponse` WebSocket DTO.
