@@ -281,6 +281,6 @@ The notification bell is not yet implemented. Planned structure:
 | Immutability guard on published announcements       | ✅ Done        |
 | `en-US` mandatory validation at API layer           | ✅ Done        |
 | `AnnouncementBroadcastResponse` WebSocket DTO       | ✅ Done        |
-| Notification bell UI (`features/notification-bell`) | ⬜ Not started |
-| Admin announcement creation UI                      | ⬜ Not started |
+| Notification bell UI (`features/notification-bell`) | ✅ Done        |
+| Admin announcement creation UI                      | ✅ Done        |
 | Additional locale translations (beyond `en`)        | ⬜ Not started |
