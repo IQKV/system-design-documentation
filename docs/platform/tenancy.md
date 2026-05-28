@@ -8,8 +8,13 @@ This document outlines the implementation details of the IQKV **Hybrid Tenancy M
 
 The core goal of the platform is **Architectural Symmetry**.
 
-- In **Multi-Tenant mode**, the organization is a visible, primary entity.
+- In **Multi-Tenant mode**, organizations are visible, primary entities.
 - In **Single-Tenant mode**, the organization is a hidden, background entity.
+
+A **Platform Tenant** (tenant_key: `platform`, schema: `t_platform`) exists in both modes:
+- **Single-Tenant Mode**: Acts as the single source of truth (default tenant).
+- **Multi-Tenant Mode**: Acts as an internal, hidden tenant for platform operations, available to platform admins.
+- **All Modes**: Every user is automatically added as a `MEMBER` of the Platform Tenant, regardless of how they join (signup or invitation).
 
 Regardless of the mode, the **data path** is identical:
 `API Request` → `Gateway (Context Injection)` → `Service (Context Propagation)` → `Persistence (Tenant Routing)`.
@@ -27,7 +32,7 @@ The tenancy system is built on several key components:
 
 ## 2. NanoID Resolution & Defaulting
 
-The system enforces the use of **NanoIDs** for all tenant keys to avoid brittle, human-readable identifiers in infrastructure (e.g., schema names).
+The system uses **NanoIDs** for tenant keys by default (to avoid brittle, human-readable identifiers in infrastructure). However, a predefined **Platform Tenant** exists with the fixed key `platform`.
 
 ### NanoID Generation
 
@@ -38,38 +43,22 @@ String tenantKey = NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR
 // Example: "abc12345"
 ```
 
-### The "Hidden" Default Tenant
+### Platform Tenant (Fixed Key: `platform`)
 
-In Single-Tenant mode, the system operates with a single "Master" workspace. To ensure this key is stable across deployments:
+A predefined Platform Tenant is always present, provisioned via Liquibase at database initialization:
+- **Tenant Key**: `platform`
+- **Schema**: `t_platform`
+- **ID**: `00000000-0000-0000-0000-000000000001`
+- **Status**: Always `ACTIVE`
 
-1. **Configuration-Based:** The default tenant key is configured via `iqkv.tenancy.default-tenant-key`
-2. **Database Resolution:** On startup, the IAM service checks the `public.tenants` table for a record marked with `is_default: true`
-3. **Auto-Generation:** If no default tenant exists, the bootstrap process creates one with a deterministic key
-4. **Implicit Enrollment:** During the `POST /signup` flow, if the mode is `SINGLE_TENANT`, the backend automatically creates a `TenantMembership` for the user against the resolved Default NanoID
+### Single-Tenant Mode Default Behavior
 
-### Default Tenant Resolution Strategy
+In Single-Tenant mode, the Platform Tenant acts as the single source of truth (default tenant):
 
-```java
-@Component
-public class DefaultTenantResolverImpl implements DefaultTenantResolver {
-
-    public String resolveDefaultTenantKey() {
-        // 1. Check configuration
-        if (hasConfiguredKey()) {
-            return tenancyProps.getDefaultTenantKey();
-        }
-
-        // 2. Query database for existing default
-        Optional<Tenant> defaultTenant = tenantMapper.findDefaultTenant();
-        if (defaultTenant.isPresent()) {
-            return defaultTenant.get().getTenantKey();
-        }
-
-        // 3. Create new default tenant
-        return createDefaultTenant();
-    }
-}
-```
+1. **Configuration-Based:** The default tenant key can be configured via `iqkv.tenancy.default-tenant-key`, but defaults to `platform`
+2. **Implicit Enrollment:** Every user is automatically added as a `MEMBER` of the Platform Tenant via:
+   - Signup flow: `MultiTenantSignupStrategy.ensurePlatformMembership()`
+   - Invitation acceptance: `InvitationServiceImpl.ensurePlatformMembership()`
 
 ---
 
@@ -309,11 +298,14 @@ public class StuckTenantReaperJob {
 
 ## 8. Migration: Single to Multi
 
-Because the Single-Tenant mode uses the exact same `schema-per-tenant` logic as the SaaS mode, migrating a customer from an "Internal Tool" to a "Public Platform" is a **Zero-Migration** event:
+Because the Single-Tenant mode uses the exact same `schema-per-tenant` logic as the SaaS mode, and every user is automatically a member of the Platform Tenant, migrating a customer from an "Internal Tool" to a "Public Platform" is a **Zero-Migration** event:
 
 1. **Configuration Change:** Change `ROLLOUT_MODE` from `SINGLE_TENANT` to `MULTI_TENANT`
-2. **Existing Users:** Remain in the `default` tenant with existing authorities
-3. **New Registrations:** Trigger the standard "Create Organization" flow, spawning new schemas alongside the original one
+2. **Existing Users:**
+   - Retain their membership in the Platform Tenant
+   - Can still access all their data (Platform Tenant schema remains intact)
+   - Can now create and join new separate tenants
+3. **New Registrations:** Trigger the standard "Create Organization" flow, spawning new schemas alongside the Platform Tenant
 4. **Gateway Behavior:** Stops auto-injecting default tenant context for new requests
 5. **UI Adaptation:** Shows organization management features for new users
 
@@ -323,7 +315,8 @@ Because the Single-Tenant mode uses the exact same `schema-per-tenant` logic as 
 - [ ] Restart services to pick up new configuration
 - [ ] Verify platform mode consistency via actuator endpoints
 - [ ] Test new user signup flow creates separate tenants
-- [ ] Verify existing users can still access their data
+- [ ] Verify existing users can still access their data in the Platform Tenant
+- [ ] Verify existing users can create new separate tenants
 - [ ] Update UI configuration to show multi-tenant features
 
 ---

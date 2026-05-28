@@ -4,17 +4,24 @@
 
 The platform uses a **Hybrid Tenancy Model** that supports both public SaaS (Multi-Tenant) and internal/enterprise (Single-Tenant) deployments using the same codebase.
 
+### Platform Tenant (Common to All Modes)
+
+A predefined **Platform Tenant** (tenant_key: `platform`, schema: `t_platform`) is always present in both deployment modes:
+- **Single-Tenant Mode**: Acts as the default single source of truth tenant (all users operate within this tenant).
+- **Multi-Tenant Mode**: Acts as an internal, hidden tenant for platform operations, accessible to users with `PLATFORM_ADMIN` authority.
+- **All Modes**: Every user is automatically added as a `MEMBER` of the Platform Tenant, regardless of how they join the platform (signup or invitation).
+
 ### Deployment Archetypes
 
 - **Multi-Tenant (Default):** Every registration creates a new organization with a unique 8-character NanoID key using alphabet `[a-z0-9]`.
-- **Single-Tenant:** Tenancy is hidden. All users are automatically joined to a single "Default" tenant created during bootstrapping.
+- **Single-Tenant:** Tenancy is hidden. All users are automatically joined to the Platform Tenant (used as default tenant).
 
 ### Isolation Strategy
 
 Isolation is handled via a **PostgreSQL Schema-Per-Tenant Model**:
 
 1. **System Schema (`public`):** Contains platform-wide data (users, tenants, memberships, token denylist)
-2. **Tenant Schemas (`t_{tenantKey}`):** Contains tenant-specific business data with complete isolation
+2. **Tenant Schemas (`t_{tenantKey}`):** Contains tenant-specific business data with complete isolation (including `t_platform` for the Platform Tenant)
 3. **MyBatis Interceptor:** Automatically switches PostgreSQL `search_path` based on tenant context
 4. **Liquibase Migrations:** Separate changesets for system vs tenant schemas
 
