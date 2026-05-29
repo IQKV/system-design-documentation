@@ -7,6 +7,7 @@ The platform uses a **Hybrid Tenancy Model** that supports both public SaaS (Mul
 ### Platform Tenant (Common to All Modes)
 
 A predefined **Platform Tenant** (tenant_key: `platform`, schema: `t_platform`) is always present in both deployment modes:
+
 - **Single-Tenant Mode**: Acts as the default single source of truth tenant (all users operate within this tenant).
 - **Multi-Tenant Mode**: Acts as an internal, hidden tenant for platform operations, accessible to users with `PLATFORM_ADMIN` authority.
 - **All Modes**: Every user is automatically added as a `MEMBER` of the Platform Tenant, regardless of how they join the platform (signup or invitation).

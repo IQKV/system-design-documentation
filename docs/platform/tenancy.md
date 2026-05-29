@@ -12,6 +12,7 @@ The core goal of the platform is **Architectural Symmetry**.
 - In **Single-Tenant mode**, the organization is a hidden, background entity.
 
 A **Platform Tenant** (tenant_key: `platform`, schema: `t_platform`) exists in both modes:
+
 - **Single-Tenant Mode**: Acts as the single source of truth (default tenant).
 - **Multi-Tenant Mode**: Acts as an internal, hidden tenant for platform operations, available to platform admins.
 - **All Modes**: Every user is automatically added as a `MEMBER` of the Platform Tenant, regardless of how they join (signup or invitation).
@@ -46,6 +47,7 @@ String tenantKey = NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR
 ### Platform Tenant (Fixed Key: `platform`)
 
 A predefined Platform Tenant is always present, provisioned via Liquibase at database initialization:
+
 - **Tenant Key**: `platform`
 - **Schema**: `t_platform`
 - **ID**: `00000000-0000-0000-0000-000000000001`
