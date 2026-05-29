@@ -15,7 +15,7 @@ The platform has completed its initial demo phase (v0.1) and is currently focusi
 - **Completed:** Core microservices (IAM, Gateway, Billing), basic UI auth flows, tenant lifecycle, and Stripe integration.
 - **In Progress:** Platform administration UI, cross-tenant management tools, and tenant billing self-service.
 
-For a detailed breakdown of what's built and what's next, see the [Implemented Features Review](docs/roadmap/06-implemented-features.md) and [Roadmap](docs/roadmap/vision.md).
+For a detailed breakdown of what's built and what's next, see the [Implemented Features Review](docs/roadmap/06-implemented-features-review-may.md) and [Roadmap](docs/roadmap/vision.md).
 
 ---
 
