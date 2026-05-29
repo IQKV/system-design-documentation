@@ -8,24 +8,28 @@ K8s-native microservices foundation for multi-tenant B2B SaaS. Three open-source
 
 ---
 
-## Status: v0.2 — Administration & Self-Service
+## Status: v0.2 — Completed
 
-The platform has completed its initial demo phase (v0.1) and is currently focusing on **Administration & Self-Service (v0.2)**.
+The platform has completed the **Administration & Self-Service (v0.2)** milestone, delivering a fully manageable production-ready SaaS foundation.
 
-- **Completed:** Core microservices (IAM, Gateway, Billing), basic UI auth flows, tenant lifecycle, and Stripe integration.
-- **In Progress:** Platform administration UI, cross-tenant management tools, and tenant billing self-service.
+- **v0.1 (Demo Release):** Core microservices (IAM, Gateway, Billing), basic UI auth flows, tenant lifecycle, Stripe integration
+- **v0.2 (Administration & Self-Service):** Platform admin UI, audit service, tenant self-service billing, announcements, in-app notifications, token exchange, avatar uploads, refunds API, WebSocket integration, Grafana dashboards
 
-For a detailed breakdown of what's built and what's next, see the [Implemented Features Review](docs/roadmap/06-implemented-features-review-may.md) and [Roadmap](docs/roadmap/vision.md).
+For detailed feature breakdowns, see:
+- [Latest Features Review (v0.2 Completion)](docs/roadmap/07-implemented-features-review.md)
+- [Previous Review (May 2026)](docs/roadmap/06-implemented-features-review-may.md)
+- [Roadmap & Vision](docs/roadmap/vision.md)
 
 ---
 
 ## Services
 
-- **IAM** (`foundation-iam-service`) — registration, JWT auth, account recovery, organizations, RBAC, invitations
-- **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing
-- **Billing** (`foundation-billing-service`) — Stripe wrapper integration; subscriptions and invoices managed on Stripe's side
-- **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, and billing
-- **Platform Admin** (`foundation-ui-platform-admin`) — Operator interface for global user, organization, and plan management
+- **IAM** (`foundation-iam-service`) — registration, JWT auth, account recovery, organizations, RBAC, invitations, token exchange, avatar uploads, announcements, in-app notifications
+- **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing, audit context propagation, per-tenant monitoring
+- **Billing** (`foundation-billing-service`) — Stripe integration; subscriptions, invoices, refunds, Customer Portal sessions
+- **Audit** (`foundation-audit-service`) — centralized event-driven audit trail with SPI-based extensibility; admin search API
+- **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, billing self-service, notifications
+- **Platform Admin** (`foundation-ui-platform-admin`) — Operator interface for global user, organization, plan, subscription, refund, announcement, and audit log management
 - **Landing Kit** (`foundation-ui-saas-landing-kit`) — Production-ready landing page template with integrated auth redirects
 
 ---
