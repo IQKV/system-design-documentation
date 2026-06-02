@@ -42,6 +42,7 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 | User ban/unban        | Platform admin can ban/unban globally; tenant owner can ban/unban within tenant; banned users automatically logged out, receive email, cannot log in; optional reason and expiration; REST APIs at /users/{userId}/ban and /tenants/{tenantKey}/members/{userId}/ban | ✅     |
 | Member authority edit | Update member authorities (TENANT_OWNER/MEMBER); cannot remove last TENANT_OWNER from tenant; cannot remove your own TENANT_OWNER authority if you are the last owner; REST API at /tenants/{tenantKey}/members/{userId}/authorities                                 | ✅     |
 | Transfer ownership    | Transfer tenant ownership to another member; old owner becomes MEMBER; REST API at /tenants/{tenantKey}/members/{userId}/transfer-ownership                                                                                                                          | ✅     |
+| Unlock user           | Platform admin can unlock user by resetting failed login attempts; REST API at /admin/users/{userId}/unlock                                                                                                                                                        | ✅     |
 
 ---
 
@@ -159,7 +160,7 @@ Separate operator SPA (`PLATFORM_ADMIN` only). Platform-scoped JWT (`tenant_id` 
 | Operator account      | View/edit operator profile; change password                                                            | ✅     |
 | Session security      | Access token in memory; refresh in `sessionStorage`; silent refresh; inactivity sign-out               | ✅     |
 | i18n                  | Lingui with English catalog; locale switcher UI                                                        | ✅     |
-| Platform actions      | Ban/unban (done), unlock, impersonation                                                                | 🚧     |
+| Platform actions      | Ban/unban/unlock (done), impersonation                                                                 | 🚧     |
 | System administration | Health dashboard, background job monitoring                                                            | 📋     |
 | Advanced metrics      | MRR/ARR, growth charts on dashboard                                                                    | 📋     |
 
