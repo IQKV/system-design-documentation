@@ -24,7 +24,10 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - Avatar uploads via two-phase presigned S3/MinIO flow; old avatars auto-deleted
 - In-app notifications — persisted to DB + real-time WebSocket push (STOMP/SockJS)
 - Site-wide announcements with multi-lingual support; async fan-out to all users in batches
-- Platform admin APIs: user CRUD, tenant CRUD, cross-tenant invitations, force-set password
+- Platform admin APIs: user CRUD, tenant CRUD, cross-tenant invitations, force-set password, ban/unban users
+- User ban/unban: platform admin can ban/unban globally, tenant owner can ban/unban within tenant; banned users automatically logged out and receive email
+- Member authority edit: tenant owner can update member authorities (TENANT_OWNER/MEMBER); cannot remove last TENANT_OWNER from tenant; cannot remove your own TENANT_OWNER authority if you are the last owner
+- Transfer ownership: tenant owner can transfer ownership to another active member; old owner becomes MEMBER
 - PostgreSQL schema-per-tenant with Liquibase migrations; `ROLLOUT_MODE` for B2B/B2C switch
 
 ### API Gateway (`foundation-gateway-service`)
@@ -63,7 +66,7 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - React 19 + TypeScript + Mantine UI SPA for workspace members
 - Sign-in with tenant discovery; sign-up with provisioning poll; forgot/reset password; email verification
 - Accept invitations (`/invite/:token`) — new and existing users
-- Dashboard, team member list, send/revoke invitations (`TENANT_OWNER`)
+- Dashboard, team member list, send/revoke invitations (`TENANT_OWNER`), ban/unban members (`TENANT_OWNER`)
 - My Account — profile, password, organizations and roles; avatar upload
 - Billing — portal access, active subscription, plan catalog, billing info, refunds
 - Tenant settings — organization metadata editing
@@ -74,7 +77,7 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 
 - React 19 + TypeScript + Mantine UI SPA for `PLATFORM_ADMIN` operators
 - Dashboard — count cards for users, organizations, active subscriptions
-- Users — paginated list, detail, edit profile, set password
+- Users — paginated list, detail, edit profile, set password, ban/unban users
 - Organizations — overview, members, billing settings, subscriptions, refunds tabs
 - Invitations — propose, edit, revoke across all tenants; plan catalog CRUD
 - Subscriptions (read-only global list + detail); refunds list and detail
@@ -218,4 +221,4 @@ Current limitations and out-of-scope features:
 - Managed hosting service
 - Advanced analytics and reporting (MRR/ARR dashboard planned)
 - Member role editing beyond invitation default (planned)
-- Platform actions: ban/unban, unlock, impersonation (planned)
+- Platform actions: unlock, impersonation (planned; ban/unban implemented)

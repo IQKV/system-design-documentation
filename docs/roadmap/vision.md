@@ -73,11 +73,11 @@ Goal: Platform administrators have full management tooling; tenants have billing
 
 Items deferred until the core platform is fully manageable:
 
-- Platform Admin UI — ban/unban, unlock, user impersonation (admin support tool)
+- Platform Admin UI — ban/unban (done), unlock, user impersonation (admin support tool)
 - Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
 - Platform Admin UI — system health dashboard, background job monitoring
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
-- Tenant App — member role editing (promote to Admin, transfer Ownership)
+- Tenant App — member ban/unban (done), member role editing (promote to Admin, transfer Ownership)
 - Tenant App — additional locales (RU, IT; infrastructure already in place)
 - SSO / SAML adapter (extension, not core)
 - Rate limiting (per-tenant and per-user, at Gateway)
