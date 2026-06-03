@@ -177,10 +177,10 @@ Separate operator SPA (`PLATFORM_ADMIN` only). Platform-scoped JWT (`tenant_id` 
 | Schema-per-tenant    | PostgreSQL schema isolation per tenant within the IAM database; identical model in both single and multi-tenant modes | ✅     |
 | Async provisioning   | RabbitMQ event-driven; ShedLock-guarded reaper for tenants stuck in `PROVISIONING`                                    | ✅     |
 | Service template     | `foundation-microservice-project-layout` — Spring Boot, MyBatis, Liquibase, RabbitMQ, JWT, quality gates pre-wired    | ✅     |
-| Secrets management   | K8s Secrets injected at deploy time via CI pipeline — never committed to source                                       | 🚧     |
+| Secrets management   | K8s Secrets injected at deploy time via CI pipeline — never committed to source                                       | ✅     |
 | TLS                  | cert-manager integration via Helm ingress values                                                                      | 🚧     |
 | Observability        | Prometheus metrics (Micrometer), structured JSON logs (Logstash encoder), correlation ID filter                       | ✅     |
-| CI/CD                | Drone pipelines per service: verify → publish artifacts → publish image → deploy → promote                            | 🚧     |
+| CI/CD                | Drone pipelines per service: verify → publish artifacts → publish image → deploy → promote                            | ✅     |
 
 ---
 

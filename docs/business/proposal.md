@@ -221,4 +221,4 @@ Current limitations and out-of-scope features:
 - Managed hosting service
 - Advanced analytics and reporting (MRR/ARR dashboard planned)
 - Member role editing beyond invitation default (planned)
-- Platform actions: unlock, impersonation (planned; ban/unban implemented)
+- Platform actions: impersonation (planned; unlock/ban/unban implemented)
