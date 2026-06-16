@@ -169,11 +169,9 @@ public class PlanFeatureRegistry {
 ### 5. Internal Plans Endpoint (`foundation-billing-service`)
 
 Service-to-service endpoint, not exposed through the public gateway route.
-Secured with `PLATFORM_SERVICE` authority.
 
 ```
 GET /api/v1/billing/internal/plans
-Authorization: Bearer <service-jwt>
 
 200 OK
 [
@@ -236,7 +234,7 @@ Configuration:
 iqkv:
   plan-catalog:
     refresh-interval: PT10M
-    billing-base-url: ${BILLING_SERVICE_URL:http://foundation-billing-service:8080}
+    billing-base-url: ${BILLING_SERVICE_URL:http://foundation-billing-service}
 ```
 
 ### 7. JWT and Gateway Enforcement
@@ -360,34 +358,34 @@ Delegates to `EntitlementEvaluator`. One `@RestController` class, no new service
 
 ### Phase 1 — Billing Service Internals
 
-- [ ] Add `PlanFeatures` record to `foundation-billing-service`.
-- [ ] Replace `String featureSet` with `PlanFeatures features` in `StripeProductSchema`.
-- [ ] Update YAML plan definitions to include typed `features` block.
-- [ ] Add `PlanFeatureRegistry` bean.
-- [ ] Update `BillingSeedRunner` to serialize `PlanFeatures` into the `feature_set` DB column.
-- [ ] Update `EntitlementDetails` record — replace raw `featureSet` string with `planCode` + `PlanFeatures`.
-- [ ] Update `DefaultEntitlementEvaluator` to use `PlanFeatureRegistry`.
-- [ ] Add `GET /api/v1/internal/plans` endpoint secured with `PLATFORM_SERVICE` authority.
-- [ ] Add `GET /api/v1/billing/entitlements/me` endpoint.
+- [x] Add `PlanFeatures` record to `foundation-billing-service`.
+- [x] Replace `String featureSet` with `PlanFeatures features` in `StripeProductSchema`.
+- [x] Update YAML plan definitions to include typed `features` block.
+- [x] Add `PlanFeatureRegistry` bean.
+- [x] Update `BillingSeedRunner` to serialize `PlanFeatures` into the `feature_set` DB column.
+- [x] Update `EntitlementDetails` record — replace raw `featureSet` string with `planCode` + `PlanFeatures`.
+- [x] Update `DefaultEntitlementEvaluator` to use `PlanFeatureRegistry`.
+- [x] Add `GET /api/v1/billing/internal/plans` endpoint.
+- [x] Add `GET /api/v1/billing/entitlements/me` endpoint.
 
 ### Phase 2 — IAM and JWT
 
-- [ ] Add `active_plan_code VARCHAR(64)` column to `tenants` table (Liquibase migration).
-- [ ] Add `planCode` field to `SubscriptionEvent`.
-- [ ] Extend `SubscriptionEventConsumer` in IAM to handle `SUBSCRIPTION_CREATED` and
+- [x] Add `active_plan_code VARCHAR(64)` column to `tenants` table (Liquibase migration).
+- [x] Add `planCode` field to `SubscriptionEvent`.
+- [x] Extend `SubscriptionEventConsumer` in IAM to handle `SUBSCRIPTION_CREATED` and
       `SUBSCRIPTION_UPDATED` — persist `planCode` on tenant.
-- [ ] Update `JwtTokenGenerator` to include `plan_code` claim.
+- [x] Update `JwtTokenGenerator` to include `plan_code` claim.
 
 ### Phase 3 — Gateway Enforcement
 
-- [ ] Update `JwtContextPropagationFilter` to propagate `X-Plan-Code` header.
-- [ ] Add `PlanCatalogCache` with `@Scheduled` refresh in `foundation-gateway-service`.
-- [ ] Implement `RequiresPlanFeatureFilterFactory`.
-- [ ] Add `RequiresPlanFeature` filter to applicable routes in gateway configuration.
+- [x] Update `JwtContextPropagationFilter` to propagate `X-Plan-Code` header.
+- [x] Add `PlanCatalogCache` with `@Scheduled` refresh in `foundation-gateway-service`.
+- [x] Implement `RequiresPlanFeatureFilterFactory`.
+- [x] Add `RequiresPlanFeature` filter to applicable routes in gateway configuration.
 
 ### Phase 4 — Downstream Quota Checks (per service, incremental)
 
-- [ ] For each service that manages a quota-bounded resource: add local `PlanCatalogCache`
+- [x] For each service that manages a quota-bounded resource: add local `PlanCatalogCache`
       and enforce quota limits at resource creation.
 
 ## What Is Not Included
