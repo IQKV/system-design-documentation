@@ -79,24 +79,43 @@ HTTP Request ──► Gateway JwtContextPropagationFilter
 New record `com.iqkv.foundation.billingservice.plan.PlanFeatures`, bound from YAML via
 `StripeProductSchema.features`. Replaces the current `String featureSet` field.
 
+Quota fields (`maxUsers`, `maxProjects`) remain typed `int` for compile-time safety.
+Display/boolean features are held in an open `Map<String, PlanFeature>` keyed by
+feature code (snake_case, matches YAML). Adding a new feature requires only a YAML
+change — no Java recompilation of any service.
+
 ```java
-public record PlanFeatures(
-    boolean prioritySupport,
-    int maxUsers,       // 0 = unlimited
-    int maxProjects     // 0 = unlimited
+public record PlanFeature(
+    String code,        // map key — e.g. "priority_support"
+    String title,       // human-readable label
+    String value,       // "true"/"false" for boolean; number string for limits
+    String description  // optional tooltip text
 ) {
-  public static final PlanFeatures NONE = new PlanFeatures(false, 1, 1);
+  public boolean isEnabled() {
+    return "true".equalsIgnoreCase(value);
+  }
+}
+
+public record PlanFeatures(
+    int maxUsers,       // 0 = unlimited
+    int maxProjects,    // 0 = unlimited
+    Map<String, PlanFeature> features
+) {
+  public static final PlanFeatures NONE = new PlanFeatures(1, 1, Map.of());
 
   public PlanFeatures {
     if (maxUsers < 0)    throw new IllegalArgumentException("maxUsers must be >= 0");
     if (maxProjects < 0) throw new IllegalArgumentException("maxProjects must be >= 0");
+    features = features != null
+        ? Collections.unmodifiableMap(features)
+        : Collections.emptyMap();
   }
 
-  public boolean has(final String feature) {
-    return switch (feature) {
-      case "priority_support" -> prioritySupport;
-      default                 -> false;
-    };
+  /** O(1) lookup — returns true if the feature code exists and value is "true". */
+  public boolean has(final String code) {
+    if (code == null || code.isBlank()) return false;
+    final PlanFeature f = features.get(code);
+    return f != null && f.isEnabled();
   }
 }
 ```
@@ -117,10 +136,9 @@ iqkv:
             currency: "USD"
             scope: "TENANT"
             active: true
-            features:
-              prioritySupport: false
-              maxUsers: 5
-              maxProjects: 3
+            maxUsers: 5
+            maxProjects: 3
+            features: {} # no boolean features on basic
           pro-monthly:
             planCode: "pro-monthly"
             displayName: "Pro Monthly"
@@ -129,10 +147,13 @@ iqkv:
             currency: "USD"
             scope: "TENANT"
             active: true
+            maxUsers: 50
+            maxProjects: 0 # 0 = unlimited
             features:
-              prioritySupport: true
-              maxUsers: 50
-              maxProjects: 0 # 0 = unlimited
+              priority_support:
+                title: "Priority Support"
+                value: "true"
+                description: "Access to priority support channel"
 ```
 
 ### 4. `PlanFeatureRegistry` — in-memory, billing-service only
@@ -175,8 +196,25 @@ GET /api/v1/billing/internal/plans
 
 200 OK
 [
-  { "planCode": "basic-monthly", "features": { "prioritySupport": false, "maxUsers": 5, "maxProjects": 3 } },
-  { "planCode": "pro-monthly",   "features": { "prioritySupport": true,  "maxUsers": 50, "maxProjects": 0 } }
+  {
+    "planCode": "basic-monthly",
+    "features": { "maxUsers": 5, "maxProjects": 3, "features": {} }
+  },
+  {
+    "planCode": "pro-monthly",
+    "features": {
+      "maxUsers": 50,
+      "maxProjects": 0,
+      "features": {
+        "priority_support": {
+          "code": "priority_support",
+          "title": "Priority Support",
+          "value": "true",
+          "description": "Access to priority support channel"
+        }
+      }
+    }
+  }
 ]
 ```
 
@@ -331,7 +369,18 @@ X-Tenant-ID: <tenantKey>
   "planCode": "pro-monthly",
   "status": "active",
   "currentPeriodEnd": "2026-07-15T00:00:00Z",
-  "features": { "prioritySupport": true, "maxUsers": 50, "maxProjects": 0 }
+  "features": {
+    "maxUsers": 50,
+    "maxProjects": 0,
+    "features": {
+      "priority_support": {
+        "code": "priority_support",
+        "title": "Priority Support",
+        "value": "true",
+        "description": "Access to priority support channel"
+      }
+    }
+  }
 }
 
 404 — no active subscription

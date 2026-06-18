@@ -42,7 +42,7 @@ Downstream Services → PlanCatalogCache → Local feature checks
 **Files Modified:** 8 files  
 **Key Changes:**
 
-- **`PlanFeatures` Record**: Replaced opaque JSON with typed structure (`prioritySupport`, `maxUsers`, `maxProjects`)
+- **`PlanFeatures` Record**: Replaced opaque JSON with split design — typed quota fields (`maxUsers`, `maxProjects`) + open `Map<String, PlanFeature>` keyed by feature code. `PlanFeature` carries `code`, `title`, `value`, `description`. Adding a new feature requires only a YAML change.
 - **`PlanFeatureRegistry`**: In-memory O(1) feature lookups from YAML configuration
 - **YAML Configuration**: Plan features now defined directly in `application-prd.yml`
 - **Internal Plans API**: Public endpoint `GET /api/v1/billing/internal/plans` (no auth required)
@@ -145,17 +145,19 @@ iqkv:
           basic-monthly:
             planCode: "basic-monthly"
             displayName: "Basic Monthly"
-            features:
-              prioritySupport: false
-              maxUsers: 5
-              maxProjects: 3
+            maxUsers: 5
+            maxProjects: 3
+            features: {} # no boolean features on basic
           pro-monthly:
             planCode: "pro-monthly"
             displayName: "Pro Monthly"
+            maxUsers: 50
+            maxProjects: 0 # unlimited
             features:
-              prioritySupport: true
-              maxUsers: 50
-              maxProjects: 0 # unlimited
+              priority_support:
+                title: "Priority Support"
+                value: "true"
+                description: "Access to priority support channel"
 ```
 
 ### **Service Configuration**
@@ -195,10 +197,21 @@ Response:
 [
   {
     "planCode": "basic-monthly",
+    "features": { "maxUsers": 5, "maxProjects": 3, "features": {} }
+  },
+  {
+    "planCode": "pro-monthly",
     "features": {
-      "prioritySupport": false,
-      "maxUsers": 5,
-      "maxProjects": 3
+      "maxUsers": 50,
+      "maxProjects": 0,
+      "features": {
+        "priority_support": {
+          "code": "priority_support",
+          "title": "Priority Support",
+          "value": "true",
+          "description": "Access to priority support channel"
+        }
+      }
     }
   }
 ]
