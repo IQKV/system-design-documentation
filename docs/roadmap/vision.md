@@ -114,11 +114,8 @@ Goal: Implement fine-grained plan-based feature access control and add internati
 
 Items deferred until the core platform is fully manageable:
 
-- Platform Admin UI — ban/unban (done), unlock, user impersonation (admin support tool)
-- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
 - Platform Admin UI — system health dashboard, background job monitoring
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
-- Tenant App — member ban/unban (done), member role editing (promote to Admin, transfer Ownership)
 - Tenant App — additional locales (RU, IT; infrastructure already in place)
 - SSO / SAML adapter (extension, not core)
 - Rate limiting (per-tenant and per-user, at Gateway)
