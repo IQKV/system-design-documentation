@@ -6,7 +6,7 @@ The SaaS Platform UI is a dedicated administrative interface for platform admins
 
 **Target Users:** Platform operators, support engineers, operations team
 
-**Tech Stack:** React 19 + Mantine UI 8 + TanStack Router + TanStack Query + TypeScript + Lingui i18n
+**Tech Stack:** React 19 + Mantine UI 9 + TanStack Router + TanStack Query + TypeScript + Lingui i18n
 
 **Architecture:** Admin pages embedded in the main user-facing SPA as a protected route group (`/admin/*`). No separate deployment — operator and tenant surfaces share the same app, the same build, and the same API Gateway connection. Route-level guards enforce `PLATFORM_ADMIN` authority; the two surfaces have completely separate layouts and session stores.
 

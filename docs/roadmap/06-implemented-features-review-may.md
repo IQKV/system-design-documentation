@@ -225,7 +225,7 @@ Plan fields: `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `price
 
 ### Tenant App (`foundation-ui-app`)
 
-**Tech stack:** React 19 · TypeScript 6 · Vite 8 (SWC) · Mantine UI 8 · TanStack Router (file-based) · TanStack Query · Zustand · React Hook Form + Zod · Lingui 6 · Axios · Vitest + Playwright · OxLint / OxFmt
+**Tech stack:** React 19 · TypeScript 6 · Vite 8 (SWC) · Mantine UI 9 · TanStack Router (file-based) · TanStack Query · Zustand · React Hook Form + Zod · Lingui 6 · Axios · Vitest + Playwright · OxLint / OxFmt
 
 **Architecture:** Feature-Sliced Design (`app → processes → pages → widgets → features → shared`); boundary tests via `pnpm test:arch`
 
@@ -269,7 +269,7 @@ Plan fields: `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `price
 
 ### Platform Admin (`foundation-ui-platform-admin`)
 
-**Tech stack:** React 19 · TypeScript · Vite + SWC · Mantine UI 8 · mantine-datatable · TanStack Router · TanStack Query · Zustand · Lingui · Zod + Mantine Form · Vitest + Playwright · OxLint / OxFmt
+**Tech stack:** React 19 · TypeScript · Vite + SWC · Mantine UI 9 · mantine-datatable · TanStack Router · TanStack Query · Zustand · Lingui · Zod + Mantine Form · Vitest + Playwright · OxLint / OxFmt
 
 **Architecture:** FSD-style layers (`app → processes → pages → features → shared`); boundary tests via `pnpm test:arch`
 

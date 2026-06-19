@@ -48,15 +48,17 @@ Then access:
 
 ---
 
-## Status: v0.2 — Completed
+## Status: v0.3 — In Progress
 
-The platform has completed the **Administration & Self-Service (v0.2)** milestone, delivering a fully manageable production-ready SaaS foundation.
+The platform is currently working on **v0.3 — Plan Feature Access Control & Internationalization**, adding fine-grained plan-based feature control and Bulgarian i18n support.
 
 - **v0.1 (Demo Release):** Core microservices (IAM, Gateway, Billing), basic UI auth flows, tenant lifecycle, Stripe integration
 - **v0.2 (Administration & Self-Service):** Platform admin UI, audit service, tenant self-service billing, announcements, in-app notifications, token exchange, avatar uploads, refunds API, WebSocket integration, Grafana dashboards
+- **v0.3 (Plan Feature Access Control & Internationalization):** Plan-based feature access control, Bulgarian (bg-BG) i18n translations, Spring Boot 4.1 upgrade, tenant user stats, read-only plan catalog, enterprise UI themes, E2E test improvements, SaaS landing kit plan selector
 
 For detailed feature breakdowns, see:
 
+- [Plan Feature Access Control Implementation Summary](docs/roadmap/10-implemented-plan-feature-access-control-summary.md)
 - [Latest Features Review (v0.2 Completion)](docs/roadmap/09-implemented-features-review.md)
 - [Previous Review (May 2026)](docs/roadmap/06-implemented-features-review-may.md)
 - [Roadmap & Vision](docs/roadmap/vision.md)
@@ -65,30 +67,32 @@ For detailed feature breakdowns, see:
 
 ## Key Features
 
-| Feature                         | Details                                                                                   |
-| ------------------------------- | ----------------------------------------------------------------------------------------- |
-| **Hybrid Tenancy**              | Single codebase supports both multi-tenant (B2B) and single-tenant (B2C) deployment modes |
-| **Schema-per-tenant Isolation** | Each tenant gets its own PostgreSQL schema for complete data separation                   |
-| **Production-ready IAM**        | JWT RS256 auth, RBAC, email verification, password reset, token revocation, invitations   |
-| **Stripe Billing Integration**  | Subscriptions, invoices, refunds, Customer Portal, webhook handling                       |
-| **Centralized Audit Trail**     | Passive event consumption, SPI-based extensibility, admin search API                      |
-| **Reactive API Gateway**        | JWT validation, header sanitization, audit context propagation, per-tenant metrics        |
-| **Tenant Self-Service UI**      | React 19 + Mantine SPA for workspace members, billing, notifications                      |
-| **Platform Admin UI**           | Operator interface for user/org management, audit logs, announcements, refunds            |
-| **Observability**               | Prometheus metrics, Grafana dashboards, Loki logging, correlation IDs                     |
-| **Event-driven Architecture**   | RabbitMQ topic exchange for async processing and platform events                          |
+| Feature                         | Details                                                                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Hybrid Tenancy**              | Single codebase supports both multi-tenant (B2B) and single-tenant (B2C) deployment modes                                                                              |
+| **Schema-per-tenant Isolation** | Each tenant gets its own PostgreSQL schema for complete data separation                                                                                                |
+| **Production-ready IAM**        | JWT RS256 auth, RBAC, email verification, password reset, token revocation, invitations, plan code in JWT, personal workspace always accessible                        |
+| **Plan Feature Access Control** | YAML-based plan config, in-memory registry, JWT plan code propagation, max users quota enforcement, plan feature guard, user entitlements API                          |
+| **Stripe Billing Integration**  | Subscriptions, invoices, refunds, Customer Portal, webhook handling, plan codes integration                                                                            |
+| **Centralized Audit Trail**     | Passive event consumption, SPI-based extensibility, admin search API, severity filters                                                                                 |
+| **Reactive API Gateway**        | JWT validation, header sanitization, audit context propagation, plan code header, plan catalog cache, RequiresPlanFeature filter                                       |
+| **Tenant Self-Service UI**      | React 19 + Mantine SPA for workspace members, billing, notifications, plan-based feature access, unified dark sidebar, Bulgarian i18n                                  |
+| **Platform Admin UI**           | Operator interface for user/org management, audit logs, announcements, refunds, enterprise theme, dashboard widgets, member signup trend chart, read-only plan catalog |
+| **Observability**               | Prometheus metrics, Grafana dashboards, Loki logging, correlation IDs                                                                                                  |
+| **Event-driven Architecture**   | RabbitMQ topic exchange for async processing and platform events                                                                                                       |
+| **Internationalization**        | English and Bulgarian (bg-BG) i18n support, multi-lingual announcements                                                                                                |
 
 ---
 
 ## Services
 
-- **IAM** (`foundation-iam-service`) — registration, JWT auth, account recovery, organizations, RBAC, invitations, token exchange, avatar uploads, announcements, in-app notifications
-- **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing, audit context propagation, per-tenant monitoring
-- **Billing** (`foundation-billing-service`) — Stripe integration; subscriptions, invoices, refunds, Customer Portal sessions
-- **Audit** (`foundation-audit-service`) — centralized event-driven audit trail with SPI-based extensibility; admin search API
-- **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, billing self-service, notifications
-- **Platform Admin** (`foundation-ui-platform-admin`) — Operator interface for global user, organization, plan, subscription, refund, announcement, and audit log management
-- **Landing Kit** (`foundation-ui-saas-landing-kit`) — Production-ready landing page template with integrated auth redirects
+- **IAM** (`foundation-iam-service`) — registration, JWT auth, account recovery, organizations, RBAC, invitations, token exchange, avatar uploads, announcements, in-app notifications, plan code caching, tenant user stats, max users quota enforcement, personal workspace handling
+- **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing, audit context propagation, per-tenant monitoring, plan code header, plan catalog cache, RequiresPlanFeature filter
+- **Billing** (`foundation-billing-service`) — Stripe integration; subscriptions, invoices, refunds, Customer Portal sessions, YAML-based plan config, PlanFeatureRegistry, internal plans API, user entitlements API, read-only plan catalog
+- **Audit** (`foundation-audit-service`) — centralized event-driven audit trail with SPI-based extensibility; admin search API, severity filters
+- **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, billing self-service, notifications, plan-based feature access, unified dark sidebar, E2E testing
+- **Platform Admin** (`foundation-ui-platform-admin`) — Operator interface for global user, organization, plan, subscription, refund, announcement, and audit log management, enterprise theme, dashboard widgets, member signup trend chart, E2E testing
+- **Landing Kit** (`foundation-ui-saas-landing-kit`) — Production-ready landing page template with integrated auth redirects, plan selector, API plans fetch, theme alignment with platform-admin
 
 ---
 
@@ -96,12 +100,12 @@ For detailed feature breakdowns, see:
 
 ### Backend
 
-- Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17
+- Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17
 - RabbitMQ (async event bus), Liquibase (migrations), Micrometer (metrics)
 
 ### Frontend
 
-- React 19, TypeScript, Mantine UI 8, TanStack Router + Query, Vite + SWC
+- React 19, TypeScript, Mantine UI 9, Mantine Form + Zod, TanStack Router + Query, Vite + SWC, Lingui (i18n), Playwright (E2E)
 
 ### Infrastructure
 

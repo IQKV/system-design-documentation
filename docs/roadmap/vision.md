@@ -69,7 +69,48 @@ Goal: Platform administrators have full management tooling; tenants have billing
 
 ---
 
-## Post-v0.2 — Scaling & Advanced Features
+## v0.3 — Plan Feature Access Control & Internationalization (In Progress)
+
+Goal: Implement fine-grained plan-based feature access control and add internationalization support.
+
+**Plan Feature Access Control**
+
+- [x] YAML-based plan configuration as single source of truth
+- [x] In-memory PlanFeatureRegistry for zero hot-path database calls
+- [x] JWT plan_code claim propagation
+- [x] Gateway X-Plan-Code header sanitization and propagation
+- [x] PlanCatalogCache with 10-minute refresh cycle
+- [x] RequiresPlanFeatureFilterFactory for route-level enforcement
+- [x] maxUsers quota enforcement (invitation acceptance, signup)
+- [x] User entitlements endpoint (`GET /api/v1/billing/entitlements/me`)
+- [x] Internal plans endpoint (`GET /api/v1/billing/internal/plans`)
+- [x] PlanFeatureGuard and PlanFeatureNotAvailableException
+- [x] Subscription event handling with planCode propagation
+
+**Internationalization**
+
+- [x] Bulgarian (bg-BG) i18n translations added
+- [x] Locale seed data for multi-lingual support
+- [x] Announcements with multi-lingual translation support
+
+**Other Enhancements**
+
+- [x] Spring Boot 4.1 upgrade across all services
+- [x] Common Spring Web exception handlers
+- [x] Tenant user stats endpoints (platform admin, owner/admin dashboard)
+- [x] Advanced analytics plan feature gate
+- [x] Audit of refund and subscription lifecycle events
+- [x] Improved Stripe integration (plan codes, product retrieval/updates)
+- [x] Personal workspace always accessible
+- [x] Avatar presigned URL public endpoint rewrite
+- [x] Skip tenant extraction for locales, announcements, /api-docs, /actuator, and WebSocket paths
+- [x] Tenant App: plan-based feature access control integration, billing entitlements API, personal workspace handling, dark sidebar layout, demo credentials hint, E2E test refactoring and data-testid attributes
+- [x] Platform Admin: read-only plan catalog UI, member signup trend chart, unified forms with Mantine Form + Zod, enterprise theme, dashboard widgets (subscription breakdown, audit feed, org health), E2E test refactoring and data-testid attributes, manage-platform-authority feature
+- [x] SaaS Landing Kit: plan selector component, fetch plans from API, theme alignment with platform-admin, link to user documentation
+
+---
+
+## Post-v0.3 — Scaling & Advanced Features
 
 Items deferred until the core platform is fully manageable:
 
