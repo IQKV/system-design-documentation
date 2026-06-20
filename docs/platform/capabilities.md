@@ -106,41 +106,42 @@ Centralized, event-driven activity logging. Passive observation of platform even
 
 Payment gateway abstraction with plan catalog and subscription state. Stripe is the active adapter — subscriptions, invoices, and payment collection are managed on the gateway side; this service maps tenants to customers and syncs webhook events.
 
-| Capability                 | Notes                                                                                                                                    | Status |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Payment gateway port       | `PaymentGatewayPort` hexagonal abstraction; Stripe adapter implemented; additional gateways via strategy pattern                         | ✅     |
-| Stripe integration         | Customer provisioning on `tenant.created` / provisioning events; webhook signature verification; subscription state cached locally       | ✅     |
-| Plan catalog               | Admin-managed plans (`planCode`, pricing, `featureSet`, `scope` TENANT/USER); tenant read APIs; soft-delete via `active=false`           | ✅     |
-| Plan eligibility           | Validates plan `scope` matches rollout mode and subject type at subscription creation                                                    | ✅     |
-| Billing settings           | Per-tenant `billing_settings`: Stripe customer ID, billing email, company info, tax ID, billing address; syncs to Stripe on PATCH        | ✅     |
-| Customer Portal            | `POST /billing/settings/{tenantKey}/portal` — creates Stripe Customer Portal session; tenant owner self-service                          | ✅     |
-| Refunds                    | `POST /billing/payments/{tenantKey}/refund` — initiate refund; `GET /billing/payments/{tenantKey}/refunds` — list; admin overview        | ✅     |
-| Platform admin APIs        | Admin CRUD for billing settings, subscriptions, plans, and refunds under `/admin/*`                                                      | ✅     |
-| User billing               | `user_billing_settings` for single-tenant mode; auto-created Stripe customer per user on first access                                    | ✅     |
-| Subscription cache         | Local cache of Stripe subscription state; updated via webhooks for fast reads without Stripe API calls                                   | ✅     |
-| Subject resolution         | `SubscriptionSubjectResolver` — TENANT-scoped (multi-tenant) vs USER-scoped (single-tenant)                                              | ✅     |
-| Entitlement evaluation     | `EntitlementEvaluator` — active subscription + plan `featureSet` for authorization decisions                                             | ✅     |
-| Multi-mode support         | Supports both multi-tenant (tenant-scoped) and single-tenant (user-scoped) billing models                                                | ✅     |
-| Webhook processing         | Idempotent Stripe webhook handling; subscription created/updated/deleted, invoice paid, payment failed                                   | ✅     |
-| REST API                   | Settings, subscriptions (`/{tenantKey}` and `/me`), plan catalog; JWT + tenant isolation                                                 | ✅     |
-| Lifecycle events           | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`, `refund.created` via RabbitMQ              | ✅     |
-| Email notifications        | Billing notification types published to RabbitMQ (subscription, trial, invoice, payment events) — consumed by email worker               | ✅     |
-| Scheduled jobs             | ShedLock-protected trial-ending (9 AM UTC) and payment-overdue (10 AM UTC) notification jobs                                             | ✅     |
-| Tax compliance             | Tax ID/VAT/GST storage and Stripe metadata sync for B2B invoicing                                                                        | ✅     |
-| Webhook idempotency        | `webhook_log` table tracks processed events; prevents duplicate processing                                                               | ✅     |
-| Email resolution           | Multi-tenant: `billing_settings.billingEmail`; single-tenant: `user_billing_settings.billingEmail` with fallback chain                   | ✅     |
-| Observability              | Prometheus metrics (revenue, subscriptions, webhook health), structured JSON logging, health checks; Grafana dashboard included          | ✅     |
-| YAML plan config           | Plan features defined in YAML config (application-prd.yaml, etc.); single source of truth                                                | ✅     |
-| PlanFeatureRegistry        | In-memory registry for O(1) plan feature lookups; loads from YAML config                                                                 | ✅     |
-| Typed plan features        | Plan features split into typed quotas (`maxUsers`, `maxProjects`) and open feature map (`Map<String, PlanFeature>); no hot-path DB calls | ✅     |
-| Internal plans API         | `GET /api/v1/billing/internal/plans` — public internal endpoint (no auth) returns all active plans with full details                     | ✅     |
-| User entitlements API      | `GET /api/v1/billing/entitlements/me` — returns user/tenant entitlements with active plan features and status                            | ✅     |
-| Stripe product sync        | Retrieve and update existing Stripe products if needed; plan codes integrated with Stripe product                                        | ✅     |
-| Plan description           | Plan description added to plan catalog; includes display name, pricing, description, maxUsers, maxProjects, features                     | ✅     |
-| Plan catalog read-only     | Plan catalog made read-only; removed admin CRUD endpoints                                                                                | ✅     |
-| Subscription updated event | Publishes `subscription.updated` event with planCode                                                                                     | ✅     |
-| Subject context fix        | Preserves subject context on `subscription.cancelled` webhook events                                                                     | ✅     |
-| No active sub entitlement  | `GET /api/v1/billing/entitlements/me` always returns 200 OK with free plan entitlements when no active subscription (instead of 404)     | ✅     |
+| Capability                 | Notes                                                                                                                                             | Status |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Payment gateway port       | `PaymentGatewayPort` hexagonal abstraction; Stripe adapter implemented; additional gateways via strategy pattern                                  | ✅     |
+| Stripe integration         | Customer provisioning on `tenant.created` / provisioning events; webhook signature verification; subscription state cached locally                | ✅     |
+| Plan catalog               | Admin-managed plans (`planCode`, pricing, `featureSet`, `scope` TENANT/USER, `trialPeriodDays`); tenant read APIs; soft-delete via `active=false` | ✅     |
+| Plan eligibility           | Validates plan `scope` matches rollout mode and subject type at subscription creation                                                             | ✅     |
+| Billing settings           | Per-tenant `billing_settings`: Stripe customer ID, billing email, company info, tax ID, billing address; syncs to Stripe on PATCH                 | ✅     |
+| Customer Portal            | `POST /billing/settings/{tenantKey}/portal` — creates Stripe Customer Portal session; tenant owner self-service                                   | ✅     |
+| Refunds                    | `POST /billing/payments/{tenantKey}/refund` — initiate refund; `GET /billing/payments/{tenantKey}/refunds` — list; admin overview                 | ✅     |
+| Platform admin APIs        | Admin CRUD for billing settings, subscriptions, plans, and refunds under `/admin/*`                                                               | ✅     |
+| User billing               | `user_billing_settings` for single-tenant mode; auto-created Stripe customer per user on first access                                             | ✅     |
+| Subscription cache         | Local cache of Stripe subscription state; updated via webhooks for fast reads without Stripe API calls                                            | ✅     |
+| Subject resolution         | `SubscriptionSubjectResolver` — TENANT-scoped (multi-tenant) vs USER-scoped (single-tenant)                                                       | ✅     |
+| Entitlement evaluation     | `EntitlementEvaluator` — active subscription + plan `featureSet` for authorization decisions                                                      | ✅     |
+| Multi-mode support         | Supports both multi-tenant (tenant-scoped) and single-tenant (user-scoped) billing models                                                         | ✅     |
+| Webhook processing         | Idempotent Stripe webhook handling; subscription created/updated/deleted, invoice paid, payment failed                                            | ✅     |
+| REST API                   | Settings, subscriptions (`/{tenantKey}` and `/me`), plan catalog; JWT + tenant isolation                                                          | ✅     |
+| Lifecycle events           | Publishes `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`, `refund.created` via RabbitMQ                       | ✅     |
+| Email notifications        | Billing notification types published to RabbitMQ (subscription, trial, invoice, payment events) — consumed by email worker                        | ✅     |
+| Scheduled jobs             | ShedLock-protected trial-ending (9 AM UTC) and payment-overdue (10 AM UTC) notification jobs                                                      | ✅     |
+| Tax compliance             | Tax ID/VAT/GST storage and Stripe metadata sync for B2B invoicing                                                                                 | ✅     |
+| Webhook idempotency        | `webhook_log` table tracks processed events; prevents duplicate processing                                                                        | ✅     |
+| Email resolution           | Multi-tenant: `billing_settings.billingEmail`; single-tenant: `user_billing_settings.billingEmail` with fallback chain                            | ✅     |
+| Observability              | Prometheus metrics (revenue, subscriptions, webhook health), structured JSON logging, health checks; Grafana dashboard included                   | ✅     |
+| YAML plan config           | Plan features defined in YAML config (application-prd.yaml, etc.); single source of truth                                                         | ✅     |
+| PlanFeatureRegistry        | In-memory registry for O(1) plan feature lookups; loads from YAML config                                                                          | ✅     |
+| Typed plan features        | Plan features split into typed quotas (`maxUsers`, `maxProjects`) and open feature map (`Map<String, PlanFeature>); no hot-path DB calls          | ✅     |
+| Internal plans API         | `GET /api/v1/billing/internal/plans` — public internal endpoint (no auth) returns all active plans with full details                              | ✅     |
+| User entitlements API      | `GET /api/v1/billing/entitlements/me` — returns user/tenant entitlements with active plan features and status                                     | ✅     |
+| Stripe product sync        | Retrieve and update existing Stripe products if needed; plan codes integrated with Stripe product                                                 | ✅     |
+| Plan description           | Plan description added to plan catalog; includes display name, pricing, description, maxUsers, maxProjects, features                              | ✅     |
+| Plan catalog read-only     | Plan catalog made read-only; removed admin CRUD endpoints                                                                                         | ✅     |
+| Subscription updated event | Publishes `subscription.updated` event with planCode                                                                                              | ✅     |
+| Subject context fix        | Preserves subject context on `subscription.cancelled` webhook events                                                                              | ✅     |
+| No active sub entitlement  | `GET /api/v1/billing/entitlements/me` always returns 200 OK with free plan entitlements when no active subscription (instead of 404)              | ✅     |
+| Subscription trial fields  | Subscription responses include `isInTrial` (boolean) and `trialDaysLeft` (number) for better UX                                                   | ✅     |
 
 ---
 
@@ -148,28 +149,28 @@ Payment gateway abstraction with plan catalog and subscription state. Stripe is 
 
 React 19 + Mantine SPA for workspace members. All requests go through the API Gateway with tenant-scoped JWTs and `X-Tenant-ID`. Static build (Nginx or CDN).
 
-| Screen / flow               | Notes                                                                                                                       | Status |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Sign-in                     | Credentials → tenant discovery (`POST /users/tenants`); multi-tenant picker; single-tenant direct sign-in                   | ✅     |
-| Sign-up                     | Self-service registration + tenant creation; polls provisioning until `ACTIVE`                                              | ✅     |
-| Password reset              | Forgot-password email + token-based reset (`/forgot-password`, `/reset-password`)                                           | ✅     |
-| Email verification          | Token-based verification from email link (`/verify-email`)                                                                  | ✅     |
-| Accept invitation           | Public `/invite/:token` — new and existing users                                                                            | ✅     |
-| Dashboard                   | Workspace name, welcome, team member count                                                                                  | ✅     |
-| Team — members              | Searchable member list, ban/unban members (`TENANT_OWNER`)                                                                  | ✅     |
-| Team — invitations          | Send, list, revoke pending invitations (`TENANT_OWNER`)                                                                     | ✅     |
-| My account                  | Profile view/edit, change password, organizations and roles; avatar upload                                                  | ✅     |
-| Billing self-service        | Stripe Customer Portal access, active subscription view, plan catalog, billing info, refunds list                           | ✅     |
-| Tenant settings             | Organization metadata editing                                                                                               | ✅     |
-| Notifications               | In-app notification list, unread badge, mark-as-read, delete; real-time WebSocket push (STOMP/SockJS)                       | ✅     |
-| Session security            | Access token in memory; refresh + tenant key in `sessionStorage`; silent refresh; 30min inactivity timeout                  | ✅     |
-| i18n & theme                | Lingui (English and Bulgarian catalogs); locale cookie; light/dark theme; unified dark sidebar layout                       | ✅     |
-| Member role editing         | Change member authorities beyond invitation default; transfer ownership (`TENANT_OWNER`)                                    | ✅     |
-| Plan-based feature access   | Integrates with billing entitlements API for plan-based feature visibility and access control                               | ✅     |
-| Personal workspace handling | Hides personal workspace from org settings and nav; handles personal workspaces in entitlements & billing pages             | ✅     |
-| Demo credentials hint       | Shows demo credentials hint when VITE_DEMO_MODE is enabled                                                                  | ✅     |
-| Billing setup form          | Shows setup form instead of error when billing settings not found                                                           | ✅     |
-| E2E testing                 | Restructured E2E test suite for scalability; added data-testid attributes to all key components; centralized test utilities | ✅     |
+| Screen / flow               | Notes                                                                                                                                                  | Status |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| Sign-in                     | Credentials → tenant discovery (`POST /users/tenants`); multi-tenant picker; single-tenant direct sign-in                                              | ✅     |
+| Sign-up                     | Self-service registration + tenant creation; polls provisioning until `ACTIVE`                                                                         | ✅     |
+| Password reset              | Forgot-password email + token-based reset (`/forgot-password`, `/reset-password`)                                                                      | ✅     |
+| Email verification          | Token-based verification from email link (`/verify-email`)                                                                                             | ✅     |
+| Accept invitation           | Public `/invite/:token` — new and existing users                                                                                                       | ✅     |
+| Dashboard                   | Workspace name, welcome, team member count                                                                                                             | ✅     |
+| Team — members              | Searchable member list, ban/unban members (`TENANT_OWNER`)                                                                                             | ✅     |
+| Team — invitations          | Send, list, revoke pending invitations (`TENANT_OWNER`)                                                                                                | ✅     |
+| My account                  | Profile view/edit, change password, organizations and roles; avatar upload                                                                             | ✅     |
+| Billing self-service        | Stripe Customer Portal access, active subscription view (with trial status and days left), plan catalog (with trial badge), billing info, refunds list | ✅     |
+| Tenant settings             | Organization metadata editing                                                                                                                          | ✅     |
+| Notifications               | In-app notification list, unread badge, mark-as-read, delete; real-time WebSocket push (STOMP/SockJS)                                                  | ✅     |
+| Session security            | Access token in memory; refresh + tenant key in `sessionStorage`; silent refresh; 30min inactivity timeout                                             | ✅     |
+| i18n & theme                | Lingui (English and Bulgarian catalogs); locale cookie; light/dark theme; unified dark sidebar layout                                                  | ✅     |
+| Member role editing         | Change member authorities beyond invitation default; transfer ownership (`TENANT_OWNER`)                                                               | ✅     |
+| Plan-based feature access   | Integrates with billing entitlements API for plan-based feature visibility and access control                                                          | ✅     |
+| Personal workspace handling | Hides personal workspace from org settings and nav; handles personal workspaces in entitlements & billing pages                                        | ✅     |
+| Demo credentials hint       | Shows demo credentials hint when VITE_DEMO_MODE is enabled                                                                                             | ✅     |
+| Billing setup form          | Shows setup form instead of error when billing settings not found                                                                                      | ✅     |
+| E2E testing                 | Restructured E2E test suite for scalability; added data-testid attributes to all key components; centralized test utilities                            | ✅     |
 
 ---
 

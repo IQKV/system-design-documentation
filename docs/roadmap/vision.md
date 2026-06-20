@@ -107,6 +107,7 @@ Goal: Implement fine-grained plan-based feature access control and add internati
 - [x] Tenant App: plan-based feature access control integration, billing entitlements API, personal workspace handling, dark sidebar layout, demo credentials hint, E2E test refactoring and data-testid attributes
 - [x] Platform Admin: read-only plan catalog UI, member signup trend chart, unified forms with Mantine Form + Zod, enterprise theme, dashboard widgets (subscription breakdown, audit feed, org health), E2E test refactoring and data-testid attributes, manage-platform-authority feature
 - [x] SaaS Landing Kit: plan selector component, fetch plans from API, theme alignment with platform-admin, link to user documentation
+- [x] Trial period support: added `trialPeriodDays` to plan catalog, Stripe checkout uses plan's trial, `isInTrial` and `trialDaysLeft` in subscription responses, UI shows trial badges and status
 
 ---
 

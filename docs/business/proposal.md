@@ -46,7 +46,7 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - `PaymentGatewayPort` hexagonal abstraction — Stripe adapter implemented; swap gateways without business logic changes
 - Auto-provisions Stripe customer on `tenant.provisioned` event (RabbitMQ)
 - Per-tenant `billing_settings`: billing email, tax ID/VAT, Stripe Customer Portal session
-- Plan catalog CRUD (platform admin); subscription checkout and management (tenant owner)
+- Plan catalog (with trial period support); subscription checkout and management (tenant owner)
 - Refunds API — initiate and list refunds per tenant; platform admin refund overview
 - Idempotent Stripe webhook ingestion; publishes lifecycle events to the platform event bus
 - Grafana dashboard with business KPIs: revenue, active subscriptions, webhook health
@@ -68,7 +68,7 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - Accept invitations (`/invite/:token`) — new and existing users
 - Dashboard, team member list, send/revoke invitations (`TENANT_OWNER`), ban/unban members (`TENANT_OWNER`)
 - My Account — profile, password, organizations and roles; avatar upload
-- Billing — portal access, active subscription, plan catalog, billing info, refunds
+- Billing — portal access, active subscription (with trial status), plan catalog (with trial badges), billing info, refunds
 - Tenant settings — organization metadata editing
 - In-app notifications with WebSocket support; notification bell UI
 - Silent token refresh, 30-minute inactivity sign-out, light/dark theme, Lingui i18n
