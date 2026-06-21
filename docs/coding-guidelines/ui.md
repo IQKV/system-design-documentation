@@ -1,6 +1,6 @@
 # UI Coding Guidelines
 
-> Consolidated reference for building UI code across `app.iqkv.site` and `auth.iqkv.site`.
+> Consolidated reference for building UI code across `app.iqkv.site` and `admin.iqkv.site`.
 > Both projects share identical conventions. Follow this document as the single source of truth.
 
 ---
@@ -8,12 +8,12 @@
 ## Tech Stack
 
 | Category          | Library / Tool             | Version            |
-| ----------------- | -------------------------- | ------------------ |
+| ----------------- | -------------------------- |--------------------|
 | Language          | TypeScript                 | ~5.9.3             |
 | Runtime           | React                      | ^19.2.4            |
 | Build             | Vite + SWC                 | ^7.3.1 / ^4.3.0    |
 | Package manager   | pnpm                       | 11.0.8             |
-| UI library        | Mantine                    | ^8.3.16            |
+| UI library        | Mantine                    | ^9.3.2             |
 | Routing           | TanStack Router            | ^1.166.7           |
 | Data fetching     | TanStack Query             | ^5.90.21           |
 | State management  | Zustand + Immer            | ^5.0.11 / ^11.1.4  |
@@ -810,7 +810,7 @@ Examples:
 ```
 feat(auth): add OAuth2 login flow
 fix(dashboard): correct chart data aggregation
-chore(deps): upgrade Mantine to 8.3.16
+chore(deps): upgrade Mantine to 9.3.2
 ```
 
 ### Pre-commit Hooks (lint-staged)
