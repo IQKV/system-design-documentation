@@ -90,8 +90,9 @@ For detailed feature breakdowns, see:
 - **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing, audit context propagation, per-tenant monitoring, plan code header, plan catalog cache, RequiresPlanFeature filter
 - **Billing** (`foundation-billing-service`) — Stripe integration; subscriptions, invoices, refunds, Customer Portal sessions, YAML-based plan config, PlanFeatureRegistry, internal plans API, user entitlements API, read-only plan catalog
 - **Audit** (`foundation-audit-service`) — centralized event-driven audit trail with SPI-based extensibility; admin search API, severity filters
-- **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, billing self-service, notifications, plan-based feature access, unified dark sidebar, E2E testing
-- **Platform Admin** (`foundation-ui-platform-admin`) — Operator interface for global user, organization, plan, subscription, refund, announcement, and audit log management, enterprise theme, dashboard widgets, member signup trend chart, E2E testing
+- **CMS** (`foundation-cms-service`) — content management microservice with static page management, multi-language support, hierarchical content structure, SEO-friendly metadata, tenant isolation via schema-per-tenant
+- **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, billing self-service, notifications, plan-based feature access, unified dark sidebar, Bulgarian i18n
+- **Platform Admin** (`foundation-ui-platform-admin`) — Operator interface for global user, organization, plan, subscription, refund, announcement, audit log, and CMS content management, enterprise theme, dashboard widgets, member signup trend chart, E2E testing
 - **Landing Kit** (`foundation-ui-saas-landing-kit`) — Production-ready landing page template with integrated auth redirects, plan selector, API plans fetch, theme alignment with platform-admin
 
 ---

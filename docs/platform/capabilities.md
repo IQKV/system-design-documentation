@@ -145,6 +145,24 @@ Payment gateway abstraction with plan catalog and subscription state. Stripe is 
 
 ---
 
+## CMS
+
+Content management service for static pages, multi-language support, and hierarchical content.
+
+| Capability           | Notes                                                                                                  | Status |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | ------ |
+| Page management      | Create, edit, delete, publish pages with draft/published status                                        | ✅     |
+| Multi-language       | Per-locale page translations with en-US fallback                                                       | ✅     |
+| Hierarchical content | Parent-child page relationships with SEO-friendly slugs                                                | ✅     |
+| SEO metadata         | Title, description, Open Graph tags, canonical URLs                                                    | ✅     |
+| Tenant isolation     | Schema-per-tenant PostgreSQL architecture with MyBatis schema interceptor                              | ✅     |
+| Event publishing     | Publishes `cms.page.created`, `cms.page.updated`, `cms.page.deleted` events to RabbitMQ topic exchange | ✅     |
+| Public API           | Read-only public endpoints for fetching published pages with locale fallback                           | ✅     |
+| Admin API            | Platform admin CRUD endpoints for managing content with tenant isolation                               | ✅     |
+| Observability        | Prometheus metrics, health checks, and actuator endpoints on separate management port                  | ✅     |
+
+---
+
 ## UI — Tenant app (`foundation-ui-app`)
 
 React 19 + Mantine SPA for workspace members. All requests go through the API Gateway with tenant-scoped JWTs and `X-Tenant-ID`. Static build (Nginx or CDN).

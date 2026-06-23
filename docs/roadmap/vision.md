@@ -93,6 +93,18 @@ Goal: Implement fine-grained plan-based feature access control and add internati
 - [x] Locale seed data for multi-lingual support
 - [x] Announcements with multi-lingual translation support
 
+**CMS Service**
+
+- [x] Static page management with draft/published status
+- [x] Multi-language support with en-US fallback
+- [x] Hierarchical content structure with parent-child pages
+- [x] SEO-friendly metadata (title, description, Open Graph tags, canonical URLs)
+- [x] Tenant isolation with schema-per-tenant PostgreSQL architecture
+- [x] Event-driven content lifecycle publishing to RabbitMQ
+- [x] Public read-only API for published pages
+- [x] Platform admin CRUD API for content management
+- [x] Observability with Prometheus metrics and health checks
+
 **Other Enhancements**
 
 - [x] Spring Boot 4.1 upgrade across all services

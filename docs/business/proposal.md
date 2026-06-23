@@ -61,6 +61,20 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - SPI pattern (`foundation-audit-spi`) — plug in Elasticsearch or custom SIEM backends without touching core
 - Secured admin search API — paginated, filterable by user, tenant, and action; restricted to `PLATFORM_ADMIN`
 
+### CMS Service (`foundation-cms-service`)
+
+- Content management microservice for static page management
+- Multi-language support with en-US fallback for internationalization
+- Hierarchical content structure with parent-child page relationships
+- SEO-friendly metadata (title, description, Open Graph tags, canonical URLs)
+- Tenant isolation via schema-per-tenant PostgreSQL architecture
+- Publishing status management (draft/published) for content workflows
+- Event-driven architecture with RabbitMQ event publishing for content lifecycle events
+- Public read-only API for fetching published pages
+- Platform admin CRUD API for managing content
+
+### Tenant UI (`foundation-ui-app`)
+
 ### Tenant UI (`foundation-ui-app`)
 
 - React 19 + TypeScript + Mantine UI SPA for workspace members

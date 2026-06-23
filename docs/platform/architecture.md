@@ -37,18 +37,19 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
                                   │
                     ┌─────────────┴──────────────┐
                     ▼                            ▼
-                   IAM                        Billing                     Audit
-              (Spring Boot)              (Spring Boot)               (Spring Boot)
-                    │                            │                           │
-                    ▼                            ▼                           ▼
-             PostgreSQL (iam)            PostgreSQL (billing)        PostgreSQL (audit)
-            (Schema-per-tenant)          (Stripe integration)        (Centralized logs)
+                   IAM                        Billing                     Audit                     CMS
+              (Spring Boot)              (Spring Boot)               (Spring Boot)               (Spring Boot)
+                    │                            │                           │                           │
+                    ▼                            ▼                           ▼                           ▼
+             PostgreSQL (iam)            PostgreSQL (billing)        PostgreSQL (audit)        PostgreSQL (cms)
+            (Schema-per-tenant)          (Stripe integration)        (Centralized logs)       (Schema-per-tenant)
 
-                    └─────────────┬──────────────┴───────────────┘
+                    └─────────────┬──────────────┴───────────────┬───────────────┘
                                   ▼
                               RabbitMQ
                         (Async tenant provisioning,
-                         audit events & lifecycle)
+                         audit events & lifecycle,
+                         content events)
 
   UI (React + Mantine) ──▶ API Gateway (all requests proxied)
                           (JWT validation & context propagation)
@@ -209,6 +210,32 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 **Events Consumed:** `user.#`, `tenant.#`, `subscription.#`, `invoice.#`, `audit.#`
 
 **Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17, RabbitMQ, Liquibase
+
+### CMS Service
+
+**Content Management Service**
+
+**Core Capabilities:**
+
+- Static page management with publishing status (draft/published)
+- Multi-language support with en-US fallback
+- Hierarchical content structure with parent/child page relationships
+- SEO-friendly metadata (title, description, Open Graph tags, canonical URLs)
+- Tenant isolation with schema-per-tenant PostgreSQL architecture
+- Event-driven content lifecycle publishing (`cms.page.created`, `cms.page.updated`, `cms.page.deleted`)
+- Public read-only API for fetching published pages
+- Platform admin CRUD API for managing content
+
+**Key Patterns:**
+
+- `PageService` handles CRUD operations with publishing status management
+- `PageTranslation` entity for multi-language content with fallback logic
+- Tenant schema routing via `MyBatisSchemaInterceptor`
+- Event publishing to RabbitMQ for content changes
+
+**Events Published:** `cms.page.created`, `cms.page.updated`, `cms.page.deleted`
+
+**Tech Stack:** Java 25, Spring Boot 4.x, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, Micrometer
 
 ### Billing Settings
 
