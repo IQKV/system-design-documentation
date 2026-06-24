@@ -9,7 +9,7 @@
 
 ### IAM Service (`foundation-iam-service`)
 
-**Tech stack:** Java 25 / Spring Boot 4.0 · MyBatis 3.x · PostgreSQL 17 · Liquibase · RabbitMQ · JJWT 0.13 RS256 · ShedLock 7.x · Thymeleaf · Micrometer + Prometheus
+**Tech stack:** Java 25 / Spring Boot 4.1 · MyBatis 3.x · PostgreSQL 17 · Liquibase · RabbitMQ · JJWT 0.13 RS256 · ShedLock 7.x · Thymeleaf · Micrometer + Prometheus
 
 #### Authentication
 
@@ -106,7 +106,7 @@
 
 ### Gateway Service (`foundation-gateway-service`)
 
-**Tech stack:** Java 25 / Spring Boot 4.0 · Spring Cloud Gateway (WebFlux) · Spring Security OAuth2 Resource Server · Micrometer + Prometheus
+**Tech stack:** Java 25 / Spring Boot 4.1 · Spring Cloud Gateway (WebFlux) · Spring Security OAuth2 Resource Server · Micrometer + Prometheus
 
 #### Filter Chain
 
@@ -147,7 +147,7 @@
 
 ### Billing Service (`foundation-billing-service`)
 
-**Tech stack:** Java 25 / Spring Boot 4.0 · MyBatis 3.x · PostgreSQL 17 · Liquibase · RabbitMQ · Stripe Java SDK · ShedLock 7.x · Micrometer + Prometheus
+**Tech stack:** Java 25 / Spring Boot 4.1 · MyBatis 3.x · PostgreSQL 17 · Liquibase · RabbitMQ · Stripe Java SDK · ShedLock 7.x · Micrometer + Prometheus
 
 #### Billing Settings
 

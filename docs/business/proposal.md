@@ -203,7 +203,7 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 
 ### Technology Stack
 
-- **Backend**: Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17
+- **Backend**: Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17
 - **Frontend**: React 19, TypeScript, Mantine UI 9, TanStack Router + Query, Vite + SWC
 - **Infrastructure**: Kubernetes, Helm, Docker, RabbitMQ, MinIO (S3-compatible)
 - **Security**: JJWT 0.13 (RS256), Spring Security OAuth2 Resource Server, BCrypt

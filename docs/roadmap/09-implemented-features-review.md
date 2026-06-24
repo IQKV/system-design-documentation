@@ -9,7 +9,7 @@
 
 ### Foundation Audit Service (`foundation-audit-service`)
 
-**Tech stack:** Java 25 / Spring Boot 4.0 · MyBatis 3.x · PostgreSQL 17 · Liquibase · RabbitMQ · Micrometer + Prometheus
+**Tech stack:** Java 25 / Spring Boot 4.1 · MyBatis 3.x · PostgreSQL 17 · Liquibase · RabbitMQ · Micrometer + Prometheus
 
 **Purpose:** Centralized microservice for platform-wide event consumption, transformation, and storage. Acts as the single source of truth for all activity logs across the platform.
 

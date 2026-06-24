@@ -96,7 +96,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Events Published:** `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`, `tenant.provisioning.failed`
 
-**Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, JJWT 0.13 (RS256), ShedLock 7.x, Thymeleaf (email templates)
+**Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, JJWT 0.13 (RS256), ShedLock 7.x, Thymeleaf (email templates)
 
 ---
 
@@ -134,7 +134,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Events Published:** `api.request.metered` (planned)
 
-**Tech Stack:** Java 25, Spring Boot 4.0, Spring Cloud Gateway, Spring Security OAuth2 Resource Server, WebFlux, Micrometer
+**Tech Stack:** Java 25, Spring Boot 4.1, Spring Cloud Gateway, Spring Security OAuth2 Resource Server, WebFlux, Micrometer
 
 ---
 
@@ -184,7 +184,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Events Published:** `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`, `notification.billing.email`
 
-**Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17, Stripe Java SDK, RabbitMQ, ShedLock 7.x, Thymeleaf (email templates)
+**Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Stripe Java SDK, RabbitMQ, ShedLock 7.x, Thymeleaf (email templates)
 
 ---
 
@@ -209,7 +209,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Events Consumed:** `user.#`, `tenant.#`, `subscription.#`, `invoice.#`, `audit.#`
 
-**Tech Stack:** Java 25, Spring Boot 4.0, MyBatis 3.x, PostgreSQL 17, RabbitMQ, Liquibase
+**Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, RabbitMQ, Liquibase
 
 ### CMS Service
 
