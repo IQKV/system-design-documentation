@@ -47,6 +47,7 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - Auto-provisions Stripe customer on `tenant.provisioned` event (RabbitMQ)
 - Per-tenant `billing_settings`: billing email, tax ID/VAT, Stripe Customer Portal session
 - Plan catalog (with trial period support); subscription checkout and management (tenant owner)
+- **Per-seat pricing** — `PricingModel` enum (`FLAT` / `PER_SEAT`); checkout quantity routing enforced in `SubscriptionService`; seat-cap validation against `maxUsers`; dedicated `PATCH .../seats` endpoint for mid-cycle seat adjustments with proration; `seatCount` propagated on subscription events for downstream IAM enforcement
 - Refunds API — initiate and list refunds per tenant; platform admin refund overview
 - Idempotent Stripe webhook ingestion; publishes lifecycle events to the platform event bus
 - Grafana dashboard with business KPIs: revenue, active subscriptions, webhook health
@@ -82,7 +83,7 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - Accept invitations (`/invite/:token`) — new and existing users
 - Dashboard, team member list, send/revoke invitations (`TENANT_OWNER`), ban/unban members (`TENANT_OWNER`)
 - My Account — profile, password, organizations and roles; avatar upload
-- Billing — portal access, active subscription (with trial status), plan catalog (with trial badges), billing info, refunds
+- Billing — portal access, active subscription (with trial status), plan catalog (with trial badges and per-seat pricing labels), billing info, refunds
 - Tenant settings — organization metadata editing
 - In-app notifications with WebSocket support; notification bell UI
 - Silent token refresh, 30-minute inactivity sign-out, light/dark theme, Lingui i18n
@@ -152,7 +153,7 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 
 - Complete user authentication and authorization (IAM Service)
 - Multi-tenant data isolation with PostgreSQL schemas
-- Stripe subscription billing with refunds and Customer Portal (Billing Service)
+- Stripe subscription billing with flat-rate and per-seat pricing, refunds, and Customer Portal (Billing Service)
 - Centralized audit logging with passive event consumption (Audit Service)
 - Reactive API gateway with JWT validation and audit context propagation (Gateway Service)
 - Tenant-facing React SPA with billing, notifications, and team management (foundation-ui-app)
@@ -230,9 +231,10 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 Current limitations and out-of-scope features:
 
 - SSO / SAML integration (planned as extension; Jackson-compatible)
-- Usage-based billing and metering
+- Usage-based billing and metering (per-seat flat pricing implemented; metered aggregation deferred)
 - Multi-region deployment
 - Managed hosting service
 - Advanced analytics and reporting (MRR/ARR dashboard planned)
 - Member role editing beyond invitation default (planned)
 - Platform actions: impersonation (planned; unlock/ban/unban implemented)
+- Per-seat IAM enforcement (seat count propagated to IAM via events; quota enforcement against purchased seats deferred)

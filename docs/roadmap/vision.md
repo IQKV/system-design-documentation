@@ -105,6 +105,23 @@ Goal: Implement fine-grained plan-based feature access control and add internati
 - [x] Platform admin CRUD API for content management
 - [x] Observability with Prometheus metrics and health checks
 
+**Per-Seat Pricing**
+
+- [x] `PricingModel` enum (`FLAT` / `PER_SEAT`) — new type in billing-service `plan` package
+- [x] `StripeProductSchema` — optional `pricingModel` field; `effectivePricingModel()` defaults to `FLAT` (backward compatible)
+- [x] `Plan` entity — `pricingModel` field; Liquibase migration adds `pricing_model VARCHAR(16) NOT NULL DEFAULT 'FLAT'` to `plan_catalog`
+- [x] `PlanMapper` — `pricing_model` in all SELECT / INSERT / UPDATE statements
+- [x] `BillingSeedRunner` — persists `pricingModel` from YAML at startup
+- [x] `PlanFeatureRegistry` — `pricingModelForPlan()` O(1) lookup; `PlanCatalogEntry` bundles features + pricingModel; `allEntries()` for internal API
+- [x] `SubscriptionService` — `resolveEffectiveQuantity` (FLAT → always 1; PER_SEAT → caller value ≥ 1) + `validateSeatCount` (throws `SeatLimitExceededException` HTTP 422 when seats > maxUsers)
+- [x] `SubscriptionService.adjustSeats` — dedicated seat-change operation with proration; rejects non-PER_SEAT plans
+- [x] `PATCH /api/v1/billing/subscriptions/{tenantKey}/{subscriptionId}/seats` — REST endpoint; 204 No Content; TENANT_OWNER or ADMIN authority
+- [x] `SubscriptionEvent` — `seatCount` field (nullable Long); old publisher overloads deprecated; downstream consumers receive seatCount for PER_SEAT plans
+- [x] Internal and public plans API — `pricingModel` exposed in both response DTOs
+- [x] `foundation-iam-service` — `PlanFeatures` updated with `pricingModel` component, `isPerSeat()` helper, `has()` method; `PlanFeatureGuard` delegates to `features.has()`
+- [x] `foundation-cms-service` and `foundation-microservice-project-layout` — `PlanFeatures` updated with `pricingModel` component and `isPerSeat()` helper
+- [x] `foundation-ui-app` — `PricingModel` union type; `pricingModel` on Plan and PlanFeatures interfaces; plan card renders `/ seat / {period}` label for PER_SEAT plans
+
 **Other Enhancements**
 
 - [x] Spring Boot 4.1 upgrade across all services
@@ -133,6 +150,7 @@ Items deferred until the core platform is fully manageable:
 - SSO / SAML adapter (extension, not core)
 - Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain
-- Usage-based billing metering
+- Usage-based metered billing (`METERED` pricing model; per-seat flat pricing is complete)
+- IAM per-seat enforcement — enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; requires `activeSeatCount` on tenant + `SubscriptionEventConsumer` update in IAM
 - Multi-region support
 - Managed hosting offering

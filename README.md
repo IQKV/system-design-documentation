@@ -50,14 +50,15 @@ Then access:
 
 ## Status: v0.3 — In Progress
 
-The platform is currently working on **v0.3 — Plan Feature Access Control & Internationalization**, adding fine-grained plan-based feature control and Bulgarian i18n support.
+The platform is currently finishing **v0.3 — Plan Feature Access Control, Internationalization & Per-Seat Pricing**, adding fine-grained plan-based feature control, Bulgarian i18n support, and per-seat billing.
 
 - **v0.1 (Demo Release):** Core microservices (IAM, Gateway, Billing), basic UI auth flows, tenant lifecycle, Stripe integration
 - **v0.2 (Administration & Self-Service):** Platform admin UI, audit service, tenant self-service billing, announcements, in-app notifications, token exchange, avatar uploads, refunds API, WebSocket integration, Grafana dashboards
-- **v0.3 (Plan Feature Access Control & Internationalization):** Plan-based feature access control, Bulgarian (bg-BG) i18n translations, Spring Boot 4.1 upgrade, tenant user stats, read-only plan catalog, enterprise UI themes, E2E test improvements, SaaS landing kit plan selector
+- **v0.3 (Plan Feature Access Control, i18n & Per-Seat Pricing):** Plan-based feature access control, Bulgarian (bg-BG) i18n translations, Spring Boot 4.1 upgrade, tenant user stats, read-only plan catalog, enterprise UI themes, E2E test improvements, SaaS landing kit plan selector, per-seat pricing (`PricingModel` FLAT/PER_SEAT, seat-cap validation, seat adjustment API, seatCount in subscription events, downstream consumer updates)
 
 For detailed feature breakdowns, see:
 
+- [Per-Seat Payment Implementation Record](docs/roadmap/11-implemented-per-seat-payments.md)
 - [Plan Feature Access Control Implementation Summary](docs/roadmap/10-implemented-plan-feature-access-control-summary.md)
 - [Latest Features Review (v0.2 Completion)](docs/roadmap/09-implemented-features-review.md)
 - [Previous Review (May 2026)](docs/roadmap/06-implemented-features-review-may.md)
@@ -73,7 +74,7 @@ For detailed feature breakdowns, see:
 | **Schema-per-tenant Isolation** | Each tenant gets its own PostgreSQL schema for complete data separation                                                                                                |
 | **Production-ready IAM**        | JWT RS256 auth, RBAC, email verification, password reset, token revocation, invitations, plan code in JWT, personal workspace always accessible                        |
 | **Plan Feature Access Control** | YAML-based plan config, in-memory registry, JWT plan code propagation, max users quota enforcement, plan feature guard, user entitlements API                          |
-| **Stripe Billing Integration**  | Subscriptions, invoices, refunds, Customer Portal, webhook handling, plan codes integration                                                                            |
+| **Stripe Billing Integration**  | Subscriptions, invoices, refunds, Customer Portal, webhook handling, plan codes integration, per-seat pricing with seat-cap validation and mid-cycle adjustment API    |
 | **Centralized Audit Trail**     | Passive event consumption, SPI-based extensibility, admin search API, severity filters                                                                                 |
 | **Reactive API Gateway**        | JWT validation, header sanitization, audit context propagation, plan code header, plan catalog cache, RequiresPlanFeature filter                                       |
 | **Tenant Self-Service UI**      | React 19 + Mantine SPA for workspace members, billing, notifications, plan-based feature access, unified dark sidebar, Bulgarian i18n                                  |
@@ -88,7 +89,7 @@ For detailed feature breakdowns, see:
 
 - **IAM** (`foundation-iam-service`) — registration, JWT auth, account recovery, organizations, RBAC, invitations, token exchange, avatar uploads, announcements, in-app notifications, plan code caching, tenant user stats, max users quota enforcement, personal workspace handling
 - **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing, audit context propagation, per-tenant monitoring, plan code header, plan catalog cache, RequiresPlanFeature filter
-- **Billing** (`foundation-billing-service`) — Stripe integration; subscriptions, invoices, refunds, Customer Portal sessions, YAML-based plan config, PlanFeatureRegistry, internal plans API, user entitlements API, read-only plan catalog
+- **Billing** (`foundation-billing-service`) — Stripe integration; subscriptions, invoices, refunds, Customer Portal sessions, YAML-based plan config, PlanFeatureRegistry, internal plans API, user entitlements API, read-only plan catalog, per-seat pricing (`PricingModel` FLAT/PER_SEAT), seat-cap validation, seat adjustment API (`PATCH .../seats`), seatCount in subscription events
 - **Audit** (`foundation-audit-service`) — centralized event-driven audit trail with SPI-based extensibility; admin search API, severity filters
 - **CMS** (`foundation-cms-service`) — content management microservice with static page management, multi-language support, hierarchical content structure, SEO-friendly metadata, tenant isolation via schema-per-tenant
 - **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, billing self-service, notifications, plan-based feature access, unified dark sidebar, Bulgarian i18n

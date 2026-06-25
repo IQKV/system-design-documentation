@@ -152,6 +152,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Async email notification publishing for billing events
 - Pre-provisioned plan catalog with eligibility validation
 - Multi-mode support: tenant-scoped (multi-tenant) vs user-scoped (single-tenant)
+- **Per-seat pricing**: `PricingModel.PER_SEAT` plans route checkout with `quantity = seatCount`; seat-cap enforced against `maxUsers`; dedicated seat-adjustment endpoint with proration; `seatCount` propagated on subscription events
 
 **Stripe Integration:**
 
@@ -286,6 +287,7 @@ subscriptions
 ├── external_customer_id      VARCHAR(255)           -- Stripe cus_xxx
 ├── status                    VARCHAR(50)            -- active | past_due | canceled | unpaid | trialing
 ├── plan_id                   VARCHAR(255)           -- Stripe price ID
+├── quantity                  BIGINT                 -- seat count for PER_SEAT plans; 1 for FLAT plans
 ├── current_period_start      TIMESTAMP
 ├── current_period_end        TIMESTAMP
 ├── cancel_at_period_end      BOOLEAN
@@ -299,16 +301,17 @@ subscriptions
 **Plan Catalog:**
 
 ```sql
-plans
+plan_catalog
 ├── id              UUID PK
 ├── plan_code       VARCHAR(100) UNIQUE
 ├── display_name    VARCHAR(255)
 ├── billing_period  VARCHAR(50)            -- MONTHLY | ANNUAL
-├── price_minor     INTEGER                -- Price in cents
+├── price_minor     INTEGER                -- flat total OR per-seat unit price (see pricing_model)
 ├── currency        VARCHAR(3)
-├── feature_set     JSONB                  -- Feature flags and limits
+├── feature_set     JSONB                  -- Feature flags and limits (maxUsers doubles as seat ceiling)
 ├── scope           VARCHAR(50)            -- TENANT | USER
 ├── active          BOOLEAN
+├── pricing_model   VARCHAR(16) NOT NULL   -- FLAT | PER_SEAT  (DEFAULT 'FLAT'; all legacy rows auto-migrated)
 ├── created_at      TIMESTAMP
 └── updated_at      TIMESTAMP
 ```
@@ -417,21 +420,22 @@ public class MyBatisSchemaInterceptor implements Interceptor {
 
 Asynchronous communication and tenant provisioning via RabbitMQ with durable queues and dead letter handling:
 
-| Exchange      | Routing Key                     | Consumer            | Purpose                                 |
-| ------------- | ------------------------------- | ------------------- | --------------------------------------- |
-| `iqkv.events` | `tenant.provisioning.requested` | Provisioning Worker | Create schema, run migrations           |
-| `iqkv.events` | `tenant.provisioned`            | Billing Service     | Create Stripe customer, init settings   |
-| `iqkv.events` | `tenant.provisioning.failed`    | Monitoring/Alerts   | Handle provisioning failures            |
-| `iqkv.events` | `tenant.suspended`              | Billing Service     | Mark billing profile inactive           |
-| `iqkv.events` | `user.invited`                  | Extensions          | Invitation notifications                |
-| `iqkv.events` | `user.removed`                  | Extensions          | Membership removal cleanup              |
-| `iqkv.events` | `subscription.created`          | IAM/Extensions      | Subscription activation handling        |
-| `iqkv.events` | `subscription.cancelled`        | IAM Service         | Suspend tenant on payment failure       |
-| `iqkv.events` | `invoice.paid`                  | Extensions          | Payment success notifications           |
-| `iqkv.events` | `payment.failed`                | Extensions          | Payment failure handling                |
-| `iqkv.events` | `notification.billing.email`    | Notification Svc    | Async email delivery for billing events |
-| `iqkv.events` | `audit.*`                       | Audit Service       | Direct audit events from services       |
-| `iqkv.events` | `user.#`, `tenant.#`            | Audit Service       | Business events consumed for auditing   |
+| Exchange      | Routing Key                     | Consumer            | Purpose                                                         |
+| ------------- | ------------------------------- | ------------------- | --------------------------------------------------------------- |
+| `iqkv.events` | `tenant.provisioning.requested` | Provisioning Worker | Create schema, run migrations                                   |
+| `iqkv.events` | `tenant.provisioned`            | Billing Service     | Create Stripe customer, init settings                           |
+| `iqkv.events` | `tenant.provisioning.failed`    | Monitoring/Alerts   | Handle provisioning failures                                    |
+| `iqkv.events` | `tenant.suspended`              | Billing Service     | Mark billing profile inactive                                   |
+| `iqkv.events` | `user.invited`                  | Extensions          | Invitation notifications                                        |
+| `iqkv.events` | `user.removed`                  | Extensions          | Membership removal cleanup                                      |
+| `iqkv.events` | `subscription.created`          | IAM/Extensions      | Subscription activation; carries `seatCount` for per-seat plans |
+| `iqkv.events` | `subscription.updated`          | IAM/Extensions      | Plan/seat change; carries `seatCount` for per-seat plans        |
+| `iqkv.events` | `subscription.cancelled`        | IAM Service         | Suspend tenant on payment failure                               |
+| `iqkv.events` | `invoice.paid`                  | Extensions          | Payment success notifications                                   |
+| `iqkv.events` | `payment.failed`                | Extensions          | Payment failure handling                                        |
+| `iqkv.events` | `notification.billing.email`    | Notification Svc    | Async email delivery for billing events                         |
+| `iqkv.events` | `audit.*`                       | Audit Service       | Direct audit events from services                               |
+| `iqkv.events` | `user.#`, `tenant.#`            | Audit Service       | Business events consumed for auditing                           |
 
 **Event Processing Patterns:**
 
