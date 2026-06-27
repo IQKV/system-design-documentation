@@ -66,19 +66,22 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 **Authentication & Authorization:**
 
 - User signup with email verification (secure token-based)
-- JWT RS256 authentication: access tokens (15 min) + refresh tokens (7 days)
+- Magic link authentication: passwordless sign-in via time-limited token (initiate → email → exchange for JWT pair)
+- JWT RS256 authentication: access tokens (15 min) + refresh tokens (7 days); `plan_code` claim stamped from tenant's active plan
 - Password reset via signed email tokens (1h TTL), rate-limited (3 requests per 15min window)
-- Brute-force protection: account lockout after 5 failed attempts for 15 minutes
+- Brute-force protection: account lockout after 5 failed attempts for 15 minutes; platform admins can unlock
 - Token revocation: JTI denylist + global signout timestamp with automatic cleanup
 - JWKS endpoint (`/.well-known/jwks.json`) for distributed token validation
+- Token exchange: `POST /auth/exchange` — workspace switching without re-authentication
 
 **Tenant & Organization Management:**
 
-- Tenant lifecycle: create, suspend, delete, retry provisioning
+- Tenant lifecycle: create (via `POST /tenants` after signup), suspend, delete, retry provisioning
 - Async tenant provisioning via RabbitMQ with ShedLock-guarded reaper for stuck tenants
 - Multi-tenant membership: one user can belong to multiple organizations
-- RBAC with authorities: `TENANT_OWNER`, `PLATFORM_ADMIN`, `MEMBER`
+- RBAC with authorities: `TENANT_OWNER`, `ADMIN`, `PLATFORM_ADMIN`, `MEMBER`
 - Cross-tenant user context switching and tenant discovery
+- Member management: ban/unban, authority editing (TENANT_OWNER ↔ ADMIN ↔ MEMBER), ownership transfer
 
 **Invitation System:**
 
@@ -94,9 +97,17 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Multi-tenant: per-signup tenant creation
 - Platform mode consistency validation across services
 
-**Events Published:** `tenant.provisioned`, `tenant.suspended`, `user.invited`, `user.removed`, `tenant.provisioning.failed`
+**Additional Capabilities:**
 
-**Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, JJWT 0.13 (RS256), ShedLock 7.x, Thymeleaf (email templates)
+- Avatar uploads: two-phase presigned S3/MinIO flow; old avatars auto-deleted
+- In-app notifications: `UserNotification` records + real-time WebSocket push (STOMP/SockJS) to `/user/{userId}/queue/notifications`
+- Site-wide announcements: multi-lingual; async fan-out in batches of 1000; WebSocket broadcast
+- Plan feature enforcement: `PlanFeatureGuard` annotation; `plan_code` JWT claim cached from billing; `maxUsers` quota checked at invite/signup
+- Bulgarian (bg-BG) i18n: locale seed data; per-user BCP 47 locale stored in `users.locale`
+
+**Events Published:** `tenant.created`, `tenant.provisioned`, `tenant.suspended`, `tenant.deleted`, `tenant.provisioning_failed`, `user.created`, `user.updated`, `user.invited`, `user.removed`, `user.deleted`, `announcement.publish`, `notification.iam.email`
+
+**Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, JJWT 0.13 (RS256), ShedLock 7.x, Spring WebSocket/STOMP, MinIO S3, Thymeleaf (email templates), Micrometer + Prometheus
 
 ---
 
@@ -109,32 +120,47 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Spring Cloud Gateway with WebFlux (reactive, non-blocking)
 - JWT validation against IAM JWKS endpoint with authority extraction
 - Multi-mode tenant resolution: JWT claims (multi-tenant) vs auto-injection (single-tenant)
-- Platform mode guard: validates rollout mode consistency with IAM service
-- Header sanitization: prevents client spoofing of `X-User-*` and `X-Tenant-ID` headers
+- Platform mode guard: validates rollout mode consistency with IAM service every 60s; returns 503 on mismatch
+- Header sanitization: prevents client spoofing of `X-User-*`, `X-Tenant-ID`, `X-Audit-*`, and `X-Plan-Code` headers
 
-**Context Propagation:**
+**Filter Chain (ordered):**
 
-- Extracts user context from validated JWTs
-- Propagates as headers to downstream services:
-  - `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`
-- Correlation ID injection for distributed tracing
+| Order           | Filter                         | Responsibility                                                                            |
+| --------------- | ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `-201`          | `MonitoringFilter`             | Request rate, latency, status, and `tenant_id` metrics per route                          |
+| `-200`          | `CorrelationIdFilter`          | Generate or propagate `X-Correlation-ID`; store in MDC                                    |
+| `-190`          | `HeaderSanitizationFilter`     | Strip all spoofable headers from incoming client requests                                 |
+| `-180`          | `AuditContextFilter`           | Extract client IP and User-Agent; forward as `X-Audit-IP`, `X-Audit-UA`, `X-Audit-Source` |
+| Spring Security | JWT validation                 | RS256 signature via JWKS endpoint from IAM                                                |
+| `-100`          | `JwtContextPropagationFilter`  | JWT claims → downstream headers including `X-Plan-Code`                                   |
+| `-50`           | `TenantContextFilter`          | MULTI_TENANT: tenant from JWT; SINGLE_TENANT: inject default key if absent                |
+| `MIN+1`         | `ResponseTransformationFilter` | Security response headers; echo `X-Correlation-ID`                                        |
+
+**Context Propagation (downstream headers):**
+
+`X-User-ID` · `X-Username` · `X-User-Email` · `X-User-Authorities` · `X-Tenant-ID` · `X-Plan-Code` · `X-Correlation-ID` · `X-Audit-IP` · `X-Audit-UA` · `X-Audit-Source`
+
+**Plan Feature Enforcement:**
+
+- `PlanCatalogCache` — reactive WebClient cache refreshed every 10 min from billing's internal plans endpoint
+- `RequiresPlanFeatureFilterFactory` — declarative route-level plan enforcement via Spring Cloud Gateway YAML
 
 **Routing & Security:**
 
-- Path-based routing to upstream services (IAM, Billing)
-- Configurable public paths (JWKS, webhooks, health checks, Swagger UI)
+- Path-based routing to IAM, Billing, CMS, and Audit services
+- Configurable public paths (JWKS, auth, magic-link, webhooks, health checks, Swagger UI, billing internal)
 - Global CORS configuration with configurable origins and methods
-- Rate limiting and request logging with structured output
+- Response security headers: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`
 
 **Observability:**
 
-- Prometheus metrics and health checks on separate management port
-- Swagger UI aggregation from downstream services
-- Correlation ID filter for request tracing
+- Prometheus metrics and health checks on separate management port 8081
+- Swagger UI aggregation from downstream services at `/swagger-ui.html`
+- Grafana dashboard for per-route and per-tenant traffic
 
 **Events Published:** `api.request.metered` (planned)
 
-**Tech Stack:** Java 25, Spring Boot 4.1, Spring Cloud Gateway, Spring Security OAuth2 Resource Server, WebFlux, Micrometer
+**Tech Stack:** Java 25, Spring Boot 4.1, Spring Cloud Gateway, Spring Security OAuth2 Resource Server, WebFlux, Micrometer + Prometheus
 
 ---
 
@@ -164,9 +190,12 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Plan Catalog:**
 
-- Pre-provisioned subscription plans with pricing, features, and scope (TENANT/USER)
+- Config-driven subscription plans (YAML `application-{env}.yml`); `BillingSeedRunner` syncs to Stripe at startup
+- `PlanFeatureRegistry` in-memory O(1) lookups; typed quotas (`maxUsers`, `maxProjects`) + open feature map
+- `FLAT` and `PER_SEAT` pricing models; `maxUsers` doubles as seat ceiling for PER_SEAT plans
+- `trialPeriodDays` per plan; trial status (`isInTrial`, `trialDaysLeft`) in subscription responses
 - Plan eligibility policy validates scope matches rollout mode
-- CRUD API for platform admins to manage catalog
+- Internal plans endpoint (`GET /internal/plans`) for service-to-service use; no auth required on internal network
 - Feature-based entitlement evaluation for authorization decisions
 
 **Multi-Mode Architecture:**
@@ -183,7 +212,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - Email resolution: `billingEmail` from settings (multi-tenant) or `userBillingSettings` (single-tenant)
 - Scheduled jobs for proactive notifications (trial ending, payment overdue)
 
-**Events Published:** `subscription.created`, `subscription.cancelled`, `invoice.paid`, `payment.failed`, `notification.billing.email`
+**Events Published:** `subscription.created`, `subscription.updated`, `subscription.cancelled`, `invoice.created`, `invoice.finalized`, `invoice.paid`, `invoice.updated`, `payment.failed`, `refund.created`, `notification.billing.email`
 
 **Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Stripe Java SDK, RabbitMQ, ShedLock 7.x, Thymeleaf (email templates)
 
@@ -328,32 +357,40 @@ plan_catalog
 
 ---
 
-## UI Application
+## UI Applications
 
-**React SPA with Mantine UI Framework**
+The platform ships three production-ready frontends, all communicating exclusively through the API Gateway.
 
-**Architecture:**
+### Tenant App (`foundation-ui-app`)
 
-- Single Page Application (SPA) built with React and Mantine UI
-- Communicates exclusively through the API Gateway (no direct service access)
-- Deployed as static build (Nginx container or CDN)
-- JWT-based authentication with automatic token refresh
+**Tech Stack:** React 19, TypeScript 6, Vite 8 (SWC), Mantine UI 9, TanStack Router + Query, Zustand, Lingui 6 (i18n), Axios, Vitest + Playwright, OxLint/OxFmt
 
-**Feature Coverage:**
+**Architecture:** Feature-Sliced Design (`app → processes → pages → widgets → features → shared`); automated boundary tests via `pnpm test:arch`
 
-- **Authentication Flows:** Sign up, login, password reset, email verification
-- **Organization Management:** Create org, invite members, manage authortities, tenant switching
-- **Account Settings:** Profile management, password change, user preferences
-- **Billing Portal:** Integration with Stripe-hosted dashboard for subscriptions and invoices
+**Key features:** sign-in with tenant discovery, sign-up with provisioning polling, password reset, email verification, invitation acceptance, team management (invite/ban/unban/role-edit/transfer-ownership), billing self-service (Stripe portal, subscription view with trial status, plan catalog with per-seat labels, refunds), in-app notifications with real-time WebSocket push, plan-based `FeatureGate` component and `EntitlementsProvider`, organization settings, light/dark theme, Lingui i18n (English + Bulgarian).
 
-**Tenancy Adaptation:**
+### Platform Admin (`foundation-ui-platform-admin`)
 
-- Mode detection via IAM actuator endpoint (`/actuator/info`)
-- Conditional UI rendering based on rollout mode
-- Multi-tenant: shows organization switcher and management features
-- Single-tenant: hides tenancy concepts, focuses on workspace features
+**Tech Stack:** React 19, TypeScript, Vite + SWC, Mantine UI 9, mantine-datatable, TanStack Router + Query, Zustand, Lingui, Zod + Mantine Form, Vitest + Playwright, OxLint/OxFmt
 
-**Tech Stack:** React 19, Mantine UI, TypeScript, Vite (build tool), Nginx (static hosting)
+**Key features:** PLATFORM_ADMIN-only access; global user/organization/invitation/subscription/plan/announcement/audit/refund/notification management; ban/unban/unlock users; member authority management; dashboard with count widgets, subscription breakdown, signup trend chart, audit feed, org health cards; enterprise dark theme; runtime `public/config.js` override.
+
+### SaaS Landing Kit (`foundation-ui-saas-landing-kit`)
+
+**Tech Stack:** Astro, React, Tailwind CSS, shadcn/ui, Zustand, TypeScript
+
+**Key features:** Static marketing pages (Home, Features, Pricing, About); auth-aware navigation; plan selector fetched from billing API with per-seat label support; React islands for partial hydration; aligned theme tokens.
+
+### Documentation Website (`foundation-docs-website`)
+
+VitePress-based site with user guides, platform overview, and quick-start instructions.
+
+**Tenancy Adaptation (all apps):**
+
+- Platform mode detected via IAM `/actuator/info` at runtime
+- Multi-tenant: shows organization switcher, create-org flow, org-scoped management
+- Single-tenant: hides tenancy concepts; workspace focuses on features
+- Runtime `public/config.js` overrides `VITE_*` build-time variables without rebuilding
 
 ---
 
@@ -363,11 +400,12 @@ plan_catalog
 
 Each service owns its own PostgreSQL database with complete data isolation. No shared databases or cross-service table access — inter-service communication flows through APIs or the event bus.
 
-| Service | Database             | Contents                                                      |
-| ------- | -------------------- | ------------------------------------------------------------- |
-| IAM     | `foundation_iam`     | Users, tenants, memberships, authorities, invitations, tokens |
-| Billing | `foundation_billing` | Stripe customer refs, subscription cache, webhook logs, plans |
-| Audit   | `foundation_audit`   | Centralized audit logs, technical context, activity records   |
+| Service | Database             | Contents                                                                                    |
+| ------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| IAM     | `foundation_iam`     | Users, tenants, memberships, authorities, invitations, tokens, notifications, announcements |
+| Billing | `foundation_billing` | Stripe customer refs, subscription cache, webhook logs, plans                               |
+| Audit   | `foundation_audit`   | Centralized audit logs, technical context, activity records                                 |
+| CMS     | `foundation_cms`     | Pages, page translations, hierarchical content (schema-per-tenant)                          |
 
 ### Schema-Per-Tenant Architecture (IAM Database)
 
@@ -420,22 +458,35 @@ public class MyBatisSchemaInterceptor implements Interceptor {
 
 Asynchronous communication and tenant provisioning via RabbitMQ with durable queues and dead letter handling:
 
-| Exchange      | Routing Key                     | Consumer            | Purpose                                                         |
-| ------------- | ------------------------------- | ------------------- | --------------------------------------------------------------- |
-| `iqkv.events` | `tenant.provisioning.requested` | Provisioning Worker | Create schema, run migrations                                   |
-| `iqkv.events` | `tenant.provisioned`            | Billing Service     | Create Stripe customer, init settings                           |
-| `iqkv.events` | `tenant.provisioning.failed`    | Monitoring/Alerts   | Handle provisioning failures                                    |
-| `iqkv.events` | `tenant.suspended`              | Billing Service     | Mark billing profile inactive                                   |
-| `iqkv.events` | `user.invited`                  | Extensions          | Invitation notifications                                        |
-| `iqkv.events` | `user.removed`                  | Extensions          | Membership removal cleanup                                      |
-| `iqkv.events` | `subscription.created`          | IAM/Extensions      | Subscription activation; carries `seatCount` for per-seat plans |
-| `iqkv.events` | `subscription.updated`          | IAM/Extensions      | Plan/seat change; carries `seatCount` for per-seat plans        |
-| `iqkv.events` | `subscription.cancelled`        | IAM Service         | Suspend tenant on payment failure                               |
-| `iqkv.events` | `invoice.paid`                  | Extensions          | Payment success notifications                                   |
-| `iqkv.events` | `payment.failed`                | Extensions          | Payment failure handling                                        |
-| `iqkv.events` | `notification.billing.email`    | Notification Svc    | Async email delivery for billing events                         |
-| `iqkv.events` | `audit.*`                       | Audit Service       | Direct audit events from services                               |
-| `iqkv.events` | `user.#`, `tenant.#`            | Audit Service       | Business events consumed for auditing                           |
+| Exchange      | Routing Key                  | Consumer          | Purpose                                                            |
+| ------------- | ---------------------------- | ----------------- | ------------------------------------------------------------------ |
+| `iqkv.events` | `tenant.created`             | Billing Service   | Create Stripe customer, init billing settings                      |
+| `iqkv.events` | `tenant.provisioned`         | Billing Service   | Send subscription activated notification                           |
+| `iqkv.events` | `tenant.provisioning.failed` | Monitoring/Alerts | Handle provisioning failures                                       |
+| `iqkv.events` | `tenant.suspended`           | Billing Service   | Send account suspended notification                                |
+| `iqkv.events` | `tenant.deleted`             | —                 | Future: cancel Stripe customer                                     |
+| `iqkv.events` | `user.created`               | —                 | Downstream extensions                                              |
+| `iqkv.events` | `user.updated`               | —                 | Downstream extensions                                              |
+| `iqkv.events` | `user.invited`               | —                 | Invitation notifications                                           |
+| `iqkv.events` | `user.removed`               | Billing Service   | Clear `profileOwnerId` on tenant billing settings                  |
+| `iqkv.events` | `user.deleted`               | Billing Service   | Clear `profileOwnerId` across all billing settings                 |
+| `iqkv.events` | `subscription.created`       | IAM Service       | Cache `planCode` on tenant; stamp into JWT                         |
+| `iqkv.events` | `subscription.updated`       | IAM Service       | Update cached `planCode` on tenant                                 |
+| `iqkv.events` | `subscription.cancelled`     | IAM Service       | Suspend tenant on cancellation / payment failure                   |
+| `iqkv.events` | `invoice.created`            | Audit Service     | Audit logging                                                      |
+| `iqkv.events` | `invoice.finalized`          | Audit Service     | Audit logging                                                      |
+| `iqkv.events` | `invoice.paid`               | Audit Service     | Payment success; audit logging                                     |
+| `iqkv.events` | `invoice.updated`            | Audit Service     | Audit logging                                                      |
+| `iqkv.events` | `payment.failed`             | Audit Service     | Payment failure handling; audit logging                            |
+| `iqkv.events` | `refund.created`             | Audit Service     | Refund audit logging                                               |
+| `iqkv.events` | `cms.page.created`           | —                 | Content lifecycle extensions                                       |
+| `iqkv.events` | `cms.page.updated`           | —                 | Content lifecycle extensions                                       |
+| `iqkv.events` | `cms.page.deleted`           | —                 | Content lifecycle extensions                                       |
+| `iqkv.events` | `announcement.publish`       | IAM Service       | Fan-out trigger: batch notification creation + WebSocket broadcast |
+| `iqkv.events` | `notification.iam.email`     | IAM Service       | Send email + persist in-app notification + push WebSocket          |
+| `iqkv.events` | `notification.billing.email` | Billing Service   | Async email delivery for billing events                            |
+| `iqkv.events` | `audit.*`                    | Audit Service     | Direct audit events published by domain services                   |
+| `iqkv.events` | `user.#`, `tenant.#`         | Audit Service     | Business events consumed for passive auditing                      |
 
 **Event Processing Patterns:**
 
@@ -472,7 +523,7 @@ Asynchronous communication and tenant provisioning via RabbitMQ with durable que
        ├── Store customer ID in billing_settings
        └── Initialize default billing configuration
 
-5. Client polls GET /api/v1/iam/tenants/{tenantKey} until ACTIVE
+5. Client polls GET /api/v1/iam/auth/signup/status/{tenantKey} until ACTIVE
 ```
 
 ### Single-Tenant Mode (Bootstrap)
@@ -511,7 +562,7 @@ When `iqkv.platform.rollout-mode: SINGLE_TENANT`, IAM runs the same provisioning
 - **Algorithm:** RS256 (asymmetric signing)
 - **Access Token:** 15-minute expiry with user context and authorities
 - **Refresh Token:** 7-day expiry for token rotation
-- **Claims:** `userId`, `username`, `email`, `tenant_id`, `authorities`, `email_verified`
+- **Claims:** `userId`, `username`, `email`, `tenant_id`, `authorities`, `email_verified`, `plan_code`
 
 **Token Lifecycle:**
 
@@ -568,13 +619,17 @@ helm-charts/IQKV/
 ├── foundation-iam-service/
 │   ├── Chart.yaml
 │   ├── values.yaml                    # Default values
-│   ├── values-local.yaml             # Local development
 │   ├── values-sit.yaml               # System integration testing
 │   ├── values-uat.yaml               # User acceptance testing
 │   └── values-prd.yaml               # Production
 ├── foundation-gateway-service/
 ├── foundation-billing-service/
-└── foundation-ui-mantine-app-portal/
+├── foundation-audit-service/
+├── foundation-cms-service/
+├── foundation-ui-app/
+├── foundation-ui-platform-admin/
+├── foundation-ui-saas-landing-kit/
+└── foundation-infra/                  # Shared infrastructure (PostgreSQL, RabbitMQ, Redis, MinIO)
 ```
 
 ### Deployment Strategy
@@ -608,38 +663,44 @@ helm upgrade --install foundation-iam-service ./foundation-iam-service \
 
 ### CI/CD Pipeline Integration
 
-**Pipeline Stages:**
+**Pipeline Stages (Java services — 10 pipelines):**
 
-1. **Build & Test:** Maven build, unit tests, integration tests
-2. **Security Scan:** Dependency vulnerability scanning
-3. **Image Build:** Docker multi-stage builds with layer caching
-4. **Deploy to Staging:** Automated deployment for testing
-5. **Production Deploy:** Manual approval gate with automated rollout
-6. **Health Checks:** Post-deployment validation and monitoring
+1. **VerifyCode:** `mvn clean verify` → SonarQube quality gate → PMD → SpotBugs
+2. **PublishArtifacts:** `mvn deploy` (SNAPSHOT on branches; release JAR on tags); GitHub Release via `release-it`
+3. **PublishDockerImage:** Multi-stage Docker build; tag strategy: branch name (`wip`), stripped feature name, or semver tag
+4. **DeployWorkInProgress:** `helm upgrade --install --atomic` to `iqkv-sit-env` on `wip` push
+5. **RollbackWorkInProgress / PromoteFeatureDeployment / RollbackFeatureDeployment:** Feature branch SIT lifecycle
+6. **PromoteDeployment / RollbackDeployment:** UAT/PRD deployment and rollback on semver tags
+7. **ReleasePackage:** Strip SNAPSHOT, create git tag, bump pom + package.json to next SNAPSHOT, update CHANGELOG
+
+**Frontend (4 pipelines):** `VerifyCode` (formatter + lint + test:coverage + SonarQube + build) → `PublishArtifacts` → `DeployWorkInProgress` (pnpm build + Nginx Docker image + Helm) → `RollbackWorkInProgress`
+
+**Library modules (2 pipelines):** `VerifyCode` + `PublishArtifacts` only
+
+**Infrastructure (3 pipelines):** `Info` (helm template dry-run) → `PromoteInfrastructure` (Helm deploy + kubectl wait + DB connectivity checks) → `RollbackInfrastructure` (helm uninstall + force-delete PVCs)
 
 **Pipeline Configuration:**
 
 ```yaml
-# .drone.yml example
+# Drone CI pipeline example — VerifyCode stage
 kind: pipeline
-name: foundation-iam-service
-
+name: VerifyCode
+type: docker
+trigger:
+  event: [push, tag]
+  ref:
+    include: [refs/heads/dev, refs/heads/feature/*, refs/tags/*]
 steps:
-- name: test
-  image: maven:3.9-eclipse-temurin-25
-  commands:
-  - mvn clean verify -Dcheckstyle.skip=false
-
-- name: build-image
-  image: plugins/docker
-  settings:
-    repo: iqkv/foundation-iam-service
-    tags: [latest, ${DRONE_COMMIT_SHA:0:8}]
-
-- name: deploy-staging
-  image: alpine/helm:latest
-  commands:
-  - helm upgrade --install foundation-iam-service ./charts/foundation-iam-service
+  - name: code-coverage-gate
+    image: cicdtools/pipeline-runner
+    commands:
+      - mvn clean verify -Dstyle.color=always
+  - name: static-analysis-gate
+    depends_on: [code-coverage-gate]
+    commands:
+      - mvn sonar:sonar -Dsonar.qualitygate.wait=true
+      - pmd check --minimum-priority High -d src -R ruleset.xml
+      - mvn spotbugs:check
 ```
 
 ---
@@ -650,9 +711,10 @@ steps:
 
 **Metrics Collection:**
 
-- **Micrometer + Prometheus:** Application metrics (JVM, HTTP, custom business metrics)
-- **Grafana Dashboards:** Pre-configured dashboards for each service
-- **Alerting:** Prometheus AlertManager with Slack/email notifications
+- **Micrometer + Prometheus:** JVM, HTTP, and custom business metrics on all services; scrape at `/actuator/prometheus`
+- **Grafana Dashboards:** Pre-provisioned dashboards per service — JVM, IAM (auth/security/lifecycle), Gateway (per-tenant traffic), Billing (MRR/churn/webhooks), Audit (event volume)
+- **Log Aggregation:** Loki + Promtail (demo stack) for centralized log querying alongside metrics
+- **Alerting:** Prometheus AlertManager integration (Slack/email)
 
 **Key Metrics:**
 
@@ -707,12 +769,12 @@ management:
 Core services publish to a versioned RabbitMQ exchange, enabling extensions without core code modifications:
 
 ```
-Core Services (IAM, Gateway, Billing)
+Core Services (IAM, Gateway, Billing, Audit, CMS)
     ↓ (publishes events)
 Platform Exchange (iqkv.events)
     ↓ (routes to)
-├── Core Workers (tenant provisioning, billing sync)
-└── Extensions (SAML SSO, analytics, audit logging, etc.)
+├── Core Workers (tenant provisioning, billing sync, audit logging)
+└── Extensions (SAML SSO, analytics, custom SIEM backends, etc.)
 ```
 
 **Extension Patterns:**

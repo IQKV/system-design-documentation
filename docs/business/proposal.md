@@ -10,12 +10,13 @@ Existing solutions either provide only UI scaffolding (leaving infrastructure un
 
 ## What We Built
 
-A complete SaaS infrastructure platform consisting of four microservices and two production React SPAs.
+A complete SaaS infrastructure platform consisting of five microservices, three production React/Astro applications, and one documentation site.
 
 ### IAM Service (`foundation-iam-service`)
 
-- User registration with email verification; signup-by-invitation (72h expiring tokens)
+- Self-service registration and tenant creation; signup-by-invitation (expiring tokens)
 - JWT RS256 authentication — 15-min access tokens, 7-day refresh tokens; JWKS endpoint for distributed validation
+- Magic link authentication with configurable TTL and rate limiting
 - Token exchange for tenant switching; JTI denylist + global signout timestamp for revocation
 - Password reset with rate limiting (3 requests / 15 min); brute-force lockout (5 attempts / 15 min)
 - Multi-organization membership — one user, multiple tenants, independent authorities per tenant
@@ -25,33 +26,38 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - In-app notifications — persisted to DB + real-time WebSocket push (STOMP/SockJS)
 - Site-wide announcements with multi-lingual support; async fan-out to all users in batches
 - Platform admin APIs: user CRUD, tenant CRUD, cross-tenant invitations, force-set password, ban/unban/unlock users
-- User ban/unban: platform admin can ban/unban globally, tenant owner can ban/unban within tenant; banned users automatically logged out and receive email
-- Member authority edit: tenant owner can update member authorities (TENANT_OWNER/MEMBER); cannot remove last TENANT_OWNER from tenant; cannot remove your own TENANT_OWNER authority if you are the last owner
+- User ban/unban: platform admin can ban/unban globally, tenant owner can ban/unban within tenant; banned users automatically logged out
+- Member authority edit: tenant owner can update member authorities (TENANT_OWNER/MEMBER); guardrails on last owner
 - Transfer ownership: tenant owner can transfer ownership to another active member; old owner becomes MEMBER
 - PostgreSQL schema-per-tenant with Liquibase migrations; `ROLLOUT_MODE` for B2B/B2C switch
+- Plan feature enforcement: `PlanFeatureGuard` annotation, `maxUsers` quota checks, `plan_code` stamped into JWT
+- Custom metrics: auth outcomes, user lifecycle, tenant provisioning, security events
 
 ### API Gateway (`foundation-gateway-service`)
 
 - Spring Cloud Gateway (WebFlux) — single entry point for all platform services
 - RS256 JWT validation via IAM JWKS; configurable public paths bypass auth
-- Header sanitization: strips `X-User-*`, `X-Tenant-ID`, `X-Audit-*` before JWT processing — prevents identity spoofing
-- Context propagation: user, authorities, tenant, correlation ID forwarded as typed headers
+- Header sanitization: strips `X-User-*`, `X-Tenant-ID`, `X-Audit-*`, `X-Plan-Code` before JWT processing — prevents identity and plan spoofing
+- Context propagation: user, authorities, tenant, plan code, correlation ID forwarded as typed headers
 - Audit context: captures client IP and User-Agent as `X-Audit-IP` / `X-Audit-UA`
 - Per-route, per-tenant request metrics; Grafana dashboard included
 - Aggregated Swagger UI; security response headers on every response
 - Platform mode guard: polls IAM rollout mode; blocks traffic with 503 on mismatch
+- Plan feature enforcement at route level via declarative filters
 
 ### Billing Service (`foundation-billing-service`)
 
 - `PaymentGatewayPort` hexagonal abstraction — Stripe adapter implemented; swap gateways without business logic changes
 - Auto-provisions Stripe customer on `tenant.provisioned` event (RabbitMQ)
 - Per-tenant `billing_settings`: billing email, tax ID/VAT, Stripe Customer Portal session
-- Plan catalog (with trial period support); subscription checkout and management (tenant owner)
-- **Per-seat pricing** — `PricingModel` enum (`FLAT` / `PER_SEAT`); checkout quantity routing enforced in `SubscriptionService`; seat-cap validation against `maxUsers`; dedicated `PATCH .../seats` endpoint for mid-cycle seat adjustments with proration; `seatCount` propagated on subscription events for downstream IAM enforcement
+- Plan catalog defined in YAML and synchronized with Stripe at startup; supports `FLAT` and `PER_SEAT` pricing models
+- Subscription checkout and management (tenant owner); trial period support
+- **Per-seat pricing** — dedicated `PATCH .../seats` endpoint for mid-cycle seat adjustments with proration; seat-cap validation against `maxUsers`
 - Refunds API — initiate and list refunds per tenant; platform admin refund overview
 - Idempotent Stripe webhook ingestion; publishes lifecycle events to the platform event bus
 - Grafana dashboard with business KPIs: revenue, active subscriptions, webhook health
 - ShedLock-protected scheduled jobs for trial-ending and payment-overdue notifications
+- Custom metrics: MRR/ARR, payments, subscriptions, webhooks, seat adjustments
 
 ### Audit Service (`foundation-audit-service`)
 
@@ -60,7 +66,8 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - Enriches records with client IP and User-Agent propagated from the Gateway
 - Dedicated PostgreSQL database — high-volume logging isolated from business transactions
 - SPI pattern (`foundation-audit-spi`) — plug in Elasticsearch or custom SIEM backends without touching core
-- Secured admin search API — paginated, filterable by user, tenant, and action; restricted to `PLATFORM_ADMIN`
+- Secured admin search API — paginated, filterable by user, tenant, action, severity, and date range; restricted to `PLATFORM_ADMIN`
+- Custom metrics: event consumption, persistence duration, search latency
 
 ### CMS Service (`foundation-cms-service`)
 
@@ -74,40 +81,43 @@ A complete SaaS infrastructure platform consisting of four microservices and two
 - Public read-only API for fetching published pages
 - Platform admin CRUD API for managing content
 
-### Tenant UI (`foundation-ui-app`)
+### Tenant App (`foundation-ui-app`)
 
-### Tenant UI (`foundation-ui-app`)
-
-- React 19 + TypeScript + Mantine UI SPA for workspace members
+- React 19 + TypeScript + Mantine UI SPA for workspace members (Feature-Sliced Design architecture)
 - Sign-in with tenant discovery; sign-up with provisioning poll; forgot/reset password; email verification
 - Accept invitations (`/invite/:token`) — new and existing users
 - Dashboard, team member list, send/revoke invitations (`TENANT_OWNER`), ban/unban members (`TENANT_OWNER`)
 - My Account — profile, password, organizations and roles; avatar upload
 - Billing — portal access, active subscription (with trial status), plan catalog (with trial badges and per-seat pricing labels), billing info, refunds
 - Tenant settings — organization metadata editing
-- In-app notifications with WebSocket support; notification bell UI
+- In-app notifications with WebSocket support; notification bell UI and notification center
+- Plan-based access control: `EntitlementsProvider`, `FeatureGate`, `useHasFeature`, `useQuota` hooks
 - Silent token refresh, 30-minute inactivity sign-out, light/dark theme, Lingui i18n
 
-### Platform Admin UI (`foundation-ui-platform-admin`)
+### Platform Admin (`foundation-ui-platform-admin`)
 
-- React 19 + TypeScript + Mantine UI SPA for `PLATFORM_ADMIN` operators
+- React 19 + TypeScript + Mantine UI SPA for `PLATFORM_ADMIN` operators (Feature-Sliced Design architecture)
 - Dashboard — count cards for users, organizations, active subscriptions
 - Users — paginated list, detail, edit profile, set password, ban/unban/unlock users
 - Organizations — overview, members, billing settings, subscriptions, refunds tabs
-- Invitations — propose, edit, revoke across all tenants; plan catalog CRUD
+- Invitations — propose, edit, revoke across all tenants
 - Subscriptions (read-only global list + detail); refunds list and detail
-- Announcements — create, edit, publish, delete with multi-lingual translation support
+- Plan catalog — read-only list (plans are config-driven via YAML + deployment); announcements with multi-lingual translation support
 - Audit logs — global audit log view across all tenants
 - In-app notifications with WebSocket support; operator account and password
+- Runtime config via `public/config.js` without rebuild
 
-### Deployment & Operations
+### SaaS Landing Kit (`foundation-ui-saas-landing-kit`)
 
-- Kubernetes Helm charts per service with env-specific value files
-- Docker Compose for local development (PostgreSQL, RabbitMQ, MailHog, MinIO per service)
-- Drone CI/CD pipelines: verify → publish artifacts → publish image → deploy → promote
-- Database migrations with Liquibase (system schema + per-tenant schema)
-- Async tenant provisioning via RabbitMQ; ShedLock-guarded reaper for stuck tenants
-- Prometheus + Grafana dashboards per service; structured JSON logging; correlation ID tracing
+- Astro + React + Tailwind CSS + shadcn/ui static site for marketing
+- Home, Features, Pricing, About pages with responsive layout
+- Auth-aware navigation and auth state management (Zustand)
+- Plan selector with per-seat pricing support
+- React islands for partial hydration
+
+### Documentation Website (`foundation-docs-website`)
+
+- VitePress-based documentation site with user guides and platform overview
 
 ---
 
@@ -135,8 +145,9 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 - Token revocation via JTI denylist and global signout timestamp
 - Brute-force protection (5 attempts, 15-minute lockout)
 - Rate-limited password reset (3 requests per 15 minutes)
-- Gateway strips all spoofable headers before JWT processing
+- Gateway strips all spoofable headers (including `X-Plan-Code`) before JWT processing
 - Avatar uploads via presigned S3 URLs — no binary data through application tier
+- WebSocket authentication via JWT in STOMP CONNECT frames
 
 ### Async Processing
 
@@ -145,31 +156,52 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 - Automatic cleanup of expired tokens, invitations, and lockout records
 - Dead-letter exchange (`iqkv.dlx`) for failed message handling
 
+### Plan & Entitlements System
+
+- YAML-defined plan catalog synchronized with Stripe
+- `FLAT` and `PER_SEAT` pricing models with trial support
+- `EntitlementsProvider` and `FeatureGate` in frontends
+- `PlanFeatureGuard` annotation in backends
+- `maxUsers` quota and feature flag enforcement
+- `plan_code` stamped into JWT and propagated to all services
+
 ---
 
 ## Current Status
 
-**Implemented and Working:**
+**v0.3 complete — Production-Ready:**
 
-- Complete user authentication and authorization (IAM Service)
-- Multi-tenant data isolation with PostgreSQL schemas
-- Stripe subscription billing with flat-rate and per-seat pricing, refunds, and Customer Portal (Billing Service)
-- Centralized audit logging with passive event consumption (Audit Service)
-- Reactive API gateway with JWT validation and audit context propagation (Gateway Service)
-- Tenant-facing React SPA with billing, notifications, and team management (foundation-ui-app)
-- Platform admin React SPA with full operator tooling including audit logs and announcements (foundation-ui-platform-admin)
-- Kubernetes deployment automation with Helm charts
-- Email notifications (verification, password reset, invitations, billing events)
-- In-app notifications with real-time WebSocket delivery
-- Async tenant provisioning with failure handling and retry
+- Complete user authentication and authorization: JWT RS256, magic link, token exchange, RBAC, email verification, password reset, brute-force lockout, member ban/unban, ownership transfer (IAM Service)
+- Multi-tenant and single-tenant data isolation with PostgreSQL schema-per-tenant (IAM and CMS)
+- Stripe subscription billing: flat-rate and per-seat pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Stripe Customer Portal (Billing Service)
+- Centralized audit logging with passive event consumption, JSONB storage, and SPI-based extensibility (Audit Service)
+- Reactive API gateway: JWT validation, header sanitization, plan code propagation, audit context headers, per-tenant metrics (Gateway Service)
+- Content management system: static pages, multi-language support, hierarchical content, SEO metadata, tenant isolation (CMS Service)
+- Tenant-facing React SPA: auth flows, team management, billing self-service, in-app notifications, plan-based feature access (foundation-ui-app)
+- Platform admin React SPA: user/org/subscription/refund/announcement/audit log management, enterprise theme, dashboard widgets (foundation-ui-platform-admin)
+- SaaS marketing landing kit with auth integration and plan selector (foundation-ui-saas-landing-kit)
+- VitePress documentation website (foundation-docs-website)
+- Kubernetes deployment with Helm charts across SIT / UAT / PRD environments; HPA configured
+- Email notifications: verification, password reset, invitations, all billing lifecycle events (9 notification types)
+- In-app notifications with real-time WebSocket delivery (STOMP/SockJS) and async streaming fan-out for announcements
+- Async tenant provisioning with failure handling, stuck-tenant reaper, and owner-triggered retry
+- Full CI/CD via Drone CI: 10 pipelines per Java service, 4 per frontend, 2 per library, 3 for infrastructure
+- Prometheus + Grafana dashboards per service with business KPI tracking
+- Loki + Promtail log aggregation in demo stack
+- Structured JSON logging with correlation IDs propagated across all services
+- Service template (`foundation-microservice-project-layout`) for adding new microservices
 
-**Operational Features:**
+**Platform Numbers (June 2026):**
 
-- Health checks and readiness probes on all services
-- Prometheus metrics collection with Grafana dashboards (per-service + business KPIs)
-- Structured JSON logging with correlation IDs
-- Database connection pooling and migration management
-- Configuration management via Helm values
+- 5 core microservices: IAM, Gateway, Billing, Audit, CMS
+- 3 frontend applications: Tenant App, Platform Admin, SaaS Landing Kit
+- 1 documentation website
+- 4 PostgreSQL databases (IAM, Billing, Audit, CMS) — schema-per-tenant in IAM and CMS
+- 100+ REST endpoints across all services
+- 20+ domain event types on RabbitMQ
+- 60+ UI routes across Tenant App and Platform Admin
+- 2 pricing models (`FLAT` and `PER_SEAT`) × 2 billing periods (MONTHLY/ANNUAL) + optional trial period per plan
+- 2 deployment modes: MULTI_TENANT (SaaS) and SINGLE_TENANT (managed); zero-migration switch between them
 
 ---
 
@@ -204,37 +236,42 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 
 ### Technology Stack
 
-- **Backend**: Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17
-- **Frontend**: React 19, TypeScript, Mantine UI 9, TanStack Router + Query, Vite + SWC
-- **Infrastructure**: Kubernetes, Helm, Docker, RabbitMQ, MinIO (S3-compatible)
-- **Security**: JJWT 0.13 (RS256), Spring Security OAuth2 Resource Server, BCrypt
-- **Monitoring**: Micrometer, Prometheus, Grafana, Loki, structured JSON logging
+- **Backend**: Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, MinIO, Redis, ShedLock
+- **Frontend**: React 19, TypeScript 6, Mantine UI 9, TanStack Router + Query, Vite 8 + SWC, Zustand, Lingui 6, Zod, Vitest, Playwright, Astro, Tailwind CSS, shadcn/ui, VitePress
+- **Infrastructure**: Kubernetes, Helm, Docker, Nginx, Drone CI, Nexus, SonarQube
+- **Security**: JJWT 0.13 (RS256), Spring Security OAuth2 Resource Server, BCrypt strength 12
+- **Monitoring**: Micrometer, Prometheus, Grafana, Loki, Promtail, structured JSON logging
 
 ### Scalability
 
 - Stateless services for horizontal scaling
-- Database read replicas and connection pooling
+- Database read replicas and connection pooling (PgBouncer)
 - Schema-per-tenant allows individual tenant migration to dedicated databases
 - Event-driven architecture for async processing; dead-letter queue for resilience
+- Production HPA: `minReplicas: 2`, `maxReplicas: 10`
 
 ### Deployment Options
 
-- Kubernetes cluster with Helm charts (any cloud or on-premise)
-- Local development with Docker Compose
-- Environment-specific configurations (local, staging, production)
+- Kubernetes cluster with Helm charts (any cloud or on-premise) across SIT/UAT/PRD environments
+- Local development with Docker Compose (full demo stack available)
+- Environment-specific configurations (local, SIT, UAT, PRD)
 - Infrastructure-as-code with version control; no vendor lock-in
 
 ---
 
-## What's Not Included
+## What's Next (Post-v0.3)
 
-Current limitations and out-of-scope features:
+Deferred items per platform roadmap:
 
-- SSO / SAML integration (planned as extension; Jackson-compatible)
-- Usage-based billing and metering (per-seat flat pricing implemented; metered aggregation deferred)
-- Multi-region deployment
-- Managed hosting service
-- Advanced analytics and reporting (MRR/ARR dashboard planned)
-- Member role editing beyond invitation default (planned)
-- Platform actions: impersonation (planned; unlock/ban/unban implemented)
-- Per-seat IAM enforcement (seat count propagated to IAM via events; quota enforcement against purchased seats deferred)
+- Platform Admin UI — system health dashboard, background job monitoring
+- Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
+- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
+- Platform Admin UI — impersonation
+- Tenant App — additional locales (RU, IT; infrastructure already in place)
+- Per-seat IAM enforcement — enforce purchased `seatCount` against `activeSeatCount` on tenant (not just plan `maxUsers`)
+- SSO / SAML adapter
+- Rate limiting (per-tenant and per-user, at Gateway)
+- Tenant resolution by subdomain
+- Usage-based metered billing (`METERED` pricing model; per-seat flat pricing is complete)
+- Multi-region support
+- Managed hosting offering

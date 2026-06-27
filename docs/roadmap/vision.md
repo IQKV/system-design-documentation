@@ -38,7 +38,7 @@ Goal: Platform administrators have full management tooling; tenants have billing
 - [x] User management (list, view detail, edit, force-set password)
 - [x] Organization management (list, view detail with Overview / Members / Billing / Subscriptions / Refunds tabs, edit metadata)
 - [x] Invitation management (cross-tenant list, propose, revoke)
-- [x] Plan catalog management (create, edit, deactivate plans)
+- [x] Plan catalog management — read-only UI (plans are config-driven via YAML + deployment; create/edit removed)
 - [x] Subscription management — global read-only list + detail view
 - [x] Refunds — global refund list and detail views
 - [x] Announcements — create, edit, publish, delete with multi-lingual translation support; async fan-out to all users
@@ -60,6 +60,8 @@ Goal: Platform administrators have full management tooling; tenants have billing
 - [x] Token exchange (`POST /auth/exchange`) — tenant switching without re-authentication
 - [x] Avatar uploads — two-phase presigned S3/MinIO flow; old avatars auto-deleted
 - [x] Site-wide announcements — multi-lingual, async fan-out in batches of 1000
+- [x] Magic link authentication — passwordless sign-in (`/auth/magic-link/initiate`, `/resend`, `/exchange`); configurable TTL; rate-limited
+- [x] Member management enhancements — ban/unban within tenant, authority editing, ownership transfer with last-owner guardrails
 
 **Localization & DX**
 
@@ -69,7 +71,7 @@ Goal: Platform administrators have full management tooling; tenants have billing
 
 ---
 
-## v0.3 — Plan Feature Access Control & Internationalization (In Progress)
+## v0.3 — Plan Feature Access Control & Internationalization (completed)
 
 Goal: Implement fine-grained plan-based feature access control and add internationalization support.
 
@@ -146,11 +148,13 @@ Items deferred until the core platform is fully manageable:
 
 - Platform Admin UI — system health dashboard, background job monitoring
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
+- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount) from admin UI
+- Platform Admin UI — impersonation
 - Tenant App — additional locales (RU, IT; infrastructure already in place)
 - SSO / SAML adapter (extension, not core)
 - Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain
 - Usage-based metered billing (`METERED` pricing model; per-seat flat pricing is complete)
-- IAM per-seat enforcement — enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; requires `activeSeatCount` on tenant + `SubscriptionEventConsumer` update in IAM
+- IAM per-seat enforcement — enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; requires `activeSeatCount` column on tenants + `SubscriptionEventConsumer` update in IAM to cache `seatCount` alongside `planCode`
 - Multi-region support
 - Managed hosting offering

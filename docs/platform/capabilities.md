@@ -51,6 +51,9 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 | Avatar URL rewrite        | Presigned URLs rewritten to public endpoint for external clients to avoid mixed-content issues                                                                                                                                                                       | ✅     |
 | Common exception handlers | Shared Spring Web exception handlers for consistent error responses across services                                                                                                                                                                                  | ✅     |
 | Bulgarian i18n            | Bulgarian (bg-BG) translations added; locale seed data; announcements support multi-lingual content                                                                                                                                                                  | ✅     |
+| Magic link authentication | Passwordless sign-in: `POST /auth/magic-link/initiate`, `/resend`, `/exchange`; configurable TTL; rate-limited resend; always 204 on initiate/resend (prevents enumeration)                                                                                          | ✅     |
+| Create tenant endpoint    | `POST /tenants` — authenticated endpoint to create a new tenant after signup; calling user becomes `TENANT_OWNER`; returns `tenantKey`                                                                                                                               | ✅     |
+| User memberships list     | `GET /users/me/memberships` — lists current user's active tenant memberships for org-switcher UIs; no `X-Tenant-ID` required                                                                                                                                         | ✅     |
 
 ---
 
@@ -58,28 +61,30 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 
 Entry point for all client traffic. No request reaches IAM or Billing without passing through here.
 
-| Capability            | Notes                                                                                                                                           | Status |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Routing               | Path-based routing to IAM, Billing, and Audit; Spring Cloud Gateway with WebFlux; Stripe webhooks on public path                                | ✅     |
-| JWT validation        | Validates RS256 tokens against IAM JWKS endpoint; extracts authorities from JWT claims                                                          | ✅     |
-| Header sanitization   | Strips client-supplied `X-User-*`, `X-Tenant-ID`, `X-Organization-ID`, and `X-Audit-*` before JWT processing — prevents identity spoofing       | ✅     |
-| Context propagation   | Extracts user context from JWT and forwards: `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`, `X-Correlation-ID` | ✅     |
-| Audit context         | `AuditContextFilter` (order -180): extracts client IP and User-Agent; forwards as `X-Audit-IP`, `X-Audit-UA`, `X-Audit-Source`                  | ✅     |
-| Monitoring filter     | `MonitoringFilter` (order -201): records request rate, latency, status, and `tenant_id` per route; Grafana dashboard included                   | ✅     |
-| Tenant context filter | `SINGLE_TENANT`: auto-injects `default-tenant-key` when absent; `MULTI_TENANT`: tenant from JWT only                                            | ✅     |
-| Public paths          | Configurable public endpoints (JWKS, auth, webhooks, health, Swagger UI); enforced by `SecurityConfig` + `GatewayProperties`                    | ✅     |
-| Platform mode guard   | Polls IAM `/actuator/info` every 60s; blocks traffic with 503 on rollout-mode mismatch; fail-open if IAM unreachable                            | ✅     |
-| Response security     | `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`; echoes correlation ID                                       | ✅     |
-| CORS                  | Global CORS configuration with configurable origins, methods, and headers                                                                       | ✅     |
-| Request logging       | Structured logs with correlation ID filter for request tracing                                                                                  | ✅     |
-| Observability         | Prometheus metrics, health checks, and actuator endpoints on separate management port                                                           | ✅     |
-| Swagger aggregation   | Aggregates API documentation from downstream services (IAM, Billing) in unified Swagger UI                                                      | ✅     |
-| Metering events       | Publishes `api.request.metered` per request                                                                                                     | 📋     |
-| Plan code header      | Extracts `plan_code` from JWT and propagates as `X-Plan-Code`; sanitizes client-supplied `X-Plan-Code` to prevent spoofing                      | ✅     |
-| Plan catalog cache    | Reactive cache (`PlanCatalogCache`) that refreshes from billing service every 10 minutes; stores active plans with full details                 | ✅     |
-| Plan feature filter   | `RequiresPlanFeatureFilterFactory` for declarative route-level plan feature enforcement in Spring Cloud Gateway routes                          | ✅     |
-| Public plans endpoint | Exposes billing service internal plans endpoint on public path                                                                                  | ✅     |
-| WebSocket X-Tenant-ID | Allows `X-Tenant-ID` header passthrough on WebSocket paths                                                                                      | ✅     |
+| Capability                | Notes                                                                                                                                           | Status |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Routing                   | Path-based routing to IAM, Billing, and Audit; Spring Cloud Gateway with WebFlux; Stripe webhooks on public path                                | ✅     |
+| JWT validation            | Validates RS256 tokens against IAM JWKS endpoint; extracts authorities from JWT claims                                                          | ✅     |
+| Header sanitization       | Strips client-supplied `X-User-*`, `X-Tenant-ID`, `X-Organization-ID`, and `X-Audit-*` before JWT processing — prevents identity spoofing       | ✅     |
+| Context propagation       | Extracts user context from JWT and forwards: `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`, `X-Correlation-ID` | ✅     |
+| Audit context             | `AuditContextFilter` (order -180): extracts client IP and User-Agent; forwards as `X-Audit-IP`, `X-Audit-UA`, `X-Audit-Source`                  | ✅     |
+| Monitoring filter         | `MonitoringFilter` (order -201): records request rate, latency, status, and `tenant_id` per route; Grafana dashboard included                   | ✅     |
+| Tenant context filter     | `SINGLE_TENANT`: auto-injects `default-tenant-key` when absent; `MULTI_TENANT`: tenant from JWT only                                            | ✅     |
+| Public paths              | Configurable public endpoints (JWKS, auth, webhooks, health, Swagger UI); enforced by `SecurityConfig` + `GatewayProperties`                    | ✅     |
+| Platform mode guard       | Polls IAM `/actuator/info` every 60s; blocks traffic with 503 on rollout-mode mismatch; fail-open if IAM unreachable                            | ✅     |
+| Response security         | `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`; echoes correlation ID                                       | ✅     |
+| CORS                      | Global CORS configuration with configurable origins, methods, and headers                                                                       | ✅     |
+| Request logging           | Structured logs with correlation ID filter for request tracing                                                                                  | ✅     |
+| Observability             | Prometheus metrics, health checks, and actuator endpoints on separate management port                                                           | ✅     |
+| Swagger aggregation       | Aggregates API documentation from downstream services (IAM, Billing) in unified Swagger UI                                                      | ✅     |
+| Metering events           | Publishes `api.request.metered` per request                                                                                                     | 📋     |
+| Plan code header          | Extracts `plan_code` from JWT and propagates as `X-Plan-Code`; sanitizes client-supplied `X-Plan-Code` to prevent spoofing                      | ✅     |
+| Plan catalog cache        | Reactive cache (`PlanCatalogCache`) that refreshes from billing service every 10 minutes; stores active plans with full details                 | ✅     |
+| Plan feature filter       | `RequiresPlanFeatureFilterFactory` for declarative route-level plan feature enforcement in Spring Cloud Gateway routes                          | ✅     |
+| Public plans endpoint     | Exposes billing service internal plans endpoint on public path                                                                                  | ✅     |
+| WebSocket X-Tenant-ID     | Allows `X-Tenant-ID` header passthrough on WebSocket paths                                                                                      | ✅     |
+| Magic link authentication | Passwordless sign-in: `POST /auth/magic-link/initiate`, `/resend`, `/exchange`; configurable TTL and rate limiting                              | ✅     |
+| Create tenant endpoint    | `POST /tenants` — authenticated endpoint for creating new tenant after signup (owner is caller)                                                 | ✅     |
 
 ---
 
@@ -211,7 +216,7 @@ Separate operator SPA (`PLATFORM_ADMIN` only). Platform-scoped JWT (`tenant_id` 
 | Invitations                       | Cross-tenant list; propose, edit, revoke                                                                                                  | ✅     |
 | Subscriptions                     | Global read-only list with search, status filter, sorting; detail view                                                                    | ✅     |
 | Refunds                           | Global refund list and detail views                                                                                                       | ✅     |
-| Plan catalog                      | List, create, edit, delete (deactivate) plans                                                                                             | ✅     |
+| Plan catalog                      | Read-only list; plans are config-driven (YAML + deployment); no create/edit/deactivate UI                                                 | ✅     |
 | Announcements                     | Create, edit, publish, delete announcements with multi-lingual translation support                                                        | ✅     |
 | Audit logs                        | Global audit log view across all tenants; filterable by user, tenant, action                                                              | ✅     |
 | Notifications                     | In-app notification list, unread badge, mark-as-read; real-time WebSocket push                                                            | ✅     |
@@ -247,19 +252,22 @@ Astro + React + Tailwind CSS + DaisyUI + shadcn/ui landing page kit.
 
 ## Infrastructure
 
-| Capability           | Notes                                                                                                                  | Status |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------ |
-| Kubernetes           | Deployments with HPA, pod anti-affinity, network policies                                                              | 🚧     |
-| Helm                 | Dedicated chart per service; env-specific value files (local/dev/test/staging/production)                              | 🚧     |
-| Docker Compose       | Local dev: PostgreSQL, RabbitMQ, MailHog per service; `compose.container.yaml` for runtime stacks                      | ✅     |
-| Database-per-service | Each service owns its own PostgreSQL database; no cross-service table access                                           | ✅     |
-| Schema-per-tenant    | PostgreSQL schema isolation per tenant within the IAM database; identical model in both single and multi-tenant modes  | ✅     |
-| Async provisioning   | RabbitMQ event-driven; ShedLock-guarded reaper for tenants stuck in `PROVISIONING`                                     | ✅     |
-| Service template     | `foundation-microservice-project-layout` — Spring Boot 4.1, MyBatis, Liquibase, RabbitMQ, JWT, quality gates pre-wired | ✅     |
-| Secrets management   | K8s Secrets injected at deploy time via CI pipeline — never committed to source                                        | ✅     |
-| TLS                  | cert-manager integration via Helm ingress values                                                                       | 🚧     |
-| Observability        | Prometheus metrics (Micrometer), structured JSON logs (Logstash encoder), correlation ID filter                        | ✅     |
-| CI/CD                | Drone pipelines per service: verify → publish artifacts → publish image → deploy → promote                             | ✅     |
+| Capability           | Notes                                                                                                                                                                                   | Status |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Kubernetes           | Deployments with HPA, pod anti-affinity, network policies                                                                                                                               | 🚧     |
+| Helm                 | Dedicated chart per service; env-specific value files (local/sit/uat/prd); PgBouncer sidecar for connection pooling                                                                     | ✅     |
+| Docker Compose       | Per-service `compose.yaml` (infra only) + `compose.container.yaml` (full stack); demo `compose.demo.yaml` starts entire platform with Nginx, all services, and full observability stack | ✅     |
+| Database-per-service | Each service owns its own PostgreSQL database; no cross-service table access                                                                                                            | ✅     |
+| Schema-per-tenant    | PostgreSQL schema isolation per tenant within IAM and CMS databases; identical model in both single and multi-tenant modes                                                              | ✅     |
+| Async provisioning   | RabbitMQ event-driven; ShedLock-guarded reaper for tenants stuck in `PROVISIONING`                                                                                                      | ✅     |
+| Service template     | `foundation-microservice-project-layout` — Spring Boot 4.1, MyBatis, Liquibase, RabbitMQ, JWT, plan feature cache, quality gates pre-wired                                              | ✅     |
+| Object storage       | MinIO S3-compatible; avatar uploads (IAM); presigned PUT URLs with expiry; per-tenant bucket prefixes; local dev via compose                                                            | ✅     |
+| Cache / state store  | Redis available in demo stack (`foundation-redis :6379`); used for caching and distributed state                                                                                        | ✅     |
+| Database admin UI    | DbGate in demo stack: unified web admin for PostgreSQL (×3), Redis, RabbitMQ, and MinIO                                                                                                 | ✅     |
+| Secrets management   | K8s Secrets injected at deploy time via CI pipeline — never committed to source                                                                                                         | ✅     |
+| TLS                  | cert-manager integration via Helm ingress values                                                                                                                                        | 🚧     |
+| Observability        | Prometheus (Micrometer), Grafana dashboards (JVM + per-service), Loki + Promtail log aggregation, structured JSON logs, correlation ID propagated across all services                   | ✅     |
+| CI/CD                | Drone: 10 pipelines per Java service, 4 per frontend, 2 per library module, 3 for infrastructure; SonarQube quality gate + PMD + SpotBugs on every build                                | ✅     |
 
 ---
 
