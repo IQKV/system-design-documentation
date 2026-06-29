@@ -1,6 +1,6 @@
 # Proposal: Refactoring Plan for Lemon Squeezy Gateway Support
 
-**Status:** Complete  
+**Status:** In Progress  
 **Date:** 2026-06-29  
 **Target:** `foundation-billing-service`
 
@@ -2133,22 +2133,22 @@ Work top-to-bottom. Each group must be complete before starting the next.
 
 ### Group A — Configuration Layer (foundation for everything else)
 
-- [ ] **A1** Rename `StripeProductSchema` → `ProductSchema`; add `externalVariantId` field
-- [ ] **A2** Flatten `BillingConfigurationProperties`: remove `stripe.schema` nesting, introduce `planCatalog`
-- [ ] **A3** Update `application.yml`: rename `iqkv.billing.stripe.schema.products` → `iqkv.billing.plan-catalog.products`; add `iqkv.lemon-squeezy.*` block; update gateway type comment
-- [ ] **A4** Add `LEMON_SQUEEZY` to `GatewayType` enum
-- [ ] **A5** Create `@ConditionalOnGateway` annotation + `GatewayCondition` class
-- [ ] **A6** Create `LemonSqueezyConfigurationProperties` record; register in `@EnableConfigurationProperties`
+- [x] **A1** Rename `StripeProductSchema` → `ProductSchema`; add `externalVariantId` field
+- [x] **A2** Flatten `BillingConfigurationProperties`: remove `stripe.schema` nesting, introduce `planCatalog`
+- [x] **A3** Update `application.yml`: rename `iqkv.billing.stripe.schema.products` → `iqkv.billing.plan-catalog.products`; add `iqkv.lemon-squeezy.*` block; update gateway type comment
+- [x] **A4** Add `LEMON_SQUEEZY` to `GatewayType` enum
+- [x] **A5** Create `@ConditionalOnGateway` annotation + `GatewayCondition` class
+- [x] **A6** Create `LemonSqueezyConfigurationProperties` record; register in `@EnableConfigurationProperties`
 
 ---
 
 ### Group B — Schema (enables persistence of gateway metadata)
 
-- [ ] **B1** Liquibase `20260701000000`: add `gateway_type` to `billing_settings`
-- [ ] **B2** Liquibase `20260701000001`: add `gateway_type` to `subscriptions`
-- [ ] **B3** Liquibase `20260701000002`: add `external_order_id` to `subscriptions`
-- [ ] **B4** Liquibase `20260701000003`: add `gateway_type` to `plan_catalog`
-- [ ] **B5** Add new migrations to `db.changelog-master.xml`
+- [x] **B1** Liquibase `20260701000000`: add `gateway_type` to `billing_settings`
+- [x] **B2** Liquibase `20260701000001`: add `gateway_type` to `subscriptions`
+- [x] **B3** Liquibase `20260701000002`: add `external_order_id` to `subscriptions`
+- [x] **B4** Liquibase `20260701000003`: add `gateway_type` to `plan_catalog`
+- [x] **B5** Add new migrations to `db.changelog-master.xml`
 
 ---
 
@@ -2176,9 +2176,9 @@ Work top-to-bottom. Each group must be complete before starting the next.
 
 ### Group E — Stripe Adapter Hardening (no behaviour change, just conditional wiring)
 
-- [ ] **E1** Annotate `StripeGatewayAdapter` with `@ConditionalOnGateway(GatewayType.STRIPE)`
+- [x] **E1** Annotate `StripeGatewayAdapter` with `@ConditionalOnGateway(GatewayType.STRIPE)`
 - [ ] **E2** Pass `GatewayType.STRIPE.name()` as `gatewayType` arg in all four `to*Event` builder methods inside `StripeGatewayAdapter`; pass `null` for `externalOrderId` in `toInvoiceEvent`
-- [ ] **E3** Annotate `StripeWebhookRestResource` with `@ConditionalOnGateway(GatewayType.STRIPE)`
+- [x] **E3** Annotate `StripeWebhookRestResource` with `@ConditionalOnGateway(GatewayType.STRIPE)`
 
 ---
 
@@ -2198,13 +2198,13 @@ Work top-to-bottom. Each group must be complete before starting the next.
 
 ### Group G — Application Layer Wiring
 
-- [ ] **G1** `BillingSeedRunner`: update collection type to `ProductSchema`; pre-populate `externalPriceId` from `externalVariantId`; conditional `planMapper.update()` (only on change); set `gatewayType` on plan before insert/update
+- [x] **G1** `BillingSeedRunner`: update collection type to `ProductSchema`; pre-populate `externalPriceId` from `externalVariantId`; conditional `planMapper.update()` (only on change); set `gatewayType` on plan before insert/update
 - [ ] **G2** `WebhookProcessingService` — `toSubscription`: set `gatewayType` from event
 - [ ] **G3** `WebhookProcessingService` — `handleInvoiceEvent`: call `updateExternalOrderId` on `invoice.payment_succeeded` when `externalOrderId` is present
 - [ ] **G4** `BillingSettingsService.createBillingSettings()`: set `gatewayType` from active gateway port
 - [ ] **G5** `PlatformModeValidatorImpl`: inject `PaymentGatewayConfigurationProperties`; add LS + SINGLE_TENANT email hard-fail guard
 - [ ] **G6** `SecurityConfig`: add `permitAll()` entries for `/api/v1/billing/webhooks/lemon-squeezy` and `/lemon-squeezy/`
-- [ ] **G7** `PaymentGatewayPort`: add LS implementation notes to Javadoc of each method
+- [x] **G7** `PaymentGatewayPort`: add LS implementation notes to Javadoc of each method
 
 ---
 
