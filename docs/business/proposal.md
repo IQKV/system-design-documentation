@@ -178,7 +178,7 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 - Reactive API gateway: JWT validation, header sanitization, plan code propagation, audit context headers, per-tenant metrics (Gateway Service)
 - Content management system: static pages, multi-language support, hierarchical content, SEO metadata, tenant isolation (CMS Service)
 - Tenant-facing React SPA: auth flows, team management, billing self-service, in-app notifications, plan-based feature access (foundation-ui-app)
-- Platform admin React SPA: user/org/subscription/refund/announcement/audit log management, enterprise theme, dashboard widgets (foundation-ui-platform-admin)
+- Platform admin React SPA: user/org/subscription/refund/announcement/audit log management, enterprise theme, dashboard widgets, member signup trend chart, read-only plan catalog (foundation-ui-platform-admin)
 - SaaS marketing landing kit with auth integration and plan selector (foundation-ui-saas-landing-kit)
 - VitePress documentation website (foundation-docs-website)
 - Kubernetes deployment with Helm charts across SIT / UAT / PRD environments; HPA configured
@@ -190,6 +190,28 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 - Loki + Promtail log aggregation in demo stack
 - Structured JSON logging with correlation IDs propagated across all services
 - Service template (`foundation-microservice-project-layout`) for adding new microservices
+
+**v0.4 in progress — Multi-Gateway Billing & Platform Hardening:**
+
+The primary v0.4 target is Lemon Squeezy support in the Billing Service, making the payment gateway fully selectable at configuration time. This unlocks an alternative to Stripe for operators who prefer a merchant-of-record model, simpler pricing, or different regional availability.
+
+Core billing changes:
+
+- `LemonSqueezyGatewayAdapter` implementing the existing `PaymentGatewayPort` — all 11 gateway-agnostic methods
+- `@ConditionalOnGateway` meta-annotation for clean `STRIPE` / `LEMON_SQUEEZY` bean wiring
+- Gateway-neutral plan catalog configuration (`iqkv.billing.plan-catalog`); `externalVariantId` field for pre-configured LS variant IDs
+- `LemonSqueezyWebhookRestResource` with HMAC-SHA256 signature verification (`X-Signature` header)
+- Normalized webhook event mapping: LS event names → existing `GatewayWebhookEvent` sealed hierarchy
+- `gateway_type` column on `billing_settings`, `subscriptions`, and `plan_catalog` for observability and future migrations
+- `external_order_id` on `subscriptions` to support LS order-level refunds
+- `BillingSeedRunner` hardening: LS adapter performs read-only variant verification instead of programmatic product creation
+
+Secondary v0.4 items (platform hardening):
+
+- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
+- Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts)
+- Per-seat IAM enforcement — enforce purchased `seatCount` at invite-accept and signup
+- Additional locales (RU, IT; infrastructure already in place)
 
 **Platform Numbers (June 2026):**
 
@@ -259,16 +281,22 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 
 ---
 
-## What's Next (Post-v0.3)
+## What's Next (v0.4 and Beyond)
 
-Deferred items per platform roadmap:
+**v0.4 — Multi-Gateway Billing & Platform Hardening** (in progress):
+
+- Lemon Squeezy payment gateway adapter — full `PaymentGatewayPort` implementation; gateway selectable via `iqkv.payment.gateway.type`
+- Gateway-neutral plan catalog config; `externalVariantId` for LS variant IDs
+- `gateway_type` observability columns; `external_order_id` for LS refund support
+- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
+- Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
+- Per-seat IAM enforcement — enforce purchased `seatCount` against `activeSeatCount` on tenant
+- Additional locales (RU, IT; infrastructure already in place)
+
+**Later milestones:**
 
 - Platform Admin UI — system health dashboard, background job monitoring
-- Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
-- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
 - Platform Admin UI — impersonation
-- Tenant App — additional locales (RU, IT; infrastructure already in place)
-- Per-seat IAM enforcement — enforce purchased `seatCount` against `activeSeatCount` on tenant (not just plan `maxUsers`)
 - SSO / SAML adapter
 - Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain

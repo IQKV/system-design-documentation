@@ -166,21 +166,35 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 ### Billing Service
 
-**Stripe Connect Wrapper with Multi-Mode Billing Support**
+**Multi-Gateway Billing with Hexagonal Architecture**
 
 **Core Responsibilities:**
 
-- Acts as the single point of integration with Stripe — no custom billing logic
-- Automatic Stripe customer provisioning per tenant via `tenant.created` events
+- `PaymentGatewayPort` hexagonal abstraction — all business logic is gateway-agnostic; the active adapter is selected at configuration time via `iqkv.payment.gateway.type`
+- Automatic customer provisioning per tenant via `tenant.created` events (adapter-agnostic)
 - Tenant-to-customer mapping and billing metadata management
-- Idempotent webhook processing with signature verification
+- Idempotent webhook processing with per-gateway signature verification
 - Platform-wide lifecycle event publishing via RabbitMQ
 - Async email notification publishing for billing events
 - Pre-provisioned plan catalog with eligibility validation
 - Multi-mode support: tenant-scoped (multi-tenant) vs user-scoped (single-tenant)
 - **Per-seat pricing**: `PricingModel.PER_SEAT` plans route checkout with `quantity = seatCount`; seat-cap enforced against `maxUsers`; dedicated seat-adjustment endpoint with proration; `seatCount` propagated on subscription events
 
-**Stripe Integration:**
+**Gateway Adapters:**
+
+- **Stripe** (`@ConditionalOnGateway(STRIPE)`) — current production adapter; customer provisioning, webhook processing via `StripeWebhookRestResource` at `/api/v1/billing/webhooks/stripe`; product/price sync at startup via `BillingSeedRunner`
+- **Lemon Squeezy** (`@ConditionalOnGateway(LEMON_SQUEEZY)`) — v0.4 target; `LemonSqueezyGatewayAdapter` calls the JSON:API at `https://api.lemonsqueezy.com/v1/` via Spring `RestClient`; webhook processing via `LemonSqueezyWebhookRestResource` at `/api/v1/billing/webhooks/lemon-squeezy`; products/variants are dashboard-managed, `syncProduct` performs read-only variant verification only
+
+**Gateway selection:**
+
+```yaml
+iqkv:
+  payment:
+    gateway:
+      type: ${PAYMENT_GATEWAY_TYPE:STRIPE} # STRIPE | LEMON_SQUEEZY
+```
+
+**Stripe Integration (active):**
 
 - Customer provisioning on tenant creation with metadata sync
 - Webhook processing: `subscription.created`, `subscription.updated`, `subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
@@ -214,7 +228,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Events Published:** `subscription.created`, `subscription.updated`, `subscription.cancelled`, `invoice.created`, `invoice.finalized`, `invoice.paid`, `invoice.updated`, `payment.failed`, `refund.created`, `notification.billing.email`
 
-**Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Stripe Java SDK, RabbitMQ, ShedLock 7.x, Thymeleaf (email templates)
+**Tech Stack:** Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Stripe Java SDK, Spring RestClient (Lemon Squeezy), RabbitMQ, ShedLock 7.x, Thymeleaf (email templates)
 
 ---
 
@@ -277,7 +291,7 @@ Each tenant (multi-tenant mode) or user (single-tenant mode) has billing setting
 billing_settings
 ├── id                    UUID PK
 ├── tenant_key            VARCHAR(255) UNIQUE FK → tenant
-├── external_customer_id  VARCHAR(255) UNIQUE    -- Stripe cus_xxx
+├── external_customer_id  VARCHAR(255) UNIQUE    -- gateway customer ID (cus_xxx for Stripe)
 ├── billing_email         VARCHAR(255)           -- finance contact, no system access required
 ├── company_name          VARCHAR(255)
 ├── billing_address       JSONB                  -- street, city, country, postal_code
@@ -285,6 +299,7 @@ billing_settings
 ├── tax_id_type           VARCHAR(50)            -- Stripe enum: eu_vat, gb_vat, au_abn, etc.
 ├── currency              VARCHAR(3)             -- ISO 4217, default USD
 ├── profile_owner_id      UUID                   -- Soft ref to IAM users.id (nullable)
+├── gateway_type          VARCHAR(32)            -- STRIPE | LEMON_SQUEEZY (v0.4)
 ├── created_at            TIMESTAMP
 └── updated_at            TIMESTAMP
 ```
@@ -295,7 +310,7 @@ billing_settings
 user_billing_settings
 ├── id                    UUID PK
 ├── user_id               UUID UNIQUE FK → user
-├── external_customer_id  VARCHAR(255) UNIQUE    -- Stripe cus_xxx
+├── external_customer_id  VARCHAR(255) UNIQUE    -- gateway customer ID
 ├── billing_email         VARCHAR(255)
 ├── company_name          VARCHAR(255)
 ├── billing_address       JSONB
@@ -312,10 +327,11 @@ user_billing_settings
 subscriptions
 ├── id                        UUID PK
 ├── tenant_key                VARCHAR(255)
-├── external_subscription_id  VARCHAR(255) UNIQUE    -- Stripe sub_xxx
-├── external_customer_id      VARCHAR(255)           -- Stripe cus_xxx
+├── external_subscription_id  VARCHAR(255) UNIQUE    -- gateway subscription ID (sub_xxx for Stripe)
+├── external_customer_id      VARCHAR(255)           -- gateway customer ID
+├── external_order_id         VARCHAR(255)           -- LS order ID for refunds; null for Stripe (v0.4)
 ├── status                    VARCHAR(50)            -- active | past_due | canceled | unpaid | trialing
-├── plan_id                   VARCHAR(255)           -- Stripe price ID
+├── plan_id                   VARCHAR(255)           -- gateway price/variant ID
 ├── quantity                  BIGINT                 -- seat count for PER_SEAT plans; 1 for FLAT plans
 ├── current_period_start      TIMESTAMP
 ├── current_period_end        TIMESTAMP
@@ -323,6 +339,7 @@ subscriptions
 ├── canceled_at               TIMESTAMP
 ├── subject_type              VARCHAR(50)            -- TENANT | USER
 ├── subject_key               VARCHAR(255)           -- tenantKey or userId
+├── gateway_type              VARCHAR(32)            -- STRIPE | LEMON_SQUEEZY (v0.4)
 ├── created_at                TIMESTAMP
 └── updated_at                TIMESTAMP
 ```
@@ -331,18 +348,20 @@ subscriptions
 
 ```sql
 plan_catalog
-├── id              UUID PK
-├── plan_code       VARCHAR(100) UNIQUE
-├── display_name    VARCHAR(255)
-├── billing_period  VARCHAR(50)            -- MONTHLY | ANNUAL
-├── price_minor     INTEGER                -- flat total OR per-seat unit price (see pricing_model)
-├── currency        VARCHAR(3)
-├── feature_set     JSONB                  -- Feature flags and limits (maxUsers doubles as seat ceiling)
-├── scope           VARCHAR(50)            -- TENANT | USER
-├── active          BOOLEAN
-├── pricing_model   VARCHAR(16) NOT NULL   -- FLAT | PER_SEAT  (DEFAULT 'FLAT'; all legacy rows auto-migrated)
-├── created_at      TIMESTAMP
-└── updated_at      TIMESTAMP
+├── id                UUID PK
+├── plan_code         VARCHAR(100) UNIQUE
+├── display_name      VARCHAR(255)
+├── billing_period    VARCHAR(50)            -- MONTHLY | ANNUAL
+├── price_minor       INTEGER                -- flat total OR per-seat unit price (see pricing_model)
+├── currency          VARCHAR(3)
+├── feature_set       JSONB                  -- Feature flags and limits (maxUsers doubles as seat ceiling)
+├── scope             VARCHAR(50)            -- TENANT | USER
+├── active            BOOLEAN
+├── pricing_model     VARCHAR(16) NOT NULL   -- FLAT | PER_SEAT  (DEFAULT 'FLAT'; all legacy rows auto-migrated)
+├── external_price_id VARCHAR(255)           -- Stripe price ID or LS variant ID (gateway-type-dependent)
+├── gateway_type      VARCHAR(32)            -- STRIPE | LEMON_SQUEEZY (v0.4)
+├── created_at        TIMESTAMP
+└── updated_at        TIMESTAMP
 ```
 
 **Key Design Decisions:**
@@ -351,9 +370,11 @@ plan_catalog
 - Decoupled from IAM users for billing independence (soft reference only)
 - VAT/GST details flow directly into Stripe invoices via metadata sync
 - Supports both tenant-scoped and user-scoped billing models
-- Local subscription cache eliminates Stripe API calls for reads
+- Local subscription cache eliminates gateway API calls for reads
 - Webhook idempotency via `webhook_log` table prevents duplicate processing
 - Subject-aware event publishing for consistent entitlement evaluation
+- `gateway_type` columns on `billing_settings`, `subscriptions`, and `plan_catalog` record which adapter owns each record — enables future cross-gateway migrations and observability
+- `external_price_id` is gateway-type-dependent: Stripe Price ID (`price_…`) or Lemon Squeezy Variant ID (integer string); `external_order_id` on `subscriptions` stores the LS Order ID required for order-level refunds
 
 ---
 
