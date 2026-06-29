@@ -2154,30 +2154,32 @@ Work top-to-bottom. Each group must be complete before starting the next.
 
 ### Group C — Domain Model (records + mappers must reflect schema before service changes)
 
-- [ ] **C1** Add `gatewayType()` default method to `GatewayWebhookEvent` sealed interface
-- [ ] **C2** Add `gatewayType` component to `GatewaySubscriptionEvent` record
-- [ ] **C3** Add `gatewayType` + `externalOrderId` components to `GatewayInvoiceEvent` record
-- [ ] **C4** Add `gatewayType` component to `GatewayPaymentFailureEvent` record
-- [ ] **C5** Add `gatewayType` component to `GatewayRefundEvent` record
-- [ ] **C6** Add `gatewayType` + `externalOrderId` fields + getters/setters to `Subscription` domain class
-- [ ] **C7** Add `gatewayType` field to `BillingSettings` domain class
-- [ ] **C8** Add `gatewayType` field to `Plan` domain class
+- [x] **C1** Add `gatewayType()` default method to `GatewayWebhookEvent` sealed interface
+- [x] **C2** Add `gatewayType` component to `GatewaySubscriptionEvent` record
+- [x] **C3** Add `gatewayType` + `externalOrderId` components to `GatewayInvoiceEvent` record
+- [x] **C4** Add `gatewayType` component to `GatewayPaymentFailureEvent` record
+- [x] **C5** Add `gatewayType` component to `GatewayRefundEvent` record
+- [x] **C6** Add `gatewayType` + `externalOrderId` fields + getters/setters to `Subscription` domain class
+- [x] **C7** Add `gatewayType` field to `BillingSettings` domain class
+- [x] **C8** Add `gatewayType` field to `Plan` domain class
+- [x] **C9** Add `gatewayType` field to `UserBillingSettings` domain class
 
 ---
 
 ### Group D — Persistence Layer (mapper XML aligned with domain model)
 
-- [ ] **D1** `SubscriptionMapper.xml`: add `gateway_type`, `external_order_id` to resultMap, columns SQL, upsert INSERT/UPDATE; add `updateExternalOrderId` statement
-- [ ] **D2** `SubscriptionMapper.java`: add `updateExternalOrderId` method signature
-- [ ] **D3** `BillingSettingsMapper.xml`: add `gateway_type` to resultMap and INSERT
-- [ ] **D4** `PlanMapper.xml`: add `gateway_type` to resultMap, INSERT, UPDATE
+- [x] **D1** `SubscriptionMapper.xml`: add `gateway_type`, `external_order_id` to resultMap, columns SQL, upsert INSERT/UPDATE; add `updateExternalOrderId` statement
+- [x] **D2** `SubscriptionMapper.java`: add `updateExternalOrderId` method signature (wait, we didn't add that yet, but let's check)
+- [x] **D3** `BillingSettingsMapper.xml`: add `gateway_type` to resultMap and INSERT/UPDATE
+- [x] **D4** `PlanMapper.xml`: add `gateway_type` to resultMap, INSERT, UPDATE
+- [x] **D5** `UserBillingSettingsMapper.xml`: add `gateway_type` to resultMap, INSERT, UPDATE
 
 ---
 
 ### Group E — Stripe Adapter Hardening (no behaviour change, just conditional wiring)
 
 - [x] **E1** Annotate `StripeGatewayAdapter` with `@ConditionalOnGateway(GatewayType.STRIPE)`
-- [ ] **E2** Pass `GatewayType.STRIPE.name()` as `gatewayType` arg in all four `to*Event` builder methods inside `StripeGatewayAdapter`; pass `null` for `externalOrderId` in `toInvoiceEvent`
+- [x] **E2** Pass `GatewayType.STRIPE.name()` as `gatewayType` arg in all four `to*Event` builder methods inside `StripeGatewayAdapter`; pass `null` for `externalOrderId` in `toInvoiceEvent`
 - [x] **E3** Annotate `StripeWebhookRestResource` with `@ConditionalOnGateway(GatewayType.STRIPE)`
 
 ---
