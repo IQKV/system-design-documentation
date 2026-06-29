@@ -2186,15 +2186,15 @@ Work top-to-bottom. Each group must be complete before starting the next.
 
 ### Group F — Lemon Squeezy Adapter (new code)
 
-- [ ] **F1** Create `LemonSqueezyRestClientConfig` (`@ConditionalOnGateway(LEMON_SQUEEZY)`)
-- [ ] **F2** Implement `LemonSqueezyGatewayAdapter` — `createCustomer`
-- [ ] **F3** Implement `LemonSqueezyGatewayAdapter` — `createCheckoutSession`
-- [ ] **F4** Implement `LemonSqueezyGatewayAdapter` — `updateSubscription`, `cancelSubscription`, `pauseSubscription`, `reactivateSubscription`
-- [ ] **F5** Implement `LemonSqueezyGatewayAdapter` — `createRefund`
-- [ ] **F6** Implement `LemonSqueezyGatewayAdapter` — `syncProduct` (read-only verify)
-- [ ] **F7** Implement `LemonSqueezyGatewayAdapter` — `verifyAndParseWebhookEvent` + all private parsing helpers
-- [ ] **F8** Implement `LemonSqueezyGatewayAdapter` — `createPortalSession`
-- [ ] **F9** Create `LemonSqueezyWebhookRestResource` (`@ConditionalOnGateway(LEMON_SQUEEZY)`)
+- [x] **F1** Create `LemonSqueezyRestClientConfig` (`@ConditionalOnGateway(LEMON_SQUEEZY)`)
+- [x] **F2** Implement `LemonSqueezyGatewayAdapter` — `createCustomer`
+- [x] **F3** Implement `LemonSqueezyGatewayAdapter` — `createCheckoutSession`
+- [x] **F4** Implement `LemonSqueezyGatewayAdapter` — `updateSubscription`, `cancelSubscription`, `pauseSubscription`, `reactivateSubscription`
+- [x] **F5** Implement `LemonSqueezyGatewayAdapter` — `createRefund`
+- [x] **F6** Implement `LemonSqueezyGatewayAdapter` — `syncProduct` (read-only verify)
+- [x] **F7** Implement `LemonSqueezyGatewayAdapter` — `verifyAndParseWebhookEvent` + all private parsing helpers
+- [x] **F8** Implement `LemonSqueezyGatewayAdapter` — `createPortalSession`
+- [x] **F9** Create `LemonSqueezyWebhookRestResource` (`@ConditionalOnGateway(LEMON_SQUEEZY)`)
 
 ---
 
