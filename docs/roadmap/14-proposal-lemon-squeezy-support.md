@@ -2201,11 +2201,11 @@ Work top-to-bottom. Each group must be complete before starting the next.
 ### Group G — Application Layer Wiring
 
 - [x] **G1** `BillingSeedRunner`: update collection type to `ProductSchema`; pre-populate `externalPriceId` from `externalVariantId`; conditional `planMapper.update()` (only on change); set `gatewayType` on plan before insert/update
-- [ ] **G2** `WebhookProcessingService` — `toSubscription`: set `gatewayType` from event
-- [ ] **G3** `WebhookProcessingService` — `handleInvoiceEvent`: call `updateExternalOrderId` on `invoice.payment_succeeded` when `externalOrderId` is present
-- [ ] **G4** `BillingSettingsService.createBillingSettings()`: set `gatewayType` from active gateway port
-- [ ] **G5** `PlatformModeValidatorImpl`: inject `PaymentGatewayConfigurationProperties`; add LS + SINGLE_TENANT email hard-fail guard
-- [ ] **G6** `SecurityConfig`: add `permitAll()` entries for `/api/v1/billing/webhooks/lemon-squeezy` and `/lemon-squeezy/`
+- [x] **G2** `WebhookProcessingService` — `toSubscription`: set `gatewayType` from event
+- [x] **G3** `WebhookProcessingService` — `handleInvoiceEvent`: call `updateExternalOrderId` on `invoice.payment_succeeded` when `externalOrderId` is present
+- [x] **G4** `BillingSettingsService.createBillingSettings()`: set `gatewayType` from active gateway port
+- [x] **G5** `PlatformModeValidatorImpl`: inject `PaymentGatewayConfigurationProperties`; add LS + SINGLE_TENANT email hard-fail guard
+- [x] **G6** `SecurityConfig`: add `permitAll()` entries for `/api/v1/billing/webhooks/lemon-squeezy` and `/lemon-squeezy/`
 - [x] **G7** `PaymentGatewayPort`: add LS implementation notes to Javadoc of each method
 
 ---
