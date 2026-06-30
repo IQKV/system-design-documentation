@@ -4,44 +4,44 @@
 
 ### Database & Migrations
 
-- [ ] Add Liquibase changelog for `user_identities` table (include rollback)
-- [ ] Add Liquibase changelog for `tenant_oidc_providers` table (include rollback)
-- [ ] Verify DB constraints and indexes
+- [x] Add Liquibase changelog for `user_identities` table (include rollback)
+- [x] Add Liquibase changelog for `tenant_oidc_providers` table (include rollback)
+- [x] Verify DB constraints and indexes
 
 ### IAM Service Dependencies
 
-- [ ] Add `spring-boot-starter-security-oauth2-client` to `foundation-iam-service/pom.xml`
-- [ ] Verify dependencies with `mvn dependency:tree`
+- [x] Add `spring-boot-starter-security-oauth2-client` to `foundation-iam-service/pom.xml`
+- [x] Verify dependencies with `mvn dependency:tree`
 
 ### Configuration
 
-- [ ] Add OIDC config to `application.yml` (static providers, base-url, post-login-redirect-uri, auto-provision-users, encryption-key, state-ttl, auto-link.enabled)
-- [ ] Add environment variable defaults
+- [x] Add OIDC config to `application.yml` (static providers, base-url, post-login-redirect-uri, auto-provision-users, encryption-key, state-ttl, auto-link.enabled)
+- [x] Add environment variable defaults
 
 ### Core Implementation
 
-- [ ] Create `oauth2` package structure
-- [ ] Implement `OidcIdentity` record
-- [ ] Implement `OidcState` record
-- [ ] Implement `OidcStateJwtService` (sign/verify state JWT)
-- [ ] Implement `OidcStateStore` (Redis-based storage)
-- [ ] Implement `AesGcmEncryptionService`
-- [ ] Implement `OidcProvisioningException`
-- [ ] Implement `OidcDtos` (OidcExchangeRequest, EnabledProvidersResponse, LinkedIdentityResponse)
-- [ ] Implement `UserIdentityMapper` (MyBatis)
-- [ ] Implement `TenantOidcProviderMapper` (MyBatis)
-- [ ] Implement `OidcUserProvisioningService` interface & implementation (delegates to existing `SignupStrategy` for tenant provisioning)
-- [ ] Implement `DynamicClientRegistrationRepository`
-- [ ] Implement `GitHubEmailFetcher` (for GitHub non-OIDC handling)
-- [ ] Implement `OidcAuthorizationRestResource` (all public endpoints)
-- [ ] Implement `TenantSsoRestResource`, `TenantSsoService`
-- [ ] Update `SecurityConfig` (permit OIDC endpoints, enable oauth2Client)
-- [ ] Update `JwtAuthenticationFilter.shouldNotFilter()`
+- [x] Create `oauth2` package structure
+- [x] Implement `OidcIdentity` record
+- [x] Implement `OidcState` record
+- [x] Implement `OidcStateJwtService` (sign/verify state JWT)
+- [x] Implement `OidcStateStore` (Redis-based storage)
+- [x] Implement `AesGcmEncryptionService`
+- [x] Implement `OidcProvisioningException`
+- [x] Implement `OidcDtos` (OidcExchangeRequest, EnabledProvidersResponse, LinkedIdentityResponse)
+- [x] Implement `UserIdentityMapper` (MyBatis)
+- [x] Implement `TenantOidcProviderMapper` (MyBatis)
+- [x] Implement `OidcUserProvisioningService` interface & implementation (delegates to existing `SignupStrategy` for tenant provisioning)
+- [x] Implement `DynamicClientRegistrationRepository`
+- [x] Implement `GitHubEmailFetcher` (for GitHub non-OIDC handling)
+- [x] Implement `OidcAuthorizationRestResource` (all public endpoints)
+- [x] Implement `TenantSsoRestResource`, `TenantSsoService`
+- [x] Update `SecurityConfig` (permit OIDC endpoints, enable oauth2Client)
+- [x] Update `JwtAuthenticationFilter.shouldNotFilter()`
 
 ### Gateway Changes
 
-- [ ] Add `/api/v1/iam/auth/oauth2/**` to gateway `public-paths`
-- [ ] Exclude OIDC endpoints from tenant extraction filter
+- [x] Add `/api/v1/iam/auth/oauth2/**` to gateway `public-paths`
+- [x] Exclude OIDC endpoints from tenant extraction filter
 
 ### Tests
 
@@ -53,15 +53,16 @@
 
 ### Documentation
 
-- [ ] Update API docs (`docs/api/`)
-- [ ] Update README.md
-- [ ] Update README.template.md
+- [x] Update API docs (`docs/api/`)
+- [x] Update README.md
+- [x] Update README.template.md
 
 ### Security & Audit
 
 - [ ] Add audit logging for auto-linking events
 - [ ] Implement admin notifications for auto-linking
-- [ ] Implement admin endpoints for unmerge & audit history
+- [x] Implement admin endpoints for unmerge
+- [ ] Implement admin endpoints for audit history
 
 ## Overview
 
@@ -775,10 +776,11 @@ To mitigate risk of account takeover from reused corporate emails:
 
 2. **Admin Notification**: Send an email notification to platform administrators about the new identity linkage.
 
-3. **Manual Unmerge Capability**: Provide admin endpoints to:
-   - List all identity linkages
-   - Unmerge a specific identity from a user account (moving it to a new user record or re-linking to another account)
-   - View audit history of linkages/unmerges
+3. **Manual Unmerge Capability**: Provide platform-admin endpoints to:
+   - List linked identities for a specific user account
+   - Unmerge a specific identity from that user account as a forced unlink
+   - Later extend the flow to move the identity to a new user record or re-link it to another account
+   - Later add audit-history retrieval for linkage/unmerge actions
 
 4. **Configuration**: Add a config flag `iqkv.auth.oauth2.auto-link.enabled` (default `true`) to allow disabling auto-linking entirely in high-security environments.
 
