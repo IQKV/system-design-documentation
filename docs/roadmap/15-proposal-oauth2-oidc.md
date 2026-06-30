@@ -10,7 +10,7 @@
 
 ### IAM Service Dependencies
 
-- [ ] Add `spring-boot-starter-oauth2-client` to `foundation-iam-service/pom.xml`
+- [ ] Add `spring-boot-starter-security-oauth2-client` to `foundation-iam-service/pom.xml`
 - [ ] Verify dependencies with `mvn dependency:tree`
 
 ### Configuration
