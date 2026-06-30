@@ -4,8 +4,8 @@
 
 ### Database & Migrations
 
-- [ ] Add Liquibase changelog for `user_identities` table
-- [ ] Add Liquibase changelog for `tenant_oidc_providers` table
+- [ ] Add Liquibase changelog for `user_identities` table (include rollback)
+- [ ] Add Liquibase changelog for `tenant_oidc_providers` table (include rollback)
 - [ ] Verify DB constraints and indexes
 
 ### IAM Service Dependencies
@@ -231,44 +231,125 @@ The gateway and all downstream services require **no new dependencies**.
 ### 2. Database Schema
 
 Two new tables are added via Liquibase changesets in the IAM service system changelog.
+**Important**: All changelogs MUST include proper rollback steps.
 
 **`user_identities`** — links external IdP identities to internal user accounts:
 
-```sql
--- db/changelog/system/20260630000000-oauth2-user-identities.xml
-CREATE TABLE user_identities (
-    id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id       UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    provider      VARCHAR(64)  NOT NULL,   -- "google" | "github" | "microsoft" | "oidc:<tenantKey>"
-    provider_sub  VARCHAR(255) NOT NULL,   -- stable subject identifier from the IdP
-    email         VARCHAR(255),            -- last known email (display only, not used for lookup)
-    display_name  VARCHAR(255),
-    avatar_url    VARCHAR(512),
-    linked_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    last_used_at  TIMESTAMPTZ,
-    UNIQUE (provider, provider_sub)
-);
-CREATE INDEX idx_user_identities_user_id ON user_identities(user_id);
+```xml
+<!-- db/changelog/system/20260630000000-oauth2-user-identities.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="20260630000000" author="iqkv">
+        <createTable tableName="user_identities" schemaName="public">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_user_identities_user_id"
+                             references="public.users(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="provider" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_sub" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="display_name" type="VARCHAR(255)"/>
+            <column name="avatar_url" type="VARCHAR(512)"/>
+            <column name="linked_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_used_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="user_identities"
+                            columnNames="provider, provider_sub"
+                            constraintName="uq_user_identities_provider_provider_sub"/>
+
+        <createIndex indexName="idx_user_identities_user_id" tableName="user_identities" schemaName="public">
+            <column name="user_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex indexName="idx_user_identities_user_id" tableName="user_identities"/>
+            <dropUniqueConstraint tableName="user_identities" constraintName="uq_user_identities_provider_provider_sub"/>
+            <dropTable tableName="user_identities"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
 ```
 
 **`tenant_oidc_providers`** — per-tenant enterprise SSO configuration:
 
-```sql
--- db/changelog/system/20260630100000-tenant-oidc-providers.xml
-CREATE TABLE tenant_oidc_providers (
-    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id      UUID         NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    provider_key   VARCHAR(64)  NOT NULL UNIQUE, -- "oidc:<tenantKey>", matches user_identities.provider
-    display_name   VARCHAR(128) NOT NULL,
-    issuer_uri     VARCHAR(512) NOT NULL,
-    client_id      VARCHAR(255) NOT NULL,
-    client_secret  TEXT         NOT NULL,        -- AES-256-GCM encrypted at rest
-    scopes         VARCHAR(255) NOT NULL DEFAULT 'openid profile email',
-    enabled        BOOLEAN      NOT NULL DEFAULT true,
-    created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX idx_tenant_oidc_providers_tenant ON tenant_oidc_providers(tenant_id);
+```xml
+<!-- db/changelog/system/20260630100000-tenant-oidc-providers.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="20260630100000" author="iqkv">
+        <createTable tableName="tenant_oidc_providers" schemaName="public">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_tenant_oidc_providers_tenant_id"
+                             references="public.tenants(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="provider_key" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_tenant_oidc_providers_provider_key"/>
+            </column>
+            <column name="display_name" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issuer_uri" type="VARCHAR(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_secret" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scopes" type="VARCHAR(255)" defaultValue="openid profile email">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_tenant_oidc_providers_tenant" tableName="tenant_oidc_providers" schemaName="public" unique="true">
+            <column name="tenant_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex indexName="idx_tenant_oidc_providers_tenant" tableName="tenant_oidc_providers"/>
+            <dropTable tableName="tenant_oidc_providers"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
 ```
 
 **Note:** User email uniqueness is already enforced at the database level with `UNIQUE (email)` on the `users` table.
