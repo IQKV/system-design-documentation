@@ -173,7 +173,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - `PaymentGatewayPort` hexagonal abstraction — all business logic is gateway-agnostic; the active adapter is selected at configuration time via `iqkv.payment.gateway.type`
 - Automatic customer provisioning per tenant via `tenant.created` events (adapter-agnostic)
 - Tenant-to-customer mapping and billing metadata management
-- Idempotent webhook processing with per-gateway signature verification
+- Idempotent webhook processing with per-gateway signature verification (Stripe and Lemon Squeezy)
 - Platform-wide lifecycle event publishing via RabbitMQ
 - Async email notification publishing for billing events
 - Pre-provisioned plan catalog with eligibility validation
@@ -182,8 +182,8 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Gateway Adapters:**
 
-- **Stripe** (`@ConditionalOnGateway(STRIPE)`) — current production adapter; customer provisioning, webhook processing via `StripeWebhookRestResource` at `/api/v1/billing/webhooks/stripe`; product/price sync at startup via `BillingSeedRunner`
-- **Lemon Squeezy** (`@ConditionalOnGateway(LEMON_SQUEEZY)`) — v0.4 target; `LemonSqueezyGatewayAdapter` calls the JSON:API at `https://api.lemonsqueezy.com/v1/` via Spring `RestClient`; webhook processing via `LemonSqueezyWebhookRestResource` at `/api/v1/billing/webhooks/lemon-squeezy`; products/variants are dashboard-managed, `syncProduct` performs read-only variant verification only
+- **Stripe** (`@ConditionalOnGateway(STRIPE)`) — customer provisioning, webhook processing via `StripeWebhookRestResource` at `/api/v1/billing/webhooks/stripe`; product/price sync at startup via `BillingSeedRunner`
+- **Lemon Squeezy** (`@ConditionalOnGateway(LEMON_SQUEEZY)`) — `LemonSqueezyGatewayAdapter` calls the JSON:API at `https://api.lemonsqueezy.com/v1/` via Spring `RestClient`; webhook processing via `LemonSqueezyWebhookRestResource` at `/api/v1/billing/webhooks/lemon-squeezy`; products/variants are dashboard-managed, `syncProduct` performs read-only variant verification only
 
 **Gateway selection:**
 

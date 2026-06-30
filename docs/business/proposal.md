@@ -47,14 +47,14 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 
 ### Billing Service (`foundation-billing-service`)
 
-- `PaymentGatewayPort` hexagonal abstraction — Stripe adapter implemented; swap gateways without business logic changes
-- Auto-provisions Stripe customer on `tenant.provisioned` event (RabbitMQ)
-- Per-tenant `billing_settings`: billing email, tax ID/VAT, Stripe Customer Portal session
-- Plan catalog defined in YAML and synchronized with Stripe at startup; supports `FLAT` and `PER_SEAT` pricing models
+- `PaymentGatewayPort` hexagonal abstraction — Stripe and Lemon Squeezy adapters implemented; swap gateways without business logic changes
+- Auto-provisions customer (Stripe/Lemon Squeezy) on `tenant.created` event (RabbitMQ)
+- Per-tenant `billing_settings`: billing email, tax ID/VAT, Customer Portal session
+- Plan catalog defined in YAML and synchronized with active gateway at startup; supports `FLAT` and `PER_SEAT` pricing models
 - Subscription checkout and management (tenant owner); trial period support
 - **Per-seat pricing** — dedicated `PATCH .../seats` endpoint for mid-cycle seat adjustments with proration; seat-cap validation against `maxUsers`
 - Refunds API — initiate and list refunds per tenant; platform admin refund overview
-- Idempotent Stripe webhook ingestion; publishes lifecycle events to the platform event bus
+- Idempotent webhook ingestion (Stripe and Lemon Squeezy); publishes lifecycle events to the platform event bus
 - Grafana dashboard with business KPIs: revenue, active subscriptions, webhook health
 - ShedLock-protected scheduled jobs for trial-ending and payment-overdue notifications
 - Custom metrics: MRR/ARR, payments, subscriptions, webhooks, seat adjustments
@@ -169,12 +169,12 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 
 ## Current Status
 
-**v0.3 complete — Production-Ready:**
+**v0.4 complete — Multi-Gateway Billing & Platform Hardening:**
 
 - Complete user authentication and authorization: JWT RS256, magic link, token exchange, RBAC, email verification, password reset, brute-force lockout, member ban/unban, ownership transfer (IAM Service)
 - Multi-tenant and single-tenant data isolation with PostgreSQL schema-per-tenant (IAM and CMS)
-- Stripe subscription billing: flat-rate and per-seat pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Stripe Customer Portal (Billing Service)
-- Centralized audit logging with passive event consumption, JSONB storage, and SPI-based extensibility (Audit Service)
+- **Multi-gateway subscription billing**: Stripe and Lemon Squeezy support, flat-rate and per-seat pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Customer Portal (Billing Service)
+- Centralized audit trail with passive event consumption, JSONB storage, and SPI-based extensibility (Audit Service)
 - Reactive API gateway: JWT validation, header sanitization, plan code propagation, audit context headers, per-tenant metrics (Gateway Service)
 - Content management system: static pages, multi-language support, hierarchical content, SEO metadata, tenant isolation (CMS Service)
 - Tenant-facing React SPA: auth flows, team management, billing self-service, in-app notifications, plan-based feature access (foundation-ui-app)
@@ -191,11 +191,7 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 - Structured JSON logging with correlation IDs propagated across all services
 - Service template (`foundation-microservice-project-layout`) for adding new microservices
 
-**v0.4 in progress — Multi-Gateway Billing & Platform Hardening:**
-
-The primary v0.4 target is Lemon Squeezy support in the Billing Service, making the payment gateway fully selectable at configuration time. This unlocks an alternative to Stripe for operators who prefer a merchant-of-record model, simpler pricing, or different regional availability.
-
-Core billing changes:
+Core billing v0.4 changes complete:
 
 - `LemonSqueezyGatewayAdapter` implementing the existing `PaymentGatewayPort` — all 11 gateway-agnostic methods
 - `@ConditionalOnGateway` meta-annotation for clean `STRIPE` / `LEMON_SQUEEZY` bean wiring
@@ -206,7 +202,7 @@ Core billing changes:
 - `external_order_id` on `subscriptions` to support LS order-level refunds
 - `BillingSeedRunner` hardening: LS adapter performs read-only variant verification instead of programmatic product creation
 
-Secondary v0.4 items (platform hardening):
+**Post-v0.4 items (platform hardening):**
 
 - Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts)

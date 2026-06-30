@@ -48,14 +48,14 @@ Then access:
 
 ---
 
-## Status: v0.3 — Complete
+## Status: v0.4 — Complete
 
-**v0.3 — Plan Feature Access Control, Internationalization & Per-Seat Pricing** is complete. The platform is production-ready.
+**v0.4 — Multi-Gateway Billing & Platform Hardening** is complete. The platform now supports both Stripe and Lemon Squeezy payment gateways and is production-ready.
 
 - **v0.1 (Demo Release):** Core microservices (IAM, Gateway, Billing), basic UI auth flows, tenant lifecycle, Stripe integration
 - **v0.2 (Administration & Self-Service):** Platform admin UI, audit service, tenant self-service billing, announcements, in-app notifications, token exchange, avatar uploads, refunds API, WebSocket integration, Grafana dashboards
 - **v0.3 (Plan Feature Access Control, i18n & Per-Seat Pricing):** Plan-based feature access control, Bulgarian (bg-BG) i18n translations, Spring Boot 4.1 upgrade, tenant user stats, read-only plan catalog, enterprise UI themes, E2E test improvements, SaaS landing kit plan selector, per-seat pricing (`PricingModel` FLAT/PER_SEAT, seat-cap validation, seat adjustment API, seatCount in subscription events, downstream consumer updates)
-- **v0.4 (Multi-Gateway Billing & Platform Hardening) — in progress:** Lemon Squeezy payment gateway adapter, `@ConditionalOnGateway` wiring, gateway-neutral plan catalog config, LS webhook resource + event mapping, `gateway_type` schema columns, platform admin subscription mutations, per-seat IAM enforcement
+- **v0.4 (Multi-Gateway Billing & Platform Hardening) — complete:** Lemon Squeezy payment gateway adapter, `@ConditionalOnGateway` wiring, gateway-neutral plan catalog config, LS webhook resource + event mapping, `gateway_type` schema columns
 
 For detailed feature breakdowns, see:
 
@@ -69,20 +69,20 @@ For detailed feature breakdowns, see:
 
 ## Key Features
 
-| Feature                         | Details                                                                                                                                                                                            |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Hybrid Tenancy**              | Single codebase supports both multi-tenant (B2B) and single-tenant (B2C) deployment modes                                                                                                          |
-| **Schema-per-tenant Isolation** | Each tenant gets its own PostgreSQL schema for complete data separation                                                                                                                            |
-| **Production-ready IAM**        | JWT RS256 auth, RBAC, email verification, password reset, token revocation, invitations, plan code in JWT, personal workspace always accessible                                                    |
-| **Plan Feature Access Control** | YAML-based plan config, in-memory registry, JWT plan code propagation, max users quota enforcement, plan feature guard, user entitlements API                                                      |
-| **Stripe Billing Integration**  | Subscriptions, invoices, refunds, Customer Portal, webhook handling, plan codes integration, per-seat pricing with seat-cap validation and mid-cycle adjustment API; Lemon Squeezy adapter in v0.4 |
-| **Centralized Audit Trail**     | Passive event consumption, SPI-based extensibility, admin search API, severity filters                                                                                                             |
-| **Reactive API Gateway**        | JWT validation, header sanitization, audit context propagation, plan code header, plan catalog cache, RequiresPlanFeature filter                                                                   |
-| **Tenant Self-Service UI**      | React 19 + Mantine SPA for workspace members, billing, notifications, plan-based feature access, unified dark sidebar, Bulgarian i18n                                                              |
-| **Platform Admin UI**           | Operator interface for user/org management, audit logs, announcements, refunds, enterprise theme, dashboard widgets, member signup trend chart, read-only plan catalog                             |
-| **Observability**               | Prometheus metrics, Grafana dashboards, Loki logging, correlation IDs                                                                                                                              |
-| **Event-driven Architecture**   | RabbitMQ topic exchange for async processing and platform events                                                                                                                                   |
-| **Internationalization**        | English and Bulgarian (bg-BG) i18n support, multi-lingual announcements                                                                                                                            |
+| Feature                               | Details                                                                                                                                                                                               |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Hybrid Tenancy**                    | Single codebase supports both multi-tenant (B2B) and single-tenant (B2C) deployment modes                                                                                                             |
+| **Schema-per-tenant Isolation**       | Each tenant gets its own PostgreSQL schema for complete data separation                                                                                                                               |
+| **Production-ready IAM**              | JWT RS256 auth, RBAC, email verification, password reset, token revocation, invitations, plan code in JWT, personal workspace always accessible                                                       |
+| **Plan Feature Access Control**       | YAML-based plan config, in-memory registry, JWT plan code propagation, max users quota enforcement, plan feature guard, user entitlements API                                                         |
+| **Multi-Gateway Billing Integration** | Stripe and Lemon Squeezy support; subscriptions, invoices, refunds, Customer Portal, webhook handling, plan codes integration, per-seat pricing with seat-cap validation and mid-cycle adjustment API |
+| **Centralized Audit Trail**           | Passive event consumption, SPI-based extensibility, admin search API, severity filters                                                                                                                |
+| **Reactive API Gateway**              | JWT validation, header sanitization, audit context propagation, plan code header, plan catalog cache, RequiresPlanFeature filter                                                                      |
+| **Tenant Self-Service UI**            | React 19 + Mantine SPA for workspace members, billing, notifications, plan-based feature access, unified dark sidebar, Bulgarian i18n                                                                 |
+| **Platform Admin UI**                 | Operator interface for user/org management, audit logs, announcements, refunds, enterprise theme, dashboard widgets, member signup trend chart, read-only plan catalog                                |
+| **Observability**                     | Prometheus metrics, Grafana dashboards, Loki logging, correlation IDs                                                                                                                                 |
+| **Event-driven Architecture**         | RabbitMQ topic exchange for async processing and platform events                                                                                                                                      |
+| **Internationalization**              | English and Bulgarian (bg-BG) i18n support, multi-lingual announcements                                                                                                                               |
 
 ---
 
@@ -90,7 +90,7 @@ For detailed feature breakdowns, see:
 
 - **IAM** (`foundation-iam-service`) — registration, JWT auth, account recovery, organizations, RBAC, invitations, token exchange, avatar uploads, announcements, in-app notifications, plan code caching, tenant user stats, max users quota enforcement, personal workspace handling
 - **API Gateway** (`foundation-gateway-service`) — JWT validation, tenant resolution, request routing, audit context propagation, per-tenant monitoring, plan code header, plan catalog cache, RequiresPlanFeature filter
-- **Billing** (`foundation-billing-service`) — Stripe integration; subscriptions, invoices, refunds, Customer Portal sessions, YAML-based plan config, PlanFeatureRegistry, internal plans API, user entitlements API, read-only plan catalog, per-seat pricing (`PricingModel` FLAT/PER_SEAT), seat-cap validation, seat adjustment API (`PATCH .../seats`), seatCount in subscription events
+- **Billing** (`foundation-billing-service`) — Multi-gateway integration (Stripe and Lemon Squeezy); subscriptions, invoices, refunds, Customer Portal sessions, YAML-based plan config, PlanFeatureRegistry, internal plans API, user entitlements API, read-only plan catalog, per-seat pricing (`PricingModel` FLAT/PER_SEAT), seat-cap validation, seat adjustment API (`PATCH .../seats`), seatCount in subscription events
 - **Audit** (`foundation-audit-service`) — centralized event-driven audit trail with SPI-based extensibility; admin search API, severity filters
 - **CMS** (`foundation-cms-service`) — content management microservice with static page management, multi-language support, hierarchical content structure, SEO-friendly metadata, tenant isolation via schema-per-tenant
 - **Tenant App** (`foundation-ui-app`) — React + Mantine UI covering auth flows, workspace management, billing self-service, notifications, plan-based feature access, unified dark sidebar, Bulgarian i18n

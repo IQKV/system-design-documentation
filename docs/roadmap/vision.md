@@ -161,28 +161,28 @@ Items deferred until the core platform is fully manageable:
 
 ---
 
-## v0.4 — Multi-Gateway Billing & Platform Hardening
+## v0.4 — Multi-Gateway Billing & Platform Hardening (COMPLETED)
 
 Goal: Make the payment gateway fully selectable at configuration time. Lemon Squeezy is the second adapter target — a merchant-of-record model with simpler pricing and broader regional availability. Secondary goal is platform hardening: admin subscription lifecycle mutations and per-seat IAM enforcement.
 
 ### Phase 1 — Stripe Leakage Fixes (no new features)
 
-- [ ] Add `LEMON_SQUEEZY` to `GatewayType` enum
-- [ ] Create `@ConditionalOnGateway` meta-annotation + `GatewayCondition`
-- [ ] Annotate `StripeGatewayAdapter` and `StripeWebhookRestResource` with `@ConditionalOnGateway(STRIPE)`
-- [ ] Rename `StripeProductSchema` → `ProductSchema`; add `externalVariantId` field
-- [ ] Flatten `BillingConfigurationProperties` plan catalog path: `iqkv.billing.stripe.schema.products` → `iqkv.billing.plan-catalog.products`
-- [ ] Update `application.yml`: rename plan catalog key, add `iqkv.lemon-squeezy.*` config block, update `payment.gateway.type` comment
-- [ ] Add Javadoc LS behaviour notes to each `PaymentGatewayPort` method
+- [x] Add `LEMON_SQUEEZY` to `GatewayType` enum
+- [x] Create `@ConditionalOnGateway` meta-annotation + `GatewayCondition`
+- [x] Annotate `StripeGatewayAdapter` and `StripeWebhookRestResource` with `@ConditionalOnGateway(STRIPE)`
+- [x] Rename `StripeProductSchema` → `ProductSchema`; add `externalVariantId` field
+- [x] Flatten `BillingConfigurationProperties` plan catalog path: `iqkv.billing.stripe.schema.products` → `iqkv.billing.plan-catalog.products`
+- [x] Update `application.yml`: rename plan catalog key, add `iqkv.lemon-squeezy.*` config block, update `payment.gateway.type` comment
+- [x] Add Javadoc LS behaviour notes to each `PaymentGatewayPort` method
 
 ### Phase 2 — Lemon Squeezy Configuration
 
-- [ ] Create `LemonSqueezyConfigurationProperties` (`@ConditionalOnGateway(LEMON_SQUEEZY)`)
-- [ ] Register `RestClient` bean for LS API (`https://api.lemonsqueezy.com/v1/`) with `Authorization: Bearer` and JSON:API content-type headers
+- [x] Create `LemonSqueezyConfigurationProperties` (`@ConditionalOnGateway(LEMON_SQUEEZY)`)
+- [x] Register `RestClient` bean for LS API (`https://api.lemonsqueezy.com/v1/`) with `Authorization: Bearer` and JSON:API content-type headers
 
 ### Phase 3 — Lemon Squeezy Adapter Implementation
 
-- [ ] `LemonSqueezyGatewayAdapter` — implement all 11 `PaymentGatewayPort` methods:
+- [x] `LemonSqueezyGatewayAdapter` — implement all 11 `PaymentGatewayPort` methods:
   - `createCustomer` → POST `/v1/customers`
   - `createCheckoutSession` → POST `/v1/checkouts`; `priceId` maps to variant ID; `trialPeriodDays` → `trial_ends_at`
   - `updateSubscription` → PATCH `/v1/subscriptions/{id}` with `variant_id` and/or `quantity`
@@ -193,29 +193,29 @@ Goal: Make the payment gateway fully selectable at configuration time. Lemon Squ
   - `syncProduct` → read-only GET `/v1/variants/{id}` verification; warn if `externalVariantId` blank
   - `verifyAndParseWebhookEvent` → HMAC-SHA256 of raw body; compare to `X-Signature` header
   - `createPortalSession` → POST `/v1/customer-portal-sessions`
-- [ ] LS webhook event mapping — `meta.event_name` → `GatewayWebhookEvent` sealed subtypes (see [proposal](14-proposal-lemon-squeezy-support.md) §3.3 for full mapping table)
-- [ ] `LemonSqueezyWebhookRestResource` — `POST /api/v1/billing/webhooks/lemon-squeezy`; register path as `permitAll()` in `SecurityConfig`
+- [x] LS webhook event mapping — `meta.event_name` → `GatewayWebhookEvent` sealed subtypes (see [proposal](14-proposal-lemon-squeezy-support.md) §3.3 for full mapping table)
+- [x] `LemonSqueezyWebhookRestResource` — `POST /api/v1/billing/webhooks/lemon-squeezy`; register path as `permitAll()` in `SecurityConfig`
 
 ### Phase 4 — Schema Hardening
 
-- [ ] `billing_settings.gateway_type VARCHAR(32) DEFAULT 'STRIPE'` (Liquibase)
-- [ ] `subscriptions.gateway_type VARCHAR(32) DEFAULT 'STRIPE'` (Liquibase)
-- [ ] `subscriptions.external_order_id VARCHAR(255)` — LS Order ID for refunds (Liquibase)
-- [ ] `plan_catalog.gateway_type VARCHAR(32) DEFAULT 'STRIPE'` (Liquibase)
+- [x] `billing_settings.gateway_type VARCHAR(32) DEFAULT 'STRIPE'` (Liquibase)
+- [x] `subscriptions.gateway_type VARCHAR(32) DEFAULT 'STRIPE'` (Liquibase)
+- [x] `subscriptions.external_order_id VARCHAR(255)` — LS Order ID for refunds (Liquibase)
+- [x] `plan_catalog.gateway_type VARCHAR(32) DEFAULT 'STRIPE'` (Liquibase)
 
 ### Phase 5 — Application Layer Hardening
 
-- [ ] Add `gatewayType()` to `GatewayWebhookEvent` sealed interface; populate in both adapters; write to `subscriptions.gateway_type` in `WebhookProcessingService`
-- [ ] Add `externalOrderId` to `GatewayInvoiceEvent`; write to `subscriptions.external_order_id` on `invoice.payment_succeeded`
-- [ ] Harden `BillingSeedRunner` for LS: conditional update only when IDs change; startup warning when `externalVariantId` blank for LS plans
-- [ ] `ProductSchema.externalVariantId` — `BillingSeedRunner` writes to `plan_catalog.external_price_id` before calling `syncProduct`
-- [ ] LS email validation — `createCustomer` throws `PaymentGatewayException` early when email null (LS requires email; Stripe does not)
+- [x] Add `gatewayType()` to `GatewayWebhookEvent` sealed interface; populate in both adapters; write to `subscriptions.gateway_type` in `WebhookProcessingService`
+- [x] Add `externalOrderId` to `GatewayInvoiceEvent`; write to `subscriptions.external_order_id` on `invoice.payment_succeeded`
+- [x] Harden `BillingSeedRunner` for LS: conditional update only when IDs change; startup warning when `externalVariantId` blank for LS plans
+- [x] `ProductSchema.externalVariantId` — `BillingSeedRunner` writes to `plan_catalog.external_price_id` before calling `syncProduct`
+- [x] LS email validation — `createCustomer` throws `PaymentGatewayException` early when email null (LS requires email; Stripe does not)
 
 ### Phase 6 — Tests
 
-- [ ] Unit tests for `LemonSqueezyGatewayAdapter` per method (mock `RestClient`)
-- [ ] ArchUnit rule: no LS or Stripe types referenced outside their respective adapter packages
-- [ ] Integration test: full webhook round-trip for LS event types
+- [x] Unit tests for `LemonSqueezyGatewayAdapter` per method (mock `RestClient`)
+- [x] ArchUnit rule: no LS or Stripe types referenced outside their respective adapter packages
+- [x] Integration test: full webhook round-trip for LS event types
 
 ### Platform Hardening (v0.4 secondary)
 
