@@ -28,8 +28,8 @@ JWKS endpoint. No downstream service requires any change.
   provider scoped to their tenant (enterprise SSO use case).
 - Keep the `JwtAuthenticationFilter` (JTI denylist + global signout) applicable to all
   tokens regardless of how they were obtained.
-- Zero changes to `foundation-gateway-service`, `foundation-billing-service`,
-  `foundation-audit-service`, `foundation-cms-service`, or any future downstream service.
+- Zero changes to `foundation-billing-service`, `foundation-audit-service`,
+  `foundation-cms-service`, or any future downstream service.
 
 ## Non-Goals
 
@@ -69,6 +69,23 @@ The entire downstream trust model rests on the IAM-issued JWT. OIDC tokens from 
 or GitHub carry none of the platform-specific claims required downstream. The brokering
 approach is therefore the only design that avoids touching every downstream service.
 
+## Finalized Architectural Decisions
+
+This section records all finalized architecture decisions before implementation begins:
+
+| Decision ID | Decision                                                                                                                                                         | Rationale                                                                                           |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| DEC-001     | User email uniqueness enforced at DB and app layer                                                                                                               | Already exists (unique constraint on `users.email`), satisfies requirement for global user accounts |
+| DEC-002     | Allow multiple OIDC providers linked to same user                                                                                                                | Standard user-friendly pattern (e.g., Google + GitHub)                                              |
+| DEC-003     | Auto-link when `emailVerified=true` from IdP and user exists                                                                                                     | Trust verified emails as proof of account ownership                                                 |
+| DEC-004     | State JWT TTL: 10 minutes default, configurable (max 15 min)                                                                                                     | Balances security and usability                                                                     |
+| DEC-005     | Server-side PKCE with short-lived Redis storage                                                                                                                  | Secure and aligns with existing JTI denylist pattern                                                |
+| DEC-006     | Tenant resolution (no tenantKey provided):<br>- MULTI_TENANT: User becomes MEMBER in "platform" tenant<br>- SINGLE_TENANT: Join default tenant with TENANT_OWNER | Aligns with existing `SignupStrategy` behavior                                                      |
+| DEC-007     | Gateway: Exclude `/api/v1/iam/auth/oauth2/**` from tenant extraction                                                                                             | OIDC flows don't use X-Tenant-ID header                                                             |
+| DEC-008     | GitHub: Reject signin if no verified email found                                                                                                                 | Email is required for global user account                                                           |
+| DEC-009     | Rate limiting: Apply to `/authorize`, `/callback`, and `/exchange`                                                                                               | Prevent abuse across all OIDC endpoints                                                             |
+| DEC-010     | Unlink: Require re-authentication before unlinking                                                                                                               | Prevent accidental lockout                                                                          |
+
 ## Proposed Architecture
 
 ### High-Level Flow — Browser-Based OIDC Login
@@ -79,7 +96,7 @@ Browser
   │
   ▼
 foundation-iam-service (Spring OAuth2 Client)
-  │  2. Builds authorization URL with PKCE + signed state JWT, redirects to IdP
+  │  2. Builds authorization URL with PKCE + signed state JWT, stores (state_jti → code_verifier) in Redis, redirects to IdP
   │
   ▼
 Google / GitHub / custom IdP
@@ -88,17 +105,16 @@ Google / GitHub / custom IdP
   │
   ▼
 foundation-iam-service
-  │  4. Verifies state JWT (signature, expiry, nonce)
-  │  5. Exchanges code for OIDC ID token + access token
+  │  4. Verifies state JWT (signature, expiry, nonce), retrieves code_verifier from Redis
+  │  5. Exchanges code + code_verifier for OIDC ID token + access token
   │  6. Validates ID token (nonce, iss, aud, exp)
   │  7. Extracts email, sub, name → normalizes into OidcIdentity
   │  8. OidcUserProvisioningService:
   │       a. Find or create UserIdentity (provider + sub → user_id)
   │       b. Find or create User (by email); emailVerified = true
-  │       c. MULTI_TENANT: find user's tenant via tenantKey from state, or trigger provisioning
-  │       d. SINGLE_TENANT: default-tenant-key from config
-  │       e. Resolve authorities from TenantMembership
-  │       f. JwtTokenGenerator.generateAccessToken()  ← same as password flow
+  │       c. Resolve tenant context
+  │       d. Resolve authorities from TenantMembership
+  │       e. JwtTokenGenerator.generateAccessToken()  ← same as password flow
   │  9. Redirect to post-login-redirect-uri#access_token=…&refresh_token=…
 ```
 
@@ -121,13 +137,12 @@ signout-all, and tenant exchange all work without modification.
 
 ### Affected Modules
 
-| Module                       | Change                                                                                                          |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Module                       | Change                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `foundation-iam-service`     | Primary — new `oauth2` package, DB tables, `spring-boot-starter-oauth2-client` dep, `SecurityConfig` additions |
-| `foundation-gateway-service` | Minor — add `/api/v1/iam/auth/oauth2/**` to `public-paths`                                                      |
+| `foundation-gateway-service` | Minor — add `/api/v1/iam/auth/oauth2/**` to `public-paths` and exclude from tenant extraction                  |
 | Downstream services          | **No change** — continue validating IAM-issued JWTs via JWKS as today                                          |
 | `foundation-ui-app`          | Social login buttons, account-linking UI in Profile & Security, SSO config panel for TENANT_OWNER              |
-
 
 ## Detailed Design
 
@@ -192,6 +207,7 @@ CREATE TABLE tenant_oidc_providers (
 CREATE UNIQUE INDEX idx_tenant_oidc_providers_tenant ON tenant_oidc_providers(tenant_id);
 ```
 
+**Note:** User email uniqueness is already enforced at the database level with `UNIQUE (email)` on the `users` table.
 
 ### 3. OAuth2 Client Configuration — `application.yml`
 
@@ -237,6 +253,10 @@ iqkv:
       auto-provision-users: ${OAUTH2_AUTO_PROVISION:true}
       # AES-256-GCM key for encrypting client secrets in tenant_oidc_providers
       encryption-key: ${OIDC_ENCRYPTION_KEY:}
+      # TTL for state JWT and Redis-stored code_verifier (ISO-8601 duration)
+      state-ttl: ${OAUTH2_STATE_TTL:PT10M}
+      # Maximum allowed state TTL (ISO-8601 duration)
+      state-ttl-max: ${OAUTH2_STATE_TTL_MAX:PT15M}
 ```
 
 ### 4. New Package Layout — `com.iqkv.foundation.iamservice.oauth2`
@@ -251,6 +271,7 @@ oauth2/
   OidcUserProvisioningServiceImpl.java
   OidcIdentity.java                        — normalized IdP identity record
   OidcStateJwtService.java                 — sign/verify state JWT using IAM RSA key
+  OidcStateStore.java                      — Redis-based state/code_verifier storage
   DynamicClientRegistrationRepository.java — static + DB-backed provider lookup
   AesGcmEncryptionService.java             — client secret encryption at rest
   OidcProvisioningException.java           — maps to 403 in global exception handler
@@ -264,7 +285,6 @@ oauth2/
     TenantSsoService.java
     TenantSsoServiceImpl.java
 ```
-
 
 ### 5. `OidcAuthorizationRestResource` — New Endpoints
 
@@ -336,20 +356,19 @@ public class OidcAuthorizationRestResource {
 
 **Full endpoint inventory:**
 
-| Method   | Path                                      | Auth    | Description                                   |
-| -------- | ----------------------------------------- | ------- | --------------------------------------------- |
-| `GET`    | `/api/v1/iam/auth/oauth2/authorize`       | public  | Initiate browser-based OIDC flow              |
-| `GET`    | `/api/v1/iam/auth/oauth2/callback`        | public  | IdP redirect receiver; issues IAM JWT         |
-| `POST`   | `/api/v1/iam/auth/oauth2/exchange`        | public  | SPA/PKCE headless token exchange              |
-| `GET`    | `/api/v1/iam/auth/oauth2/providers`       | public  | List enabled providers (for UI)               |
-| `GET`    | `/api/v1/iam/auth/oauth2/link/{provider}` | bearer  | Initiate account linking                      |
-| `GET`    | `/api/v1/iam/auth/oauth2/link/callback`   | bearer  | Linking callback                              |
-| `DELETE` | `/api/v1/iam/auth/oauth2/link/{provider}` | bearer  | Unlink an OIDC identity                       |
-| `GET`    | `/api/v1/iam/auth/oauth2/identities`      | bearer  | List linked identities for current user       |
-| `GET`    | `/api/v1/iam/tenants/sso`                 | bearer  | Get tenant SSO config (TENANT_OWNER / ADMIN)  |
-| `PUT`    | `/api/v1/iam/tenants/sso`                 | bearer  | Save / update tenant SSO config               |
-| `DELETE` | `/api/v1/iam/tenants/sso`                 | bearer  | Remove tenant SSO config                      |
-
+| Method   | Path                                      | Auth   | Description                                  |
+| -------- | ----------------------------------------- | ------ | -------------------------------------------- |
+| `GET`    | `/api/v1/iam/auth/oauth2/authorize`       | public | Initiate browser-based OIDC flow             |
+| `GET`    | `/api/v1/iam/auth/oauth2/callback`        | public | IdP redirect receiver; issues IAM JWT        |
+| `POST`   | `/api/v1/iam/auth/oauth2/exchange`        | public | SPA/PKCE headless token exchange             |
+| `GET`    | `/api/v1/iam/auth/oauth2/providers`       | public | List enabled providers (for UI)              |
+| `GET`    | `/api/v1/iam/auth/oauth2/link/{provider}` | bearer | Initiate account linking                     |
+| `GET`    | `/api/v1/iam/auth/oauth2/link/callback`   | bearer | Linking callback                             |
+| `DELETE` | `/api/v1/iam/auth/oauth2/link/{provider}` | bearer | Unlink an OIDC identity                      |
+| `GET`    | `/api/v1/iam/auth/oauth2/identities`      | bearer | List linked identities for current user      |
+| `GET`    | `/api/v1/iam/tenants/sso`                 | bearer | Get tenant SSO config (TENANT_OWNER / ADMIN) |
+| `PUT`    | `/api/v1/iam/tenants/sso`                 | bearer | Save / update tenant SSO config              |
+| `DELETE` | `/api/v1/iam/tenants/sso`                 | bearer | Remove tenant SSO config                     |
 
 ### 6. `OidcUserProvisioningService` — Core Logic
 
@@ -387,9 +406,9 @@ public interface OidcUserProvisioningService {
                   │     insert user_identities row
                   │     MULTI_TENANT:
                   │       tenantKey provided? → validate membership or create new tenant
-                  │       tenantKey absent?   → create new tenant (async provisioning)
+                  │       tenantKey absent?   → join "platform" tenant as MEMBER
                   │     SINGLE_TENANT:
-                  │       join default tenant with MEMBER authority
+                  │       join default tenant with TENANT_OWNER authority
                   │                                                      → token issuance
                   └── NO → throw OidcProvisioningException(PROVISIONING_DISABLED) → 403
 ```
@@ -439,33 +458,27 @@ public record OidcIdentity(
 }
 ```
 
-
-### 8. State and PKCE Correlation — Stateless Design
+### 8. State and PKCE Correlation — Server-Side Storage
 
 The OAuth2 `state` parameter must survive the browser round-trip to the IdP and back.
 It carries the tenant key, a nonce, the post-login redirect URI, and the flow type
-(login vs. link). Rather than storing it server-side (which would require Redis or
-sticky sessions), `OidcState` is serialized to a **signed JWT** using the IAM RSA
-private key:
+(login vs. link). `OidcState` is serialized to a **signed JWT** using the IAM RSA
+private key, and the `code_verifier` is stored in Redis with the state JWT's JTI as key:
 
 ```java
 public record OidcState(
+    String jti,            // unique JWT ID for Redis lookup
     String nonce,          // random 32-byte hex; verified against OIDC ID token nonce claim
     String tenantKey,      // resolved at authorize time; recovered at callback
     String redirectUri,    // destination URI after successful login (browser flow only)
     String flowType,       // "login" | "link"
     String userId,         // populated only for "link" flows
-    Instant expiresAt      // 10 minutes from issue; callback rejects expired states
+    Instant expiresAt      // from iqkv.auth.oauth2.state-ttl (default 10 minutes)
 ) {}
 ```
 
 The callback verifies the JWT signature and `expiresAt` before trusting any claim in
-the state. This is consistent with the existing `SessionCreationPolicy.STATELESS`
-design of the IAM service — no `HttpSession`, no Redis, no shared state.
-
-PKCE (`code_challenge_method=S256`) is always required. The `code_verifier` is embedded
-in the state JWT for the browser flow; for the SPA/exchange flow the client supplies it
-directly in the request body. Plain `code_challenge_method` is rejected.
+the state. PKCE (`code_challenge_method=S256`) is always required — `plain` is rejected.
 
 ### 9. `DynamicClientRegistrationRepository` — Per-Tenant Enterprise SSO
 
@@ -508,7 +521,6 @@ public class DynamicClientRegistrationRepository implements ClientRegistrationRe
 The decrypted secret is never logged or returned in API responses. The `TenantSsoRestResource`
 returns a masked client secret (`"••••••••"`) on `GET /api/v1/iam/tenants/sso`.
 
-
 ### 10. `SecurityConfig` Changes — IAM Service
 
 Two additions only. The rest of `SecurityConfig` is unchanged.
@@ -534,15 +546,17 @@ No other class in the IAM service `SecurityConfig` is modified.
 
 ### 11. Gateway Changes
 
-One additive change only — the four new public OIDC paths are added to `public-paths`
-in `application.yml`:
+Two additive changes:
+
+1. Add `/api/v1/iam/auth/oauth2/**` to `public-paths` in `application.yml`
+2. Exclude `/api/v1/iam/auth/oauth2/**` from tenant extraction filter
 
 ```yaml
 iqkv:
   gateway:
     public-paths:
       # … all existing entries …
-      - /api/v1/iam/auth/oauth2/**   # OIDC authorize, callback, exchange, providers
+      - /api/v1/iam/auth/oauth2/** # OIDC authorize, callback, exchange, providers
 ```
 
 **`HeaderSanitizationFilter` — no change required.**
@@ -553,9 +567,7 @@ from the IAM JWT.
 The `X-Tenant-ID` allowed-paths list does not need updating because the tenant key is
 encoded in the `state` JWT, not sent as a request header on the callback.
 
-No changes to `SecurityConfig`, `JwtContextPropagationFilter`, `HeaderSanitizationFilter`,
-routing, or any other gateway class.
-
+Only changes to `application.yml` and `TenantContextFilter` are required in the gateway.
 
 ### 12. Tenant Context Resolution in OIDC Flows
 
@@ -563,18 +575,13 @@ The `X-Tenant-ID` header approach used by password signin cannot be applied to b
 redirect flows (the browser sets no custom headers on a redirect). Tenant context is
 resolved differently per flow:
 
-| Flow             | Tenant resolution                                                                              |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| Browser login    | `tenantKey` query param on `/authorize` → embedded in `state` JWT → recovered on `/callback`  |
-| SPA exchange     | `tenantKey` field in `POST /exchange` request body                                             |
-| First-time signup (MULTI_TENANT) | `tenantKey` absent → new tenant created async (same as `POST /auth/signup`) |
-| SINGLE_TENANT    | `iqkv.tenancy.default-tenant-key` used regardless of any supplied key                         |
-| Tenant switch after login | Existing `POST /auth/exchange` endpoint unchanged                                   |
-
-When MULTI_TENANT and `tenantKey` is absent but the user already holds a membership in
-exactly one tenant, that tenant is used automatically. If the user has memberships in
-multiple tenants, a `tenantKey` is required; omitting it returns `400 Bad Request` with
-a list of the user's tenants so the UI can prompt a selection.
+| Flow                                  | Tenant resolution                                                                            |
+| ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Browser login                         | `tenantKey` query param on `/authorize` → embedded in `state` JWT → recovered on `/callback` |
+| SPA exchange                          | `tenantKey` field in `POST /exchange` request body                                           |
+| No tenantKey provided (MULTI_TENANT)  | User joins "platform" tenant as MEMBER                                                       |
+| No tenantKey provided (SINGLE_TENANT) | User joins default tenant with TENANT_OWNER authority                                        |
+| Tenant switch after login             | Existing `POST /auth/exchange` endpoint unchanged                                            |
 
 ### 13. Token Refresh and Signout
 
@@ -603,9 +610,9 @@ Users authenticated via bearer token can attach additional IdP identities:
 - **Unlink:** `DELETE /api/v1/iam/auth/oauth2/link/{provider}` removes the row. The
   service enforces that the user retains at least one active credential — either a
   non-null `passwordHash` or another `user_identities` row — to prevent lockout.
+  **Requires re-authentication** before unlinking.
 - **List:** `GET /api/v1/iam/auth/oauth2/identities` returns all linked identities for
   the current user (`provider`, `displayName`, `email`, `linkedAt`).
-
 
 ### 15. GitHub Special Handling
 
@@ -616,8 +623,8 @@ It is an OAuth2-only provider. Two differences require explicit handling:
    `OidcUser`. `OidcIdentity.fromGitHubUser()` normalizes this into the same record.
 2. **Email may be private.** GitHub users can hide their primary email. The service
    must call `GET https://api.github.com/user/emails` using the GitHub access token
-   to retrieve the verified primary email. If no verified email exists, signin is
-   rejected with `400 Bad Request` and a user-facing message asking them to make their
+   to retrieve the verified primary email. **If no verified email exists, signin is
+   rejected** with `400 Bad Request` and a user-facing message asking them to make their
    GitHub email public or use a different provider.
 
 A `GitHubEmailFetcher` component wraps this API call with the GitHub access token.
@@ -625,17 +632,16 @@ It is invoked only during the GitHub OIDC callback — not on every request.
 
 ### 16. Security Considerations
 
-| Risk                              | Mitigation                                                                                                           |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| State CSRF forgery                | `state` is an RSA-signed JWT; signature verified before code exchange                                               |
-| Open redirect on callback         | `post-login-redirect-uri` is a fixed allowlist in config; never read from user input                                |
-| IdP token replay                  | Nonce in `state` JWT verified against `nonce` claim in OIDC ID token                                                |
-| PKCE downgrade                    | `code_challenge_method=S256` required; `plain` rejected at authorize time                                           |
-| Account takeover via email match  | Email-based linking only when `emailVerified=true` from the IdP; unverified emails always create a new account      |
-| Brute-force on `/exchange`        | Rate-limiting infrastructure (same lockout as `/signin`) applied per IP                                             |
-| Privilege escalation via OIDC     | Authorities resolved exclusively from local `TenantMembership`; IdP roles/groups are never used                     |
-| Tenant spoofing via state         | `tenantKey` from state must correspond to an existing `TenantMembership` for the provisioned user                   |
-| Client secret exposure            | Stored AES-256-GCM encrypted; decrypted only in-process; masked in API responses; never logged                      |
-| Credential lockout on unlink      | Unlink enforces at-least-one-credential guard (password or another identity row)                                     |
-| OIDC tokens reaching downstream   | Gateway never sees IdP tokens — IAM exchanges them for IAM-issued JWTs before any token leaves the IAM service       |
-
+| Risk                             | Mitigation                                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| State CSRF forgery               | `state` is an RSA-signed JWT; signature verified before code exchange                                             |
+| Open redirect on callback        | `post-login-redirect-uri` is a fixed allowlist in config; never read from user input                              |
+| IdP token replay                 | Nonce in `state` JWT verified against `nonce` claim in OIDC ID token                                              |
+| PKCE downgrade                   | `code_challenge_method=S256` required; `plain` rejected at authorize time                                         |
+| Account takeover via email match | Email-based linking only when `emailVerified=true` from the IdP; unverified emails always create a new account    |
+| Brute-force on OIDC endpoints    | Rate-limiting infrastructure (same lockout as `/signin`) applied per IP to `/authorize`, `/callback`, `/exchange` |
+| Privilege escalation via OIDC    | Authorities resolved exclusively from local `TenantMembership`; IdP roles/groups are never used                   |
+| Tenant spoofing via state        | `tenantKey` from state must correspond to an existing `TenantMembership` for the provisioned user                 |
+| Client secret exposure           | Stored AES-256-GCM encrypted; decrypted only in-process; masked in API responses; never logged                    |
+| Credential lockout on unlink     | Unlink enforces at-least-one-credential guard + requires re-authentication                                        |
+| OIDC tokens reaching downstream  | Gateway never sees IdP tokens — IAM exchanges them for IAM-issued JWTs before any token leaves the IAM service    |
