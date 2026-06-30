@@ -1,5 +1,68 @@
 # Proposal: OAuth2 / OpenID Connect (OIDC) Authentication
 
+## Implementation Checklist
+
+### Database & Migrations
+
+- [ ] Add Liquibase changelog for `user_identities` table
+- [ ] Add Liquibase changelog for `tenant_oidc_providers` table
+- [ ] Verify DB constraints and indexes
+
+### IAM Service Dependencies
+
+- [ ] Add `spring-boot-starter-oauth2-client` to `foundation-iam-service/pom.xml`
+- [ ] Verify dependencies with `mvn dependency:tree`
+
+### Configuration
+
+- [ ] Add OIDC config to `application.yml` (static providers, base-url, post-login-redirect-uri, auto-provision-users, encryption-key, state-ttl, auto-link.enabled)
+- [ ] Add environment variable defaults
+
+### Core Implementation
+
+- [ ] Create `oauth2` package structure
+- [ ] Implement `OidcIdentity` record
+- [ ] Implement `OidcState` record
+- [ ] Implement `OidcStateJwtService` (sign/verify state JWT)
+- [ ] Implement `OidcStateStore` (Redis-based storage)
+- [ ] Implement `AesGcmEncryptionService`
+- [ ] Implement `OidcProvisioningException`
+- [ ] Implement `OidcDtos` (OidcExchangeRequest, EnabledProvidersResponse, LinkedIdentityResponse)
+- [ ] Implement `UserIdentityMapper` (MyBatis)
+- [ ] Implement `TenantOidcProviderMapper` (MyBatis)
+- [ ] Implement `OidcUserProvisioningService` interface & implementation (delegates to existing `SignupStrategy` for tenant provisioning)
+- [ ] Implement `DynamicClientRegistrationRepository`
+- [ ] Implement `GitHubEmailFetcher` (for GitHub non-OIDC handling)
+- [ ] Implement `OidcAuthorizationRestResource` (all public endpoints)
+- [ ] Implement `TenantSsoRestResource`, `TenantSsoService`
+- [ ] Update `SecurityConfig` (permit OIDC endpoints, enable oauth2Client)
+- [ ] Update `JwtAuthenticationFilter.shouldNotFilter()`
+
+### Gateway Changes
+
+- [ ] Add `/api/v1/iam/auth/oauth2/**` to gateway `public-paths`
+- [ ] Exclude OIDC endpoints from tenant extraction filter
+
+### Tests
+
+- [ ] Unit tests for `OidcUserProvisioningServiceImpl`
+- [ ] Unit tests for `OidcStateJwtService`
+- [ ] Unit tests for `AesGcmEncryptionService`
+- [ ] Unit tests for `DynamicClientRegistrationRepository`
+- [ ] Integration tests for `OidcAuthorizationRestResource`
+
+### Documentation
+
+- [ ] Update API docs (`docs/api/`)
+- [ ] Update README.md
+- [ ] Update README.template.md
+
+### Security & Audit
+
+- [ ] Add audit logging for auto-linking events
+- [ ] Implement admin notifications for auto-linking
+- [ ] Implement admin endpoints for unmerge & audit history
+
 ## Overview
 
 This document proposes adding OAuth2/OIDC as a parallel authentication path alongside
@@ -85,6 +148,7 @@ This section records all finalized architecture decisions before implementation 
 | DEC-008     | GitHub: Reject signin if no verified email found                                                                                                                 | Email is required for global user account                                                           |
 | DEC-009     | Rate limiting: Apply to `/authorize`, `/callback`, and `/exchange`                                                                                               | Prevent abuse across all OIDC endpoints                                                             |
 | DEC-010     | Unlink: Require re-authentication before unlinking                                                                                                               | Prevent accidental lockout                                                                          |
+| DEC-011     | Email conflict handling: Soft-merge + admin notification + manual unmerge                                                                                        | Mitigate account takeover risk from reused corporate emails                                         |
 
 ## Proposed Architecture
 
@@ -257,6 +321,8 @@ iqkv:
       state-ttl: ${OAUTH2_STATE_TTL:PT10M}
       # Maximum allowed state TTL (ISO-8601 duration)
       state-ttl-max: ${OAUTH2_STATE_TTL_MAX:PT15M}
+      # Enable/disable auto-linking of OIDC identities to existing users by verified email
+      auto-link.enabled: ${OAUTH2_AUTO_LINK_ENABLED:true}
 ```
 
 ### 4. New Package Layout — `com.iqkv.foundation.iamservice.oauth2`
@@ -376,6 +442,10 @@ This is the single point of truth for all identity federation decisions. It is t
 place that reads `user_identities` and the only place that decides whether to provision,
 link, or reject an incoming OIDC identity.
 
+**Architecture Note**: Tenant provisioning logic is delegated to existing `SignupStrategy`
+implementations (`MultiTenantSignupStrategy` and `SingleTenantSignupStrategy`) to ensure
+consistency across password-based and OIDC-based signups.
+
 ```java
 public interface OidcUserProvisioningService {
   /**
@@ -397,18 +467,14 @@ public interface OidcUserProvisioningService {
 (provider, provider_sub) found in user_identities?
   ├── YES → load User, update last_used_at                              → token issuance
   └── NO  →
-        email in users table AND emailVerified=true in IdP identity?
-          ├── YES → insert user_identities row (account linking)        → token issuance
+        email in users table AND emailVerified=true in IdP identity AND iqkv.auth.oauth2.auto-link.enabled=true?
+          ├── YES → insert user_identities row (account linking); log audit event; notify admins → token issuance
           └── NO  →
                 iqkv.auth.oauth2.auto-provision-users = true?
                   ├── YES →
                   │     create User (status=ACTIVE, emailVerified=true, passwordHash=null)
                   │     insert user_identities row
-                  │     MULTI_TENANT:
-                  │       tenantKey provided? → validate membership or create new tenant
-                  │       tenantKey absent?   → join "platform" tenant as MEMBER
-                  │     SINGLE_TENANT:
-                  │       join default tenant with TENANT_OWNER authority
+                  │     delegate to existing SignupStrategy for tenant provisioning (handles both MULTI_TENANT and SINGLE_TENANT modes)
                   │                                                      → token issuance
                   └── NO → throw OidcProvisioningException(PROVISIONING_DISABLED) → 403
 ```
@@ -599,7 +665,7 @@ The IAM service does **not** revoke the IdP session on signout. Back-channel log
 (OIDC logout endpoint notification) can be added later as a `LogoutSuccessHandler`
 event without altering the token flow.
 
-### 14. Account Linking
+### 14. Account Linking & Email Conflict Handling
 
 Users authenticated via bearer token can attach additional IdP identities:
 
@@ -613,6 +679,27 @@ Users authenticated via bearer token can attach additional IdP identities:
   **Requires re-authentication** before unlinking.
 - **List:** `GET /api/v1/iam/auth/oauth2/identities` returns all linked identities for
   the current user (`provider`, `displayName`, `email`, `linkedAt`).
+
+#### Email Conflict Mitigation (Soft-Merge)
+
+To mitigate risk of account takeover from reused corporate emails:
+
+1. **Auto-Linking with Audit Logging**: When auto-linking occurs (existing user found by `emailVerified=true` email), log a detailed audit event including:
+   - Timestamp
+   - User ID
+   - Provider name
+   - Provider subject ID
+   - IP address
+   - User agent
+
+2. **Admin Notification**: Send an email notification to platform administrators about the new identity linkage.
+
+3. **Manual Unmerge Capability**: Provide admin endpoints to:
+   - List all identity linkages
+   - Unmerge a specific identity from a user account (moving it to a new user record or re-linking to another account)
+   - View audit history of linkages/unmerges
+
+4. **Configuration**: Add a config flag `iqkv.auth.oauth2.auto-link.enabled` (default `true`) to allow disabling auto-linking entirely in high-security environments.
 
 ### 15. GitHub Special Handling
 
@@ -632,16 +719,16 @@ It is invoked only during the GitHub OIDC callback — not on every request.
 
 ### 16. Security Considerations
 
-| Risk                             | Mitigation                                                                                                        |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| State CSRF forgery               | `state` is an RSA-signed JWT; signature verified before code exchange                                             |
-| Open redirect on callback        | `post-login-redirect-uri` is a fixed allowlist in config; never read from user input                              |
-| IdP token replay                 | Nonce in `state` JWT verified against `nonce` claim in OIDC ID token                                              |
-| PKCE downgrade                   | `code_challenge_method=S256` required; `plain` rejected at authorize time                                         |
-| Account takeover via email match | Email-based linking only when `emailVerified=true` from the IdP; unverified emails always create a new account    |
-| Brute-force on OIDC endpoints    | Rate-limiting infrastructure (same lockout as `/signin`) applied per IP to `/authorize`, `/callback`, `/exchange` |
-| Privilege escalation via OIDC    | Authorities resolved exclusively from local `TenantMembership`; IdP roles/groups are never used                   |
-| Tenant spoofing via state        | `tenantKey` from state must correspond to an existing `TenantMembership` for the provisioned user                 |
-| Client secret exposure           | Stored AES-256-GCM encrypted; decrypted only in-process; masked in API responses; never logged                    |
-| Credential lockout on unlink     | Unlink enforces at-least-one-credential guard + requires re-authentication                                        |
-| OIDC tokens reaching downstream  | Gateway never sees IdP tokens — IAM exchanges them for IAM-issued JWTs before any token leaves the IAM service    |
+| Risk                              | Mitigation                                                                                                                                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| State CSRF forgery                | `state` is an RSA-signed JWT; signature verified before code exchange                                                                                             |
+| Open redirect on callback         | `post-login-redirect-uri` is a fixed allowlist in config; never read from user input                                                                              |
+| IdP token replay                  | Nonce in `state` JWT verified against `nonce` claim in OIDC ID token                                                                                              |
+| PKCE downgrade                    | `code_challenge_method=S256` required; `plain` rejected at authorize time                                                                                         |
+| Account takeover via reused email | Email-based linking only when `emailVerified=true` from the IdP; detailed audit logging; admin notifications; manual unmerge capability; auto-link disable config |
+| Brute-force on OIDC endpoints     | Rate-limiting infrastructure (same lockout as `/signin`) applied per IP to `/authorize`, `/callback`, `/exchange`                                                 |
+| Privilege escalation via OIDC     | Authorities resolved exclusively from local `TenantMembership`; IdP roles/groups are never used                                                                   |
+| Tenant spoofing via state         | `tenantKey` from state must correspond to an existing `TenantMembership` for the provisioned user                                                                 |
+| Client secret exposure            | Stored AES-256-GCM encrypted; decrypted only in-process; masked in API responses; never logged                                                                    |
+| Credential lockout on unlink      | Unlink enforces at-least-one-credential guard + requires re-authentication                                                                                        |
+| OIDC tokens reaching downstream   | Gateway never sees IdP tokens — IAM exchanges them for IAM-issued JWTs before any token leaves the IAM service                                                    |
