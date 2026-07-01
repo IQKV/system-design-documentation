@@ -24,6 +24,10 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 | Organizations             | Create, update, suspend, delete; async provisioning via RabbitMQ with ShedLock-guarded reaper for stuck tenants; automatic retry mechanism for failed provisioning                                                                                                   | ✅     |
 | RBAC                      | Tenant authorities: `TENANT_OWNER`, `ADMIN`, `MEMBER`; platform authority: `PLATFORM_ADMIN`; per-tenant membership with independent authorities; `@PreAuthorize` on endpoints                                                                                        | ✅     |
 | Platform admin APIs       | Paginated admin CRUD for users and tenants; cross-tenant invitations; member authority management; force-set password                                                                                                                                                | ✅     |
+| OAuth2 / OIDC federation  | Social login for Google, GitHub, Microsoft, plus tenant-scoped custom OIDC providers; IAM brokers external identity into the same internal RS256 JWT contract                                                                                                        | ✅     |
+| Account linking           | Existing users can link / unlink external providers; external identities stored in `user_identities`; last-credential guard on unlink                                                                                                                                | ✅     |
+| Tenant SSO                | TENANT_OWNER can configure a per-tenant OIDC provider in `tenant_oidc_providers`; client secrets encrypted with AES-256-GCM; provider available as `oidc:{tenantKey}`                                                                                                | ✅     |
+| OIDC admin remediation    | `PLATFORM_ADMIN` endpoints to list linked identities and force-unmerge an external identity from a user account                                                                                                                                                      | ✅     |
 | Invitations               | Email invite with 72h expiring token; `authority` defaults to `MEMBER` (also `ADMIN`); new users created on accept (email pre-verified); existing users verified by password; ShedLock-guarded reaper                                                                | ✅     |
 | Multi-org                 | One user can belong to multiple organizations with different authorities; tenant discovery by credentials; cross-tenant user context switching                                                                                                                       | ✅     |
 | Rollout mode              | `MULTI_TENANT` (default) or `SINGLE_TENANT` — configured via `platform.rollout-mode`; single-tenant provisions one default tenant at startup; mode consistency enforced across services                                                                              | ✅     |
@@ -109,7 +113,7 @@ Centralized, event-driven activity logging. Passive observation of platform even
 
 ## Billing
 
-Payment gateway abstraction with plan catalog and subscription state. The active gateway is selected via `iqkv.payment.gateway.type` — Stripe is the current production adapter; Lemon Squeezy is the v0.4 target. All business logic operates against the gateway-agnostic `PaymentGatewayPort`; adapters are wired conditionally with `@ConditionalOnGateway`.
+Payment gateway abstraction with plan catalog and subscription state. The active gateway is selected via `iqkv.payment.gateway.type` — Stripe and Lemon Squeezy are both supported behind the same gateway-agnostic `PaymentGatewayPort`, with adapters wired conditionally via `@ConditionalOnGateway`.
 
 | Capability                    | Notes                                                                                                                                                                                                                                    | Status |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
@@ -185,28 +189,30 @@ Content management service for static pages, multi-language support, and hierarc
 
 React 19 + Mantine SPA for workspace members. All requests go through the API Gateway with tenant-scoped JWTs and `X-Tenant-ID`. Static build (Nginx or CDN).
 
-| Screen / flow               | Notes                                                                                                                                                                              | Status |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Sign-in                     | Credentials → tenant discovery (`POST /users/tenants`); multi-tenant picker; single-tenant direct sign-in                                                                          | ✅     |
-| Sign-up                     | Self-service registration + tenant creation; polls provisioning until `ACTIVE`                                                                                                     | ✅     |
-| Password reset              | Forgot-password email + token-based reset (`/forgot-password`, `/reset-password`)                                                                                                  | ✅     |
-| Email verification          | Token-based verification from email link (`/verify-email`)                                                                                                                         | ✅     |
-| Accept invitation           | Public `/invite/:token` — new and existing users                                                                                                                                   | ✅     |
-| Dashboard                   | Workspace name, welcome, team member count                                                                                                                                         | ✅     |
-| Team — members              | Searchable member list, ban/unban members (`TENANT_OWNER`)                                                                                                                         | ✅     |
-| Team — invitations          | Send, list, revoke pending invitations (`TENANT_OWNER`)                                                                                                                            | ✅     |
-| My account                  | Profile view/edit, change password, organizations and roles; avatar upload                                                                                                         | ✅     |
-| Billing self-service        | Stripe Customer Portal access, active subscription view (with trial status and days left), plan catalog (with trial badge and per-seat pricing labels), billing info, refunds list | ✅     |
-| Tenant settings             | Organization metadata editing                                                                                                                                                      | ✅     |
-| Notifications               | In-app notification list, unread badge, mark-as-read, delete; real-time WebSocket push (STOMP/SockJS)                                                                              | ✅     |
-| Session security            | Access token in memory; refresh + tenant key in `sessionStorage`; silent refresh; 30min inactivity timeout                                                                         | ✅     |
-| i18n & theme                | Lingui (English and Bulgarian catalogs); locale cookie; light/dark theme; unified dark sidebar layout                                                                              | ✅     |
-| Member role editing         | Change member authorities beyond invitation default; transfer ownership (`TENANT_OWNER`)                                                                                           | ✅     |
-| Plan-based feature access   | Integrates with billing entitlements API for plan-based feature visibility and access control                                                                                      | ✅     |
-| Personal workspace handling | Hides personal workspace from org settings and nav; handles personal workspaces in entitlements & billing pages                                                                    | ✅     |
-| Demo credentials hint       | Shows demo credentials hint when VITE_DEMO_MODE is enabled                                                                                                                         | ✅     |
-| Billing setup form          | Shows setup form instead of error when billing settings not found                                                                                                                  | ✅     |
-| E2E testing                 | Restructured E2E test suite for scalability; added data-testid attributes to all key components; centralized test utilities                                                        | ✅     |
+| Screen / flow               | Notes                                                                                                                                                                                                | Status |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Sign-in                     | Credentials → tenant discovery (`POST /users/tenants`); multi-tenant picker; single-tenant direct sign-in                                                                                            | ✅     |
+| OAuth2 / OIDC sign-in       | Google / GitHub / Microsoft social login plus enterprise SSO entry via `oidc:{tenantKey}`; callback handled at `/auth/callback`                                                                      | ✅     |
+| Sign-up                     | Self-service registration + tenant creation; polls provisioning until `ACTIVE`                                                                                                                       | ✅     |
+| Password reset              | Forgot-password email + token-based reset (`/forgot-password`, `/reset-password`)                                                                                                                    | ✅     |
+| Email verification          | Token-based verification from email link (`/verify-email`)                                                                                                                                           | ✅     |
+| Accept invitation           | Public `/invite/:token` — new and existing users                                                                                                                                                     | ✅     |
+| Dashboard                   | Workspace name, welcome, team member count                                                                                                                                                           | ✅     |
+| Team — members              | Searchable member list, ban/unban members (`TENANT_OWNER`)                                                                                                                                           | ✅     |
+| Team — invitations          | Send, list, revoke pending invitations (`TENANT_OWNER`)                                                                                                                                              | ✅     |
+| My account                  | Profile view/edit, change password, organizations and roles; avatar upload; connected accounts (link / unlink OAuth2 providers)                                                                      | ✅     |
+| Billing self-service        | Billing portal access (Stripe or Lemon Squeezy), active subscription view (with trial status and days left), plan catalog (with trial badge and per-seat pricing labels), billing info, refunds list | ✅     |
+| Tenant settings             | Organization metadata editing                                                                                                                                                                        | ✅     |
+| Tenant SSO configuration    | TENANT_OWNER security panel for issuer URI, client ID / secret, scopes, enabled flag; write-only client secret                                                                                       | ✅     |
+| Notifications               | In-app notification list, unread badge, mark-as-read, delete; real-time WebSocket push (STOMP/SockJS)                                                                                                | ✅     |
+| Session security            | Access token in memory; refresh + tenant key in `sessionStorage`; silent refresh; 30min inactivity timeout                                                                                           | ✅     |
+| i18n & theme                | Lingui (English and Bulgarian catalogs); locale cookie; light/dark theme; unified dark sidebar layout                                                                                                | ✅     |
+| Member role editing         | Change member authorities beyond invitation default; transfer ownership (`TENANT_OWNER`)                                                                                                             | ✅     |
+| Plan-based feature access   | Integrates with billing entitlements API for plan-based feature visibility and access control                                                                                                        | ✅     |
+| Personal workspace handling | Hides personal workspace from org settings and nav; handles personal workspaces in entitlements & billing pages                                                                                      | ✅     |
+| Demo credentials hint       | Shows demo credentials hint when VITE_DEMO_MODE is enabled                                                                                                                                           | ✅     |
+| Billing setup form          | Shows setup form instead of error when billing settings not found                                                                                                                                    | ✅     |
+| E2E testing                 | Restructured E2E test suite for scalability; added data-testid attributes to all key components; centralized test utilities                                                                          | ✅     |
 
 ---
 
@@ -218,16 +224,17 @@ Separate operator SPA (`PLATFORM_ADMIN` only). Platform-scoped JWT (`tenant_id` 
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | Admin sign-in                     | `POST /auth/admin/signin`; refresh via `/auth/admin/refresh`; `/unauthorized` without authority                                           | ✅     |
 | Dashboard                         | Parallel count cards: users, organizations, active subscriptions                                                                          | ✅     |
-| Users                             | Paginated list; detail with Overview + Organizations tabs; edit profile; set password                                                     | ✅     |
+| Users                             | Paginated list; detail with Overview, Organizations, Platform Authority, and OIDC Identities tabs; edit profile; set password             | ✅     |
 | Organizations                     | Paginated list with status filter; detail with Overview, Members, Billing, Subscriptions, Refunds tabs                                    | ✅     |
 | Invitations                       | Cross-tenant list; propose, edit, revoke                                                                                                  | ✅     |
-| Subscriptions                     | Global read-only list with search, status filter, sorting; detail view                                                                    | ✅     |
+| Subscriptions                     | Global list with search, status filter, sorting; detail view; cancel / pause / reactivate and quantity update                             | ✅     |
 | Refunds                           | Global refund list and detail views                                                                                                       | ✅     |
 | Plan catalog                      | Read-only list; plans are config-driven (YAML + deployment); no create/edit/deactivate UI                                                 | ✅     |
 | Announcements                     | Create, edit, publish, delete announcements with multi-lingual translation support                                                        | ✅     |
 | Audit logs                        | Global audit log view across all tenants; filterable by user, tenant, action                                                              | ✅     |
 | Notifications                     | In-app notification list, unread badge, mark-as-read; real-time WebSocket push                                                            | ✅     |
 | Operator account                  | View/edit operator profile; change password                                                                                               | ✅     |
+| OIDC admin remediation            | User-detail OIDC identities tab; forced unmerge flow for linked external identities                                                       | ✅     |
 | Session security                  | Access token in memory; refresh in `sessionStorage`; silent refresh; inactivity sign-out                                                  | ✅     |
 | i18n                              | Lingui with English and Bulgarian catalogs; locale switcher UI                                                                            | ✅     |
 | Platform actions                  | Ban/unban/unlock (done), impersonation                                                                                                    | 🚧     |
@@ -278,25 +285,19 @@ Astro + React + Tailwind CSS + DaisyUI + shadcn/ui landing page kit.
 
 ---
 
-## Planned (v0.4 and Beyond)
+## Planned (Post-v0.4)
 
-### v0.4 — Multi-Gateway Billing & Platform Hardening
+### Current Open Items
 
-| Capability                              | Notes                                                                                                                                       |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lemon Squeezy adapter                   | `LemonSqueezyGatewayAdapter` — full `PaymentGatewayPort` implementation via Spring `RestClient`; `@ConditionalOnGateway(LEMON_SQUEEZY)`     |
-| `@ConditionalOnGateway`                 | Meta-annotation + `GatewayCondition` for conditional bean wiring; `GatewayType.LEMON_SQUEEZY` constant                                      |
-| LS webhook resource                     | `LemonSqueezyWebhookRestResource` at `/api/v1/billing/webhooks/lemon-squeezy`; HMAC-SHA256 verification via `X-Signature` header            |
-| LS webhook event mapping                | LS `meta.event_name` values normalized to `GatewayWebhookEvent` sealed subtypes; `meta.custom_data` for tenant/user context                 |
-| Gateway-neutral plan catalog config     | `iqkv.billing.plan-catalog.products` replaces `iqkv.billing.stripe.schema.products`; `externalVariantId` for pre-configured LS variant IDs  |
-| gateway_type columns                    | `gateway_type VARCHAR(32)` on `billing_settings`, `subscriptions`, and `plan_catalog`; Liquibase migrations                                 |
-| external_order_id on subscriptions      | `external_order_id VARCHAR(255)` on `subscriptions`; populated from LS `subscription_payment_success` webhook; used for order-level refunds |
-| gatewayType in webhook events           | `gatewayType()` on `GatewayWebhookEvent`; written to `subscriptions.gateway_type` by `WebhookProcessingService`                             |
-| BillingSeedRunner LS hardening          | Read-only variant verification for LS; startup warning when `externalVariantId` is blank; conditional update only when IDs actually change  |
-| Platform Admin — subscription mutations | Change plan, cancel, reactivate, apply discount from admin UI                                                                               |
-| Platform Admin — advanced metrics       | MRR/ARR, growth charts, trends on dashboard                                                                                                 |
-| Per-seat IAM enforcement                | Enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; `activeSeatCount` column on tenants                   |
-| Additional locales                      | RU, IT (infrastructure already in place)                                                                                                    |
+| Capability                              | Notes                                                                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Platform Admin — subscription mutations | Change plan and apply discount from admin UI; cancel / pause / reactivate / quantity update are already implemented       |
+| Platform Admin — advanced metrics       | MRR/ARR, growth charts, trends on dashboard                                                                               |
+| Per-seat IAM enforcement                | Enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; `activeSeatCount` column on tenants |
+| Additional locales                      | RU, IT (infrastructure already in place)                                                                                  |
+| OIDC admin audit history                | Admin history / audit endpoints for identity-link and unmerge operations                                                  |
+| OIDC token hardening                    | JWK-backed `id_token` validation beyond current nonce / claim checks                                                      |
+| OIDC focused tests                      | Automated coverage for provisioning, state JWT, Redis PKCE store, and callback flows                                      |
 
 ### Later Milestones
 

@@ -17,6 +17,7 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 - Self-service registration and tenant creation; signup-by-invitation (expiring tokens)
 - JWT RS256 authentication — 15-min access tokens, 7-day refresh tokens; JWKS endpoint for distributed validation
 - Magic link authentication with configurable TTL and rate limiting
+- OAuth2 / OIDC federation — Google, GitHub, Microsoft, and tenant-scoped custom OIDC providers; IAM brokers external identities into the same internal JWT contract
 - Token exchange for tenant switching; JTI denylist + global signout timestamp for revocation
 - Password reset with rate limiting (3 requests / 15 min); brute-force lockout (5 attempts / 15 min)
 - Multi-organization membership — one user, multiple tenants, independent authorities per tenant
@@ -25,10 +26,11 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 - Avatar uploads via two-phase presigned S3/MinIO flow; old avatars auto-deleted
 - In-app notifications — persisted to DB + real-time WebSocket push (STOMP/SockJS)
 - Site-wide announcements with multi-lingual support; async fan-out to all users in batches
-- Platform admin APIs: user CRUD, tenant CRUD, cross-tenant invitations, force-set password, ban/unban/unlock users
+- Platform admin APIs: user CRUD, tenant CRUD, cross-tenant invitations, force-set password, ban/unban/unlock users, linked-identity listing, forced unmerge
 - User ban/unban: platform admin can ban/unban globally, tenant owner can ban/unban within tenant; banned users automatically logged out
 - Member authority edit: tenant owner can update member authorities (TENANT_OWNER/MEMBER); guardrails on last owner
 - Transfer ownership: tenant owner can transfer ownership to another active member; old owner becomes MEMBER
+- Tenant SSO management: tenant owners can configure a custom OIDC provider; client secrets encrypted with AES-256-GCM
 - PostgreSQL schema-per-tenant with Liquibase migrations; `ROLLOUT_MODE` for B2B/B2C switch
 - Plan feature enforcement: `PlanFeatureGuard` annotation, `maxUsers` quota checks, `plan_code` stamped into JWT
 - Custom metrics: auth outcomes, user lifecycle, tenant provisioning, security events
@@ -84,12 +86,13 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 ### Tenant App (`foundation-ui-app`)
 
 - React 19 + TypeScript + Mantine UI SPA for workspace members (Feature-Sliced Design architecture)
-- Sign-in with tenant discovery; sign-up with provisioning poll; forgot/reset password; email verification
+- Sign-in with tenant discovery, OAuth2/OIDC social login, enterprise SSO entry, sign-up with provisioning poll; forgot/reset password; email verification
 - Accept invitations (`/invite/:token`) — new and existing users
 - Dashboard, team member list, send/revoke invitations (`TENANT_OWNER`), ban/unban members (`TENANT_OWNER`)
-- My Account — profile, password, organizations and roles; avatar upload
-- Billing — portal access, active subscription (with trial status), plan catalog (with trial badges and per-seat pricing labels), billing info, refunds
+- My Account — profile, password, organizations and roles; avatar upload; connected account linking / unlinking
+- Billing — portal access (Stripe or Lemon Squeezy), active subscription (with trial status), plan catalog (with trial badges and per-seat pricing labels), billing info, refunds
 - Tenant settings — organization metadata editing
+- Security settings — tenant OIDC / SSO provider configuration for TENANT_OWNER
 - In-app notifications with WebSocket support; notification bell UI and notification center
 - Plan-based access control: `EntitlementsProvider`, `FeatureGate`, `useHasFeature`, `useQuota` hooks
 - Silent token refresh, 30-minute inactivity sign-out, light/dark theme, Lingui i18n
@@ -98,10 +101,10 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 
 - React 19 + TypeScript + Mantine UI SPA for `PLATFORM_ADMIN` operators (Feature-Sliced Design architecture)
 - Dashboard — count cards for users, organizations, active subscriptions
-- Users — paginated list, detail, edit profile, set password, ban/unban/unlock users
+- Users — paginated list, detail, edit profile, set password, ban/unban/unlock users, platform-authority management, OIDC identity remediation
 - Organizations — overview, members, billing settings, subscriptions, refunds tabs
 - Invitations — propose, edit, revoke across all tenants
-- Subscriptions (read-only global list + detail); refunds list and detail
+- Subscriptions (global list + detail; cancel / pause / reactivate / quantity update); refunds list and detail
 - Plan catalog — read-only list (plans are config-driven via YAML + deployment); announcements with multi-lingual translation support
 - Audit logs — global audit log view across all tenants
 - In-app notifications with WebSocket support; operator account and password
@@ -169,16 +172,17 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 
 ## Current Status
 
-**v0.4 complete — Multi-Gateway Billing & Platform Hardening:**
+**v0.4 complete — identity federation, enterprise SSO, and multi-gateway billing:**
 
 - Complete user authentication and authorization: JWT RS256, magic link, token exchange, RBAC, email verification, password reset, brute-force lockout, member ban/unban, ownership transfer (IAM Service)
 - Multi-tenant and single-tenant data isolation with PostgreSQL schema-per-tenant (IAM and CMS)
 - **Multi-gateway subscription billing**: Stripe and Lemon Squeezy support, flat-rate and per-seat pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Customer Portal (Billing Service)
 - Centralized audit trail with passive event consumption, JSONB storage, and SPI-based extensibility (Audit Service)
 - Reactive API gateway: JWT validation, header sanitization, plan code propagation, audit context headers, per-tenant metrics (Gateway Service)
+- Identity federation: OAuth2/OIDC social login, tenant-scoped enterprise SSO, account linking / unlinking, admin unmerge remediation (IAM + tenant/admin UIs)
 - Content management system: static pages, multi-language support, hierarchical content, SEO metadata, tenant isolation (CMS Service)
-- Tenant-facing React SPA: auth flows, team management, billing self-service, in-app notifications, plan-based feature access (foundation-ui-app)
-- Platform admin React SPA: user/org/subscription/refund/announcement/audit log management, enterprise theme, dashboard widgets, member signup trend chart, read-only plan catalog (foundation-ui-platform-admin)
+- Tenant-facing React SPA: auth flows, social login, enterprise SSO, connected accounts, billing self-service, in-app notifications, plan-based feature access (foundation-ui-app)
+- Platform admin React SPA: user/org/subscription/refund/announcement/audit log management, platform-authority tab, OIDC identities tab with forced unmerge, enterprise theme, dashboard widgets, member signup trend chart, read-only plan catalog (foundation-ui-platform-admin)
 - SaaS marketing landing kit with auth integration and plan selector (foundation-ui-saas-landing-kit)
 - VitePress documentation website (foundation-docs-website)
 - Kubernetes deployment with Helm charts across SIT / UAT / PRD environments; HPA configured
@@ -191,8 +195,13 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 - Structured JSON logging with correlation IDs propagated across all services
 - Service template (`foundation-microservice-project-layout`) for adding new microservices
 
-Core billing v0.4 changes complete:
+Core v0.4 workstreams complete:
 
+- OAuth2/OIDC social login in IAM with Google, GitHub, and Microsoft providers
+- Tenant-scoped enterprise SSO with custom OIDC provider configuration
+- Account linking / unlinking plus platform-admin linked-identity remediation
+- Tenant-app OAuth callback handling, connected accounts UI, and enterprise SSO entry point
+- Platform-admin OIDC identities tab and force-unmerge flow
 - `LemonSqueezyGatewayAdapter` implementing the existing `PaymentGatewayPort` — all 11 gateway-agnostic methods
 - `@ConditionalOnGateway` meta-annotation for clean `STRIPE` / `LEMON_SQUEEZY` bean wiring
 - Gateway-neutral plan catalog configuration (`iqkv.billing.plan-catalog`); `externalVariantId` field for pre-configured LS variant IDs
@@ -201,6 +210,8 @@ Core billing v0.4 changes complete:
 - `gateway_type` column on `billing_settings`, `subscriptions`, and `plan_catalog` for observability and future migrations
 - `external_order_id` on `subscriptions` to support LS order-level refunds
 - `BillingSeedRunner` hardening: LS adapter performs read-only variant verification instead of programmatic product creation
+
+This release should be understood primarily as the identity-federation and enterprise-SSO release; Lemon Squeezy support is the parallel billing simplification track that completed at the same time.
 
 **Post-v0.4 items (platform hardening):**
 
@@ -277,17 +288,13 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 
 ---
 
-## What's Next (v0.4 and Beyond)
+## What's Next (Post-v0.4 Hardening)
 
-**v0.4 — Multi-Gateway Billing & Platform Hardening** (in progress):
-
-- Lemon Squeezy payment gateway adapter — full `PaymentGatewayPort` implementation; gateway selectable via `iqkv.payment.gateway.type`
-- Gateway-neutral plan catalog config; `externalVariantId` for LS variant IDs
-- `gateway_type` observability columns; `external_order_id` for LS refund support
-- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
+- Platform Admin UI — change plan and apply discount from the admin subscriptions surface
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
 - Per-seat IAM enforcement — enforce purchased `seatCount` against `activeSeatCount` on tenant
 - Additional locales (RU, IT; infrastructure already in place)
+- OIDC audit history and automated test hardening
 
 **Later milestones:**
 

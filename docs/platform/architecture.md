@@ -42,7 +42,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
                     │                            │                           │                           │
                     ▼                            ▼                           ▼                           ▼
              PostgreSQL (iam)            PostgreSQL (billing)        PostgreSQL (audit)        PostgreSQL (cms)
-            (Schema-per-tenant)          (Stripe integration)        (Centralized logs)       (Schema-per-tenant)
+            (Schema-per-tenant)       (Multi-gateway billing)       (Centralized logs)       (Schema-per-tenant)
 
                     └─────────────┬──────────────┴───────────────┬───────────────┘
                                   ▼
@@ -67,12 +67,15 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 - User signup with email verification (secure token-based)
 - Magic link authentication: passwordless sign-in via time-limited token (initiate → email → exchange for JWT pair)
+- OAuth2 / OIDC federation: Google, GitHub, Microsoft, and tenant-scoped custom OIDC providers
 - JWT RS256 authentication: access tokens (15 min) + refresh tokens (7 days); `plan_code` claim stamped from tenant's active plan
 - Password reset via signed email tokens (1h TTL), rate-limited (3 requests per 15min window)
 - Brute-force protection: account lockout after 5 failed attempts for 15 minutes; platform admins can unlock
 - Token revocation: JTI denylist + global signout timestamp with automatic cleanup
 - JWKS endpoint (`/.well-known/jwks.json`) for distributed token validation
 - Token exchange: `POST /auth/exchange` — workspace switching without re-authentication
+- Account linking / unlinking for external identities; admin-linked-identity listing and forced unmerge for remediation
+- Browser-based OIDC state management: signed state JWT + Redis-backed PKCE verifier storage
 
 **Tenant & Organization Management:**
 
@@ -82,6 +85,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - RBAC with authorities: `TENANT_OWNER`, `ADMIN`, `PLATFORM_ADMIN`, `MEMBER`
 - Cross-tenant user context switching and tenant discovery
 - Member management: ban/unban, authority editing (TENANT_OWNER ↔ ADMIN ↔ MEMBER), ownership transfer
+- Tenant SSO management: TENANT_OWNER-configured custom OIDC provider with encrypted client secret storage
 
 **Invitation System:**
 
@@ -148,7 +152,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 **Routing & Security:**
 
 - Path-based routing to IAM, Billing, CMS, and Audit services
-- Configurable public paths (JWKS, auth, magic-link, webhooks, health checks, Swagger UI, billing internal)
+- Configurable public paths (JWKS, auth, magic-link, OAuth2/OIDC auth, webhooks, health checks, Swagger UI, billing internal)
 - Global CORS configuration with configurable origins and methods
 - Response security headers: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`
 
@@ -194,13 +198,10 @@ iqkv:
       type: ${PAYMENT_GATEWAY_TYPE:STRIPE} # STRIPE | LEMON_SQUEEZY
 ```
 
-**Stripe Integration (active):**
+**Gateway Integrations:**
 
-- Customer provisioning on tenant creation with metadata sync
-- Webhook processing: `subscription.created`, `subscription.updated`, `subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
-- Signature verification and idempotency via `webhook_log` table
-- Subscription state caching for fast reads without Stripe API calls
-- Tax ID/VAT/GST sync to Stripe for compliant B2B invoices
+- **Stripe** — customer provisioning on tenant creation with metadata sync; webhook processing for subscription and invoice lifecycle events; signature verification and idempotency via `webhook_log`; subscription state caching for fast reads without Stripe API calls; tax ID / VAT / GST sync for compliant B2B invoices
+- **Lemon Squeezy** — merchant-of-record workflow with webhook normalization, customer portal sessions, read-only variant verification, and order-level refund support via `external_order_id`
 
 **Plan Catalog:**
 

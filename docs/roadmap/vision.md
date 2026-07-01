@@ -148,7 +148,7 @@ Items deferred until the core platform is fully manageable:
 
 - Platform Admin UI — system health dashboard, background job monitoring
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
-- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount) from admin UI
+- Platform Admin UI — remaining subscription lifecycle mutations (change plan, apply discount) from admin UI
 - Platform Admin UI — impersonation
 - Tenant App — additional locales (RU, IT; infrastructure already in place)
 - SSO / SAML adapter (extension, not core)
@@ -161,9 +161,9 @@ Items deferred until the core platform is fully manageable:
 
 ---
 
-## v0.4 — Multi-Gateway Billing & Platform Hardening (COMPLETED)
+## v0.4 — Identity Federation, Enterprise SSO & Multi-Gateway Billing (COMPLETED)
 
-Goal: Make the payment gateway fully selectable at configuration time. Lemon Squeezy is the second adapter target — a merchant-of-record model with simpler pricing and broader regional availability. Secondary goal is platform hardening: admin subscription lifecycle mutations and per-seat IAM enforcement.
+Goal: deliver enterprise-ready identity federation and tenant-scoped SSO while keeping the platform's downstream trust model unchanged, and in parallel make the billing gateway selectable at configuration time. OAuth2/OIDC and tenant SSO are the strategic goal for this release; Lemon Squeezy is the simpler parallel billing track.
 
 ### Phase 1 — Stripe Leakage Fixes (no new features)
 
@@ -219,7 +219,37 @@ Goal: Make the payment gateway fully selectable at configuration time. Lemon Squ
 
 ### Platform Hardening (v0.4 secondary)
 
-- [ ] Platform Admin UI — subscription lifecycle mutations: change plan, cancel, reactivate, apply discount
+- [x] Platform Admin UI — subscription lifecycle mutations: cancel, pause, reactivate, update quantity
+- [ ] Platform Admin UI — subscription lifecycle mutations: change plan, apply discount
 - [ ] Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
 - [ ] IAM per-seat enforcement — enforce purchased `seatCount` at invite-accept and signup; `activeSeatCount` column on tenants; `SubscriptionEventConsumer` caches `seatCount` alongside `planCode`
 - [ ] Additional locales — RU, IT (infrastructure already in place)
+
+---
+
+### Identity Federation & Enterprise SSO
+
+Goal: add modern external identity support without changing the downstream trust model. IAM continues brokering identity and issuing the platform's existing RS256 JWTs; Gateway, Billing, Audit, CMS, and future services continue trusting IAM-issued tokens only.
+
+**IAM / Gateway**
+
+- [x] OAuth2 / OIDC social login for Google, GitHub, and Microsoft
+- [x] Tenant-scoped enterprise SSO via custom OIDC provider configuration
+- [x] Redis-backed state / PKCE verifier store for browser-based auth flows
+- [x] Account linking / unlinking for existing users
+- [x] Admin remediation endpoints for linked identity listing and forced unmerge
+- [x] Gateway public-path support and tenant-extraction exclusions for `/api/v1/iam/auth/oauth2/**`
+- [x] Helm chart / Drone CI wiring for Redis, OIDC encryption key, and provider secrets
+
+**Tenant App / Platform Admin UI**
+
+- [x] Tenant App — social sign-in buttons, OAuth callback handling, connected accounts UI
+- [x] Tenant App — enterprise SSO entry point (`oidc:{tenantKey}`) and TENANT_OWNER SSO config panel
+- [x] Platform Admin UI — user-detail OIDC identities tab with forced unmerge action
+- [x] Platform Admin UI — platform authority grant / revoke tab on user detail
+
+**Still Open**
+
+- [ ] JWK-backed `id_token` validation hardening beyond current nonce / claim checks
+- [ ] Focused automated tests for OIDC state handling, provisioning, and authorization flows
+- [ ] Admin audit-history endpoints for identity-link / unmerge operations
