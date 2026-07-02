@@ -226,7 +226,7 @@ Plans are defined in YAML (`application-{env}.yml`) and synchronized with Stripe
 | `GET /internal/plans`         | None (internal network) | Full plan feature catalog for service-to-service use |
 | `GET /internal/plans/public`  | None (internal network) | Full plan catalog for public pricing pages           |
 
-Plan fields: `planCode`, `displayName`, `description`, `billingPeriod` (MONTHLY/ANNUAL), `priceMinor` (cents), `currency`, `featureSet`, `scope` (TENANT/USER), `active`, `pricingModel` (FLAT/PER_SEAT), `trialPeriodDays`
+Plan fields: `planCode`, `displayName`, `description`, `billingPeriod` (MONTHLY/ANNUAL), `priceMinor` (cents), `currency`, `entitlement`, `scope` (TENANT/USER), `active`, `pricingModel` (FLAT/PER_SEAT), `trialPeriodDays`
 
 `PlanFeatureRegistry` serves an in-memory map loaded at startup for O(1) entitlement evaluation. `PlanEntitlement` has typed quotas (`maxUsers`, `maxProjects`) and an open `Map<String, PlanFeature>` keyed by feature code.
 

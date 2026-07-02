@@ -348,7 +348,7 @@
 
 ### `plan/`
 
-**`Plan`** — domain: `id`, `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `priceMinor` (cents), `currency`, `featureSet` (JSON string), `scope` (TENANT|USER), `active`
+**`Plan`** — domain: `id`, `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `priceMinor` (cents), `currency`, `entitlement` (JSON string), `scope` (TENANT|USER), `active`
 
 **`PlanCatalogRestResource`** — `@RestController /api/v1/billing/plans`
 
@@ -390,7 +390,7 @@
 
 **`EntitlementEvaluator`** — interface: `evaluateEntitlements(subject)` → `Optional<EntitlementDetails>`
 
-**`DefaultEntitlementEvaluator`** — `@Component`: finds active subscription by subject; enriches with plan `featureSet` from plan catalog; returns `EntitlementDetails` (subject, planId, status, currentPeriodEnd, featureSet)
+**`DefaultEntitlementEvaluator`** — `@Component`: finds active subscription by subject; enriches with plan `entitlement` from plan catalog; returns `EntitlementDetails` (subject, planId, status, currentPeriodEnd, entitlement)
 
 **`TrialNotificationService`** — `@Service @ConditionalOnProperty(rabbitmq.enabled=true)`
 
@@ -936,9 +936,9 @@ Here is the complete, thorough breakdown of every file read across all three ser
 
 ### `plan/`
 
-**`Plan`** — domain class: `id`, `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `priceMinor` (cents), `currency`, `featureSet` (JSON string), `scope` (TENANT|USER), `active`
+**`Plan`** — domain class: `id`, `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `priceMinor` (cents), `currency`, `entitlement` (JSON string), `scope` (TENANT|USER), `active`
 
-**`PlanRequest`** — record (request body): `@NotBlank planCode`, `displayName`, `billingPeriod`, `@Positive priceMinor`, `currency`, `featureSet`, `@NotBlank scope`, `active`
+**`PlanRequest`** — record (request body): `@NotBlank planCode`, `displayName`, `billingPeriod`, `@Positive priceMinor`, `currency`, `entitlement`, `@NotBlank scope`, `active`
 
 **`PlanCatalogRestResource`** — `@RestController` at `/api/v1/billing/plans`
 

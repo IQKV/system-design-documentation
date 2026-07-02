@@ -287,7 +287,7 @@ All existing plan definitions updated to include `pricingModel: "FLAT"` explicit
 | File                                           | Change                                                                                                                   |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `src/shared/api/billing.ts`                    | Added `PricingModel` union type; added `pricingModel?: PricingModel \| null` to `Plan` and `PlanEntitlement` interfaces     |
-| `src/features/manage-billing/ui/plan-card.tsx` | `featureSet` fallback object includes `pricingModel: null`; price label renders `/ seat / {period}` for `PER_SEAT` plans |
+| `src/features/manage-billing/ui/plan-card.tsx` | `entitlement` fallback object includes `pricingModel: null`; price label renders `/ seat / {period}` for `PER_SEAT` plans |
 
 ---
 

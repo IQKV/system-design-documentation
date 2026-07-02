@@ -370,7 +370,7 @@ Plan {
   billingPeriod: String     // MONTHLY | ANNUAL
   priceMinor: Integer       // price in cents
   currency: String          // default "USD"
-  featureSet: String        // JSON feature flags/limits
+  entitlement: String        // JSON feature flags/limits
   scope: String             // TENANT | USER (matches rollout mode)
   active: Boolean           // soft-delete flag
 }

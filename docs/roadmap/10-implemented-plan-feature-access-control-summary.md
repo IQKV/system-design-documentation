@@ -311,7 +311,7 @@ Response:
 
 ### **Backward Compatibility**
 
-- ✅ Existing `featureSet` JSON column preserved for rollback safety
+- ✅ Existing `entitlement` JSON column preserved for rollback safety
 - ✅ All existing JWT claims maintained
 - ✅ No breaking API changes for client applications
 

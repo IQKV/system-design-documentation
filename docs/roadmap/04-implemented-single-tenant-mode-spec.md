@@ -268,7 +268,7 @@ Subject scope:
 Recommended schema direction in Billing:
 
 - `plan_catalog` (platform-owned)
-  - `plan_code`, `display_name`, `billing_period`, `price_minor`, `currency`, `feature_set`, `active`, `scope`.
+  - `plan_code`, `display_name`, `billing_period`, `price_minor`, `currency`, `entitlement`, `active`, `scope`.
 - `subscriptions`
   - add `subject_type` (`TENANT` or `USER`)
   - add `subject_key` (tenantKey or userId)

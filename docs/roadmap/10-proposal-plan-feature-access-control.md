@@ -13,7 +13,7 @@ the hot enforcement path.
 
 ## Goals
 
-- Replace the current opaque `featureSet` JSON string on plans with a typed, validated
+- Replace the current opaque `entitlement` JSON string on plans with a typed, validated
   `PlanEntitlement` struct bound directly from YAML.
 - Enforce boolean feature access at the gateway via route-level filters — downstream
   services require no changes for feature gating.
@@ -41,7 +41,7 @@ YAML / Helm values
         │
         ▼
 BillingSeedRunner (on startup)
-        │  upserts plan_catalog with feature_set JSON snapshot
+        │  upserts plan_catalog with entitlement JSON snapshot
         │  populates PlanFeatureRegistry (in-memory)
         │
         ├──► GET /api/v1/internal/plans ◄── Gateway PlanCatalogCache   (startup + every 10m)
@@ -77,7 +77,7 @@ HTTP Request ──► Gateway JwtContextPropagationFilter
 ### 3. `PlanEntitlement` — typed struct (`foundation-billing-service`)
 
 New record `com.iqkv.foundation.billingservice.plan.PlanEntitlement`, bound from YAML via
-`StripeProductSchema.features`. Replaces the current `String featureSet` field.
+`StripeProductSchema.features`. Replaces the current `String entitlement` field.
 
 Quota fields (`maxUsers`, `maxProjects`) remain typed `int` for compile-time safety.
 Display/boolean features are held in an open `Map<String, PlanFeature>` keyed by
@@ -408,11 +408,11 @@ Delegates to `EntitlementEvaluator`. One `@RestController` class, no new service
 ### Phase 1 — Billing Service Internals
 
 - [x] Add `PlanEntitlement` record to `foundation-billing-service`.
-- [x] Replace `String featureSet` with `PlanEntitlement features` in `StripeProductSchema`.
+- [x] Replace `String entitlement` with `PlanEntitlement features` in `StripeProductSchema`.
 - [x] Update YAML plan definitions to include typed `features` block.
 - [x] Add `PlanFeatureRegistry` bean.
-- [x] Update `BillingSeedRunner` to serialize `PlanEntitlement` into the `feature_set` DB column.
-- [x] Update `EntitlementDetails` record — replace raw `featureSet` string with `planCode` + `PlanEntitlement`.
+- [x] Update `BillingSeedRunner` to serialize `PlanEntitlement` into the `entitlement` DB column.
+- [x] Update `EntitlementDetails` record — replace raw `entitlement` string with `planCode` + `PlanEntitlement`.
 - [x] Update `DefaultEntitlementEvaluator` to use `PlanFeatureRegistry`.
 - [x] Add `GET /api/v1/billing/internal/plans` endpoint.
 - [x] Add `GET /api/v1/billing/entitlements/me` endpoint.

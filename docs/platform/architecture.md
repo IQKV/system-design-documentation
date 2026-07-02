@@ -355,7 +355,7 @@ plan_catalog
 ├── billing_period    VARCHAR(50)            -- MONTHLY | ANNUAL
 ├── price_minor       INTEGER                -- flat total OR per-seat unit price (see pricing_model)
 ├── currency          VARCHAR(3)
-├── feature_set       JSONB                  -- Feature flags and limits (maxUsers doubles as seat ceiling)
+├── entitlement       JSONB                  -- Feature flags and limits (maxUsers doubles as seat ceiling)
 ├── scope             VARCHAR(50)            -- TENANT | USER
 ├── active            BOOLEAN
 ├── pricing_model     VARCHAR(16) NOT NULL   -- FLAT | PER_SEAT  (DEFAULT 'FLAT'; all legacy rows auto-migrated)

@@ -192,7 +192,7 @@ Subject resolution: multi-tenant → `TENANT / tenantKey`; single-tenant → `US
 | `PATCH /admin/plans/{planCode}`  | `PLATFORM_ADMIN`  | Partially update plan                         |
 | `DELETE /admin/plans/{planCode}` | `PLATFORM_ADMIN`  | Deactivate plan (soft-delete, `active=false`) |
 
-Plan fields: `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `priceMinor` (cents), `currency`, `scope` (TENANT|USER), `featureSet` (JSON), `active`
+Plan fields: `planCode`, `displayName`, `billingPeriod` (MONTHLY|ANNUAL), `priceMinor` (cents), `currency`, `scope` (TENANT|USER), `entitlement` (JSON), `active`
 
 #### Stripe Webhook Processing
 
