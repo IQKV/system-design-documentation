@@ -26,7 +26,7 @@ The service follows hexagonal architecture with a clean separation between:
 
 | Layer                 | Key types                                                                        |
 | --------------------- | -------------------------------------------------------------------------------- |
-| Domain / plan         | `Plan`, `PlanFeatures`, `PlanFeature`, `PlanFeatureRegistry`, `PlanFeatureGuard` |
+| Domain / plan         | `Plan`, `PlanEntitlement`, `PlanFeature`, `PlanFeatureRegistry`, `PlanFeatureGuard` |
 | Domain / subscription | `Subscription`, `SubscriptionService`, `SubjectType`, `SubscriptionSubject`      |
 | Application config    | `StripeProductSchema`, `BillingConfigurationProperties`, `BillingSeedRunner`     |
 | Gateway port          | `PaymentGatewayPort` (Strategy interface)                                        |
@@ -92,7 +92,7 @@ is largely present.
 | **YAML / config schema**            | `StripeProductSchema` has no `pricingModel` field                                        | BillingSeedRunner cannot differentiate plan types                                                                                                                                                                                                 |
 | **DB schema**                       | `plan_catalog` has no `pricing_model` or `price_per_seat_minor` column                   | Gateway sync and runtime cannot persist/read per-seat data                                                                                                                                                                                        |
 | **Entitlement propagation**         | `MessagingService.publishSubscriptionCreated/Updated` does not include `seatCount`       | Downstream IAM service has no reliable way to enforce seat limits on user-invite actions                                                                                                                                                          |
-| **PlanFeatures.maxUsers semantics** | Already `0 = unlimited, N = cap` — well-defined                                          | No gap; this field becomes the seat cap for per-seat plans                                                                                                                                                                                        |
+| **PlanEntitlement.maxUsers semantics** | Already `0 = unlimited, N = cap` — well-defined                                          | No gap; this field becomes the seat cap for per-seat plans                                                                                                                                                                                        |
 
 ---
 
@@ -136,7 +136,7 @@ public record StripeProductSchema(
     @NotBlank String billingPeriod,
     @NotNull @Positive Integer priceMinor,   // flat total OR per-seat unit price depending on pricingModel
     @NotBlank String currency,
-    PlanFeatures features,
+    PlanEntitlement features,
     @NotBlank String scope,
     Boolean active,
     Integer trialPeriodDays,
@@ -165,7 +165,7 @@ private String pricingModel;    // "FLAT" | "PER_SEAT" — persisted to plan_cat
 ```
 
 `priceMinor` stays as-is; its semantics follow `pricingModel` as described above.
-`PlanFeatures.maxUsers` (already `0 = unlimited, N = cap`) becomes the seat ceiling for
+`PlanEntitlement.maxUsers` (already `0 = unlimited, N = cap`) becomes the seat ceiling for
 `PER_SEAT` plans; no new field is needed.
 
 ### 3.5 Database Migration
@@ -207,7 +207,7 @@ private void validateSeatCount(Plan plan, long requestedSeats) {
     if (requestedSeats < 1) {
         throw new IllegalArgumentException("Seat count must be at least 1");
     }
-    PlanFeatures features = planFeatureRegistry.forPlan(plan.getPlanCode());
+    PlanEntitlement features = planFeatureRegistry.resolveEntitlement(plan.getPlanCode());
     int maxUsers = features.maxUsers();
     if (maxUsers > 0 && requestedSeats > maxUsers) {
         throw new SeatLimitExceededException(plan.getPlanCode(), requestedSeats, maxUsers);
@@ -327,7 +327,7 @@ No schema break: `seatCount` is additive. Existing consumers that do not read it
 ### 3.9 `PlanFeatureRegistry` — No Change Required
 
 `PlanFeatureRegistry` is already loaded from `StripeProductSchema.features` at startup and provides
-`O(1)` lookups of `PlanFeatures.maxUsers`. The new `pricingModel` field on the schema is needed
+`O(1)` lookups of `PlanEntitlement.maxUsers`. The new `pricingModel` field on the schema is needed
 only in `BillingSeedRunner` and `SubscriptionService`; it does not need to be stored in the
 registry.
 
@@ -447,7 +447,7 @@ can pass `"none"` or `"always_invoice"` in the request body.
 ### 7.3 Minimum seat count
 
 The proposal enforces `quantity ≥ 1`. Some products enforce a higher minimum (e.g., 3 seats).
-This can be added as a `minUsers` field on `PlanFeatures` in a follow-up without touching the
+This can be added as a `minUsers` field on `PlanEntitlement` in a follow-up without touching the
 core per-seat logic.
 
 ### 7.4 Overage handling
@@ -466,7 +466,7 @@ The following are explicitly deferred:
   invoice created at period end). Requires a new `METERED` `PricingModel` variant and a
   usage-reporting endpoint/job.
 - **Tiered pricing** — volume discounts at different seat thresholds (Stripe `tiers`).
-- **Per-project or other quantity dimensions** — `maxProjects` is present in `PlanFeatures` but
+- **Per-project or other quantity dimensions** — `maxProjects` is present in `PlanEntitlement` but
   billing by project count is not proposed here.
 - **Add-on line items** — multiple Stripe subscription items (e.g., base fee + per-seat add-on).
   The current data model assumes one price per subscription.

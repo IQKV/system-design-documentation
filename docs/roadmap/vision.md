@@ -120,9 +120,9 @@ Goal: Implement fine-grained plan-based feature access control and add internati
 - [x] `PATCH /api/v1/billing/subscriptions/{tenantKey}/{subscriptionId}/seats` — REST endpoint; 204 No Content; TENANT_OWNER or ADMIN authority
 - [x] `SubscriptionEvent` — `seatCount` field (nullable Long); old publisher overloads deprecated; downstream consumers receive seatCount for PER_SEAT plans
 - [x] Internal and public plans API — `pricingModel` exposed in both response DTOs
-- [x] `foundation-iam-service` — `PlanFeatures` updated with `pricingModel` component, `isPerSeat()` helper, `has()` method; `PlanFeatureGuard` delegates to `features.has()`
-- [x] `foundation-cms-service` and `foundation-microservice-project-layout` — `PlanFeatures` updated with `pricingModel` component and `isPerSeat()` helper
-- [x] `foundation-ui-app` — `PricingModel` union type; `pricingModel` on Plan and PlanFeatures interfaces; plan card renders `/ seat / {period}` label for PER_SEAT plans
+- [x] `foundation-iam-service` — `PlanEntitlement` updated with `pricingModel` component, `isPerSeat()` helper, `has()` method; `PlanFeatureGuard` delegates to `features.has()`
+- [x] `foundation-cms-service` and `foundation-microservice-project-layout` — `PlanEntitlement` updated with `pricingModel` component and `isPerSeat()` helper
+- [x] `foundation-ui-app` — `PricingModel` union type; `pricingModel` on Plan and PlanEntitlement interfaces; plan card renders `/ seat / {period}` label for PER_SEAT plans
 
 **Other Enhancements**
 

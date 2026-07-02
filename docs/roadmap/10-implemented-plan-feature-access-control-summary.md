@@ -42,7 +42,7 @@ Downstream Services → PlanCatalogCache → Local feature checks
 **Files Modified:** 8 files  
 **Key Changes:**
 
-- **`PlanFeatures` Record**: Replaced opaque JSON with split design — typed quota fields (`maxUsers`, `maxProjects`) + open `Map<String, PlanFeature>` keyed by feature code. `PlanFeature` carries `code`, `title`, `value`, `description`. Adding a new feature requires only a YAML change.
+- **`PlanEntitlement` Record**: Replaced opaque JSON with split design — typed quota fields (`maxUsers`, `maxProjects`) + open `Map<String, PlanFeature>` keyed by feature code. `PlanFeature` carries `code`, `title`, `value`, `description`. Adding a new feature requires only a YAML change.
 - **`PlanFeatureRegistry`**: In-memory O(1) feature lookups from YAML configuration
 - **YAML Configuration**: Plan features now defined directly in `application-prd.yml`
 - **Internal Plans API**: Public endpoint `GET /api/v1/billing/internal/plans` (no auth required)
@@ -51,7 +51,7 @@ Downstream Services → PlanCatalogCache → Local feature checks
 
 **Key Files:**
 
-- `PlanFeatures.java` - Typed feature record with `has(feature)` lookup
+- `PlanEntitlement.java` - Typed feature record with `has(feature)` lookup
 - `PlanFeatureRegistry.java` - In-memory registry loaded from YAML
 - `PlanInternalRestResource.java` - Service-to-service catalog endpoint
 - `EntitlementRestResource.java` - User-facing entitlements endpoint

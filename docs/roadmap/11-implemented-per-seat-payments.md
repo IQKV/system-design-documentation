@@ -100,7 +100,7 @@ Runs at startup. Persists `pricing_model` to `plan_catalog` for every plan defin
 
 - New inner record:
   ```java
-  public record PlanCatalogEntry(String planCode, PlanFeatures features, PricingModel pricingModel) {}
+  public record PlanCatalogEntry(String planCode, PlanEntitlement features, PricingModel pricingModel) {}
   ```
 - New `pricingRegistry` map (`planCode → PricingModel`) populated from `StripeProductSchema.effectivePricingModel()`
 - New `pricingModelForPlan(String planCode)` — O(1) lookup, falls back to `FLAT`
@@ -116,7 +116,7 @@ Both response records updated:
 **`PlanCatalogEntry`** (service-to-service endpoint `GET /api/v1/billing/internal/plans`):
 
 ```java
-public record PlanCatalogEntry(String planCode, PlanFeatures features, PricingModel pricingModel) {}
+public record PlanCatalogEntry(String planCode, PlanEntitlement features, PricingModel pricingModel) {}
 ```
 
 `listPlanCatalog()` now uses `planFeatureRegistry.allEntries()`.
@@ -127,7 +127,7 @@ public record PlanCatalogEntry(String planCode, PlanFeatures features, PricingMo
 public record PublicPlanEntry(
     String planCode, String displayName, String description,
     String billingPeriod, Integer priceMinor, String currency,
-    PlanFeatures features, String scope, Boolean active,
+    PlanEntitlement features, String scope, Boolean active,
     PricingModel pricingModel   // NEW
 ) {}
 ```
@@ -265,7 +265,7 @@ All existing plan definitions updated to include `pricingModel: "FLAT"` explicit
 
 | File                    | Change                                                                                                                                                                                                 |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PlanFeatures.java`     | Added `String pricingModel` record component; added compact constructor with defensive `features` map copy; added `has(String code)` method; added `isPerSeat()` helper; `NONE` sentinel passes `null` |
+| `PlanEntitlement.java`     | Added `String pricingModel` record component; added compact constructor with defensive `features` map copy; added `has(String code)` method; added `isPerSeat()` helper; `NONE` sentinel passes `null` |
 | `PlanFeatureGuard.java` | `hasFeature()` now delegates to `features.has()` instead of duplicating the inline map lookup                                                                                                          |
 
 `PlanCatalogCache` and `PlanCatalogRestTemplateConfig` — no changes needed.
@@ -274,19 +274,19 @@ All existing plan definitions updated to include `pricingModel: "FLAT"` explicit
 
 | File                | Change                                                                                            |
 | ------------------- | ------------------------------------------------------------------------------------------------- |
-| `PlanFeatures.java` | Added `String pricingModel` record component; updated `NONE` sentinel; added `isPerSeat()` helper |
+| `PlanEntitlement.java` | Added `String pricingModel` record component; updated `NONE` sentinel; added `isPerSeat()` helper |
 
 ### `foundation-microservice-project-layout` — `plan/` package
 
 | File                | Change                      |
 | ------------------- | --------------------------- |
-| `PlanFeatures.java` | Same changes as cms-service |
+| `PlanEntitlement.java` | Same changes as cms-service |
 
 ### `foundation-ui-app` — billing API types
 
 | File                                           | Change                                                                                                                   |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `src/shared/api/billing.ts`                    | Added `PricingModel` union type; added `pricingModel?: PricingModel \| null` to `Plan` and `PlanFeatures` interfaces     |
+| `src/shared/api/billing.ts`                    | Added `PricingModel` union type; added `pricingModel?: PricingModel \| null` to `Plan` and `PlanEntitlement` interfaces     |
 | `src/features/manage-billing/ui/plan-card.tsx` | `featureSet` fallback object includes `pricingModel: null`; price label renders `/ seat / {period}` for `PER_SEAT` plans |
 
 ---
@@ -298,7 +298,7 @@ All existing plan definitions updated to include `pricingModel: "FLAT"` explicit
 | `StripeGatewayAdapter.syncProduct`      | Stripe price creation is identical for both modes (`UNIT_AMOUNT` recurring). No change needed.                          |
 | `PaymentGatewayPort`                    | `updateSubscription` already accepts `quantity`. No new methods required.                                               |
 | `WebhookProcessingService`              | Already maps `event.quantity()` → `subscription.quantity`. Per-seat quantity arrives from Stripe webhook automatically. |
-| `PlanFeatures` record (billing-service) | `pricingModel` belongs on `StripeProductSchema` and `Plan`, not on the feature-entitlement record.                      |
+| `PlanEntitlement` record (billing-service) | `pricingModel` belongs on `StripeProductSchema` and `Plan`, not on the feature-entitlement record.                      |
 | `EntitlementEvaluator`                  | Entitlement checks are feature-flag based; pricing mode does not affect them.                                           |
 
 ---

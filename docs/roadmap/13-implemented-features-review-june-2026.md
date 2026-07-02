@@ -228,7 +228,7 @@ Plans are defined in YAML (`application-{env}.yml`) and synchronized with Stripe
 
 Plan fields: `planCode`, `displayName`, `description`, `billingPeriod` (MONTHLY/ANNUAL), `priceMinor` (cents), `currency`, `featureSet`, `scope` (TENANT/USER), `active`, `pricingModel` (FLAT/PER_SEAT), `trialPeriodDays`
 
-`PlanFeatureRegistry` serves an in-memory map loaded at startup for O(1) entitlement evaluation. `PlanFeatures` has typed quotas (`maxUsers`, `maxProjects`) and an open `Map<String, PlanFeature>` keyed by feature code.
+`PlanFeatureRegistry` serves an in-memory map loaded at startup for O(1) entitlement evaluation. `PlanEntitlement` has typed quotas (`maxUsers`, `maxProjects`) and an open `Map<String, PlanFeature>` keyed by feature code.
 
 #### Pricing Models
 
@@ -268,7 +268,7 @@ Subject resolution: MULTI_TENANT → `TENANT/tenantKey`; SINGLE_TENANT → `USER
 | ---------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /entitlements/me` | Any authenticated | Active plan + subscription status + typed features for current subject. Always returns 200 (free plan when no active subscription). |
 
-Response includes `planCode`, `status`, `isInTrial`, `trialDaysLeft`, `currentPeriodEnd`, and full `PlanFeatures` record.
+Response includes `planCode`, `status`, `isInTrial`, `trialDaysLeft`, `currentPeriodEnd`, and full `PlanEntitlement` record.
 
 #### Billing Settings
 
@@ -366,7 +366,7 @@ Custom metrics: `audit.event.consumption` (by type and source), `audit.persisten
 | SEO metadata           | Per-page title, description, Open Graph tags, canonical URLs                                 |
 | Tenant isolation       | Schema-per-tenant via `MyBatisSchemaInterceptor`                                             |
 | Event publishing       | `cms.page.created`, `cms.page.updated`, `cms.page.deleted` on `iqkv.events` exchange         |
-| Plan feature awareness | `PlanFeatures` record includes `pricingModel` and `isPerSeat()` helper                       |
+| Plan feature awareness | `PlanEntitlement` record includes `pricingModel` and `isPerSeat()` helper                       |
 
 #### API
 
@@ -634,7 +634,7 @@ PgBouncer included in Helm chart for PostgreSQL connection pooling at scale.
 `foundation-microservice-project-layout` serves as the canonical template for adding new microservices. Includes:
 
 - Standard project structure (DDD layers, `infrastructure/`, `shared/`)
-- `PlanFeatures` record with `pricingModel` and `isPerSeat()` helper
+- `PlanEntitlement` record with `pricingModel` and `isPerSeat()` helper
 - `PlanCatalogCache` (non-reactive, RestTemplate-based) for plan feature lookups
 - `PlanFeatureGuard` annotation and `PlanFeatureNotAvailableException` with HTTP 402 mapping
 - Drone CI pipeline template (10 pipelines)
