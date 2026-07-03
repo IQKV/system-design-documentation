@@ -888,7 +888,7 @@ public record StripeProductSchema(
     @NotBlank String planCode, @NotBlank String displayName,
     String description, @NotBlank String billingPeriod,
     @NotNull @Positive Integer priceMinor, @NotBlank String currency,
-    PlanEntitlement features, @NotBlank String scope,
+    PlanEntitlement entitlement, @NotBlank String scope,
     Boolean active, Integer trialPeriodDays, PricingModel pricingModel
 ) { ... }
 
@@ -904,7 +904,7 @@ public record ProductSchema(
     @NotBlank String planCode, @NotBlank String displayName,
     String description, @NotBlank String billingPeriod,
     @NotNull @Positive Integer priceMinor, @NotBlank String currency,
-    PlanEntitlement features, @NotBlank String scope,
+    PlanEntitlement entitlement, @NotBlank String scope,
     Boolean active, Integer trialPeriodDays, PricingModel pricingModel,
     String externalVariantId  // LS variant ID; null for Stripe-managed plans
 ) {

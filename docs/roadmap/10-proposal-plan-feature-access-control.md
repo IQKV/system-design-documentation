@@ -344,11 +344,11 @@ the gateway. The owning service checks at **write time only** using its local
 `PlanCatalogCache` — no synchronous call to billing on the hot path:
 
 ```java
-final PlanEntitlement features = planCatalogCache.resolveEntitlement(
+final PlanEntitlement planEntitlement = planCatalogCache.resolveEntitlement(
     request.getHeader("X-Plan-Code"));
 
 final int current = userRepository.countByTenantKey(tenantKey);
-if (features.maxUsers() > 0 && current >= features.maxUsers()) {
+if (planEntitlement.maxUsers() > 0 && current >= planEntitlement.maxUsers()) {
     throw new QuotaExceededException("User limit reached for your current plan");
 }
 ```

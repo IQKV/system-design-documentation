@@ -136,7 +136,7 @@ public record StripeProductSchema(
     @NotBlank String billingPeriod,
     @NotNull @Positive Integer priceMinor,   // flat total OR per-seat unit price depending on pricingModel
     @NotBlank String currency,
-    PlanEntitlement features,
+    PlanEntitlement entitlement,
     @NotBlank String scope,
     Boolean active,
     Integer trialPeriodDays,
@@ -207,8 +207,8 @@ private void validateSeatCount(Plan plan, long requestedSeats) {
     if (requestedSeats < 1) {
         throw new IllegalArgumentException("Seat count must be at least 1");
     }
-    PlanEntitlement features = planFeatureRegistry.resolveEntitlement(plan.getPlanCode());
-    int maxUsers = features.maxUsers();
+    PlanEntitlement planEntitlement = planFeatureRegistry.resolveEntitlement(plan.getPlanCode());
+    int maxUsers = planEntitlement.maxUsers();
     if (maxUsers > 0 && requestedSeats > maxUsers) {
         throw new SeatLimitExceededException(plan.getPlanCode(), requestedSeats, maxUsers);
     }
