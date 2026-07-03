@@ -100,7 +100,7 @@ Runs at startup. Persists `pricing_model` to `plan_catalog` for every plan defin
 
 - New inner record:
   ```java
-  public record PlanCatalogEntry(String planCode, PlanEntitlement planEntitlement, PricingModel pricingModel) {}
+  public record PlanCatalogEntry(String planCode, PlanEntitlement entitlement, PricingModel pricingModel) {}
   ```
 - New `pricingRegistry` map (`planCode → PricingModel`) populated from `StripeProductSchema.effectivePricingModel()`
 - New `pricingModelForPlan(String planCode)` — O(1) lookup, falls back to `FLAT`
@@ -116,7 +116,7 @@ Both response records updated:
 **`PlanCatalogEntry`** (service-to-service endpoint `GET /api/v1/billing/internal/plans`):
 
 ```java
-public record PlanCatalogEntry(String planCode, PlanEntitlement planEntitlement, PricingModel pricingModel) {}
+public record PlanCatalogEntry(String planCode, PlanEntitlement entitlement, PricingModel pricingModel) {}
 ```
 
 `listPlanCatalog()` now uses `planFeatureRegistry.allEntries()`.
