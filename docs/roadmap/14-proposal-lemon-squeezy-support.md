@@ -816,7 +816,7 @@ iqkv:
 | `infrastructure/persistence/BillingSettingsMapper.java` + XML | Add `gateway_type`                                                         |
 | `infrastructure/persistence/PlanMapper.java` + XML            | Add `gateway_type`                                                         |
 | `resources/application.yml`                                   | Rename plan-catalog path; add LS config block                              |
-| `resources/db/changelog/db.changelog-master.xml`              | Include new migration files                                                |
+| `resources/db/changelog/system/db.changelog-system.xml`              | Include new migration files                                                |
 
 ---
 
@@ -2026,7 +2026,7 @@ In `BillingSeedRunner.syncProduct()`, before the insert/update:
 plan.setGatewayType(paymentGatewayPort.getGatewayType().name());
 ```
 
-### 10.24 `db/changelog/db.changelog-master.xml` — include new migrations
+### 10.24 `db/changelog/system/db.changelog-system.xml` — include new migrations
 
 ```xml
 <!-- ADD after the last existing include, before the demo block -->
