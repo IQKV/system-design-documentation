@@ -166,7 +166,7 @@ iqkv:
 iqkv:
   billing:
     service-url: ${BILLING_SERVICE_URI:http://foundation-billing-service}
-    plan-catalog-refresh-interval: ${PLAN_CATALOG_REFRESH_INTERVAL:PT10M}
+    plan-refresh-interval: ${BILLING_PLAN_REFRESH_INTERVAL:PT10M}
 ```
 
 ### **Gateway Route Example**
