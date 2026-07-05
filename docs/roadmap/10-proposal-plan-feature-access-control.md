@@ -27,12 +27,12 @@ the hot enforcement path.
 
 ### 1. Affected Modules
 
-| Module                       | Role                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Module                       | Role                                                                                                             |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `foundation-billing-service` | Source of truth — typed `PlanEntitlement`, `PlanFeatureRegistry`, internal plans endpoint, entitlements endpoint |
-| `foundation-iam-service`     | Caches active `planCode` on tenant; stamps `plan_code` claim into JWT                                         |
-| `foundation-gateway-service` | Propagates `X-Plan-Code` header; `PlanCatalogCache`; `RequiresPlanFeatureFilter`                              |
-| Downstream services          | `PlanCatalogCache` for quota checks at write time only                                                        |
+| `foundation-iam-service`     | Caches active `planCode` on tenant; stamps `plan_code` claim into JWT                                            |
+| `foundation-gateway-service` | Propagates `X-Plan-Code` header; `PlanCatalogCache`; `RequiresPlanFeatureFilter`                                 |
+| Downstream services          | `PlanCatalogCache` for quota checks at write time only                                                           |
 
 ### 2. High-Level Design
 

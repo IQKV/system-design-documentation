@@ -61,9 +61,9 @@ For detailed feature breakdowns, see:
 
 - [Per-Seat Payment Implementation Record](docs/roadmap/11-implemented-per-seat-payments.md)
 - [Plan Feature Access Control Implementation Summary](docs/roadmap/10-implemented-plan-feature-access-control-summary.md)
-- [v0.3 Features Review (June 2026)](docs/roadmap/13-implemented-features-review-june-2026.md)
 - [v0.4 Proposal: Lemon Squeezy Support](docs/roadmap/14-proposal-lemon-squeezy-support.md)
 - [v0.4 Proposal: OAuth2 / OIDC Authentication](docs/roadmap/15-proposal-oauth2-oidc.md)
+- [v0.4 Features Review (June 2026)](docs/roadmap/16-implemented-features-review.md)
 - [Roadmap & Vision](docs/roadmap/vision.md)
 
 ---

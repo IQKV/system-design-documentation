@@ -265,41 +265,41 @@ All existing plan definitions updated to include `pricingModel: "FLAT"` explicit
 
 | File                    | Change                                                                                                                                                                                                 |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PlanEntitlement.java`     | Added `String pricingModel` record component; added compact constructor with defensive `features` map copy; added `has(String code)` method; added `isPerSeat()` helper; `NONE` sentinel passes `null` |
+| `PlanEntitlement.java`  | Added `String pricingModel` record component; added compact constructor with defensive `features` map copy; added `has(String code)` method; added `isPerSeat()` helper; `NONE` sentinel passes `null` |
 | `PlanFeatureGuard.java` | `hasFeature()` now delegates to `features.has()` instead of duplicating the inline map lookup                                                                                                          |
 
 `PlanCatalogCache` and `PlanCatalogRestTemplateConfig` — no changes needed.
 
 ### `foundation-cms-service` — `plan/` package
 
-| File                | Change                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------- |
+| File                   | Change                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
 | `PlanEntitlement.java` | Added `String pricingModel` record component; updated `NONE` sentinel; added `isPerSeat()` helper |
 
 ### `foundation-microservice-project-layout` — `plan/` package
 
-| File                | Change                      |
-| ------------------- | --------------------------- |
+| File                   | Change                      |
+| ---------------------- | --------------------------- |
 | `PlanEntitlement.java` | Same changes as cms-service |
 
 ### `foundation-ui-app` — billing API types
 
-| File                                           | Change                                                                                                                   |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `src/shared/api/billing.ts`                    | Added `PricingModel` union type; added `pricingModel?: PricingModel \| null` to `Plan` and `PlanEntitlement` interfaces     |
+| File                                           | Change                                                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `src/shared/api/billing.ts`                    | Added `PricingModel` union type; added `pricingModel?: PricingModel \| null` to `Plan` and `PlanEntitlement` interfaces   |
 | `src/features/manage-billing/ui/plan-card.tsx` | `entitlement` fallback object includes `pricingModel: null`; price label renders `/ seat / {period}` for `PER_SEAT` plans |
 
 ---
 
 ## 5. What Was Not Changed
 
-| Component                               | Reason                                                                                                                  |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `StripeGatewayAdapter.syncProduct`      | Stripe price creation is identical for both modes (`UNIT_AMOUNT` recurring). No change needed.                          |
-| `PaymentGatewayPort`                    | `updateSubscription` already accepts `quantity`. No new methods required.                                               |
-| `WebhookProcessingService`              | Already maps `event.quantity()` → `subscription.quantity`. Per-seat quantity arrives from Stripe webhook automatically. |
+| Component                                  | Reason                                                                                                                  |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `StripeGatewayAdapter.syncProduct`         | Stripe price creation is identical for both modes (`UNIT_AMOUNT` recurring). No change needed.                          |
+| `PaymentGatewayPort`                       | `updateSubscription` already accepts `quantity`. No new methods required.                                               |
+| `WebhookProcessingService`                 | Already maps `event.quantity()` → `subscription.quantity`. Per-seat quantity arrives from Stripe webhook automatically. |
 | `PlanEntitlement` record (billing-service) | `pricingModel` belongs on `StripeProductSchema` and `Plan`, not on the feature-entitlement record.                      |
-| `EntitlementEvaluator`                  | Entitlement checks are feature-flag based; pricing mode does not affect them.                                           |
+| `EntitlementEvaluator`                     | Entitlement checks are feature-flag based; pricing mode does not affect them.                                           |
 
 ---
 

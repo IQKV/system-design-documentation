@@ -816,7 +816,7 @@ iqkv:
 | `infrastructure/persistence/BillingSettingsMapper.java` + XML | Add `gateway_type`                                                         |
 | `infrastructure/persistence/PlanMapper.java` + XML            | Add `gateway_type`                                                         |
 | `resources/application.yml`                                   | Rename plan-catalog path; add LS config block                              |
-| `resources/db/changelog/system/db.changelog-system.xml`              | Include new migration files                                                |
+| `resources/db/changelog/system/db.changelog-system.xml`       | Include new migration files                                                |
 
 ---
 

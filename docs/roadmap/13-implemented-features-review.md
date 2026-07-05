@@ -366,7 +366,7 @@ Custom metrics: `audit.event.consumption` (by type and source), `audit.persisten
 | SEO metadata           | Per-page title, description, Open Graph tags, canonical URLs                                 |
 | Tenant isolation       | Schema-per-tenant via `MyBatisSchemaInterceptor`                                             |
 | Event publishing       | `cms.page.created`, `cms.page.updated`, `cms.page.deleted` on `iqkv.events` exchange         |
-| Plan feature awareness | `PlanEntitlement` record includes `pricingModel` and `isPerSeat()` helper                       |
+| Plan feature awareness | `PlanEntitlement` record includes `pricingModel` and `isPerSeat()` helper                    |
 
 #### API
 
