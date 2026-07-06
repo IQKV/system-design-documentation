@@ -243,7 +243,7 @@ Two new tables are added via Liquibase changesets in the IAM service system chan
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
 
     <changeSet id="20260630000000" author="iqkv">
         <createTable tableName="user_identities" schemaName="public">
@@ -298,7 +298,7 @@ Two new tables are added via Liquibase changesets in the IAM service system chan
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
 
     <changeSet id="20260630100000" author="iqkv">
         <createTable tableName="tenant_oidc_providers" schemaName="public">

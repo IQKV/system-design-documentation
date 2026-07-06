@@ -1181,7 +1181,7 @@ src/main/resources/db/changelog/
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
 
   <changeSet id="20251110167000-create-contacts-table" author="iqkv">
     <createTable tableName="contacts">
