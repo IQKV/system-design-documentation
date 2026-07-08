@@ -146,7 +146,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Plan Feature Enforcement:**
 
-- `PlanCatalogCache` — reactive WebClient cache refreshed every 10 min from billing's internal plans endpoint
+- `PlanResolver` — reactive WebClient cache refreshed every 10 min from billing's internal plans endpoint
 - `RequiresPlanFeatureFilterFactory` — declarative route-level plan enforcement via Spring Cloud Gateway YAML
 
 **Routing & Security:**

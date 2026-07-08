@@ -30,7 +30,7 @@ Stripe Webhook → SubscriptionEvent → IAM caches planCode
                     ↓
 JWT Generation → plan_code claim → Gateway propagates X-Plan-Code
                     ↓
-Downstream Services → PlanCatalogCache → Local feature checks
+Downstream Services → PlanResolver → Local feature checks
 ```
 
 ---
@@ -83,13 +83,13 @@ Downstream Services → PlanCatalogCache → Local feature checks
 
 - **Header Propagation**: `JwtContextPropagationFilter` extracts `plan_code` from JWT and propagates as `X-Plan-Code`
 - **Security Enhancement**: `HeaderSanitizationFilter` strips client-supplied `X-Plan-Code` to prevent spoofing
-- **Reactive Cache**: `PlanCatalogCache` with 10-minute refresh cycle using WebClient
+- **Reactive Cache**: `PlanResolver` with 10-minute refresh cycle using WebClient
 - **Route-Level Gates**: `RequiresPlanFeatureFilterFactory` for declarative plan enforcement in Spring Cloud Gateway
 - **Public Access**: Added internal plans endpoint to gateway's public paths
 
 **Key Files:**
 
-- `PlanCatalogCache.java` - Reactive cache with scheduled refresh
+- `PlanResolver.java` - Reactive cache with scheduled refresh
 - `RequiresPlanFeatureFilterFactory.java` - Route-level feature enforcement
 - `JwtContextPropagationFilter.java` - Enhanced header propagation
 - `HeaderSanitizationFilter.java` - Client header sanitization
@@ -103,11 +103,11 @@ Downstream Services → PlanCatalogCache → Local feature checks
 - **IAM Quota Checks**: Implemented `maxUsers` enforcement in invitation acceptance and user signup flows
 - **Exception Handling**: Added `PlanMemberQuotaException` with HTTP 402 mapping
 - **Template Implementation**: Provided reference implementation in `foundation-microservice-project-layout`
-- **Non-Reactive Cache**: RestTemplate-based `PlanCatalogCache` for traditional Spring Boot services
+- **Non-Reactive Cache**: RestTemplate-based `PlanResolver` for traditional Spring Boot services
 
 **Key Files:**
 
-- `PlanCatalogCache.java` (IAM) - Non-reactive cache implementation
+- `PlanResolver.java` (IAM) - Non-reactive cache implementation
 - `InvitationServiceImpl.java` - Quota check before membership creation
 - `SingleTenantSignupStrategy.java` - Quota check in signup flow
 - `PlanMemberQuotaException.java` - Custom exception with 402 mapping

@@ -83,7 +83,7 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 | Swagger aggregation       | Aggregates API documentation from downstream services (IAM, Billing) in unified Swagger UI                                                      | ✅     |
 | Metering events           | Publishes `api.request.metered` per request                                                                                                     | 📋     |
 | Plan code header          | Extracts `plan_code` from JWT and propagates as `X-Plan-Code`; sanitizes client-supplied `X-Plan-Code` to prevent spoofing                      | ✅     |
-| Plan catalog cache        | Reactive cache (`PlanCatalogCache`) that refreshes from billing service every 10 minutes; stores active plans with full details                 | ✅     |
+| Plan catalog cache        | Reactive cache (`PlanResolver`) that refreshes from billing service every 10 minutes; stores active plans with full details                 | ✅     |
 | Plan feature filter       | `RequiresPlanFeatureFilterFactory` for declarative route-level plan feature enforcement in Spring Cloud Gateway routes                          | ✅     |
 | Public plans endpoint     | Exposes billing service internal plans endpoint on public path                                                                                  | ✅     |
 | WebSocket X-Tenant-ID     | Allows `X-Tenant-ID` header passthrough on WebSocket paths                                                                                      | ✅     |

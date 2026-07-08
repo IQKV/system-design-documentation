@@ -268,7 +268,7 @@ All existing plan definitions updated to include `pricingModel: "FLAT"` explicit
 | `PlanEntitlement.java`  | Added `String pricingModel` record component; added compact constructor with defensive `features` map copy; added `has(String code)` method; added `isPerSeat()` helper; `NONE` sentinel passes `null` |
 | `PlanFeatureGuard.java` | `hasFeature()` now delegates to `features.has()` instead of duplicating the inline map lookup                                                                                                          |
 
-`PlanCatalogCache` and `PlanCatalogRestTemplateConfig` — no changes needed.
+`PlanResolver` and `PlanCatalogRestTemplateConfig` — no changes needed.
 
 ### `foundation-cms-service` — `plan/` package
 

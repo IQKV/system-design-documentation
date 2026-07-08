@@ -31,8 +31,8 @@ the hot enforcement path.
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `foundation-billing-service` | Source of truth — typed `PlanEntitlement`, `PlanFeatureRegistry`, internal plans endpoint, entitlements endpoint |
 | `foundation-iam-service`     | Caches active `planCode` on tenant; stamps `plan_code` claim into JWT                                            |
-| `foundation-gateway-service` | Propagates `X-Plan-Code` header; `PlanCatalogCache`; `RequiresPlanFeatureFilter`                                 |
-| Downstream services          | `PlanCatalogCache` for quota checks at write time only                                                           |
+| `foundation-gateway-service` | Propagates `X-Plan-Code` header; `PlanResolver`; `RequiresPlanFeatureFilter`                                 |
+| Downstream services          | `PlanResolver` for quota checks at write time only                                                           |
 
 ### 2. High-Level Design
 
@@ -44,8 +44,8 @@ BillingSeedRunner (on startup)
         │  upserts plan_catalog with entitlement JSON snapshot
         │  populates PlanFeatureRegistry (in-memory)
         │
-        ├──► GET /api/v1/internal/plans ◄── Gateway PlanCatalogCache   (startup + every 10m)
-        │                                ◄── Downstream PlanCatalogCache (startup + every 10m)
+        ├──► GET /api/v1/internal/plans ◄── Gateway PlanResolver   (startup + every 10m)
+        │                                ◄── Downstream PlanResolver (startup + every 10m)
         │
 Stripe webhook ──► WebhookProcessingService
                          │  upserts subscription
@@ -63,14 +63,14 @@ HTTP Request ──► Gateway JwtContextPropagationFilter
                          │  adds X-Plan-Code header
                          │
                   RequiresPlanFeatureFilter
-                         │  planCatalogCache.resolveEntitlement(planCode).has("priority_support")
+                         │  planResolver.resolveEntitlement(planCode).has("priority_support")
                          │  → 402 if false, forward if true
                          │
                          ▼
                   Downstream Service
                          │
                     quota check (write path only):
-                    planCatalogCache.resolveEntitlement(planCode).maxUsers()
+                    planResolver.resolveEntitlement(planCode).maxUsers()
                     vs current DB count → 402 if exceeded
 ```
 
@@ -222,7 +222,7 @@ Implementation: one `@RestController` backed by `PlanFeatureRegistry`. No DB rea
 The `/billing/internal/` prefix keeps it under the existing billing service route in
 the gateway — no new gateway route definition needed.
 
-### 6. `PlanCatalogCache` — gateway and downstream services
+### 6. `PlanResolver` — gateway and downstream services
 
 Fetches the internal plans endpoint at startup and refreshes on a schedule.
 Falls back to last known state on transient billing unavailability.
@@ -230,7 +230,7 @@ Each consumer service holds its own instance — no shared library required.
 
 ```java
 @Component
-public class PlanCatalogCache {
+public class PlanResolver {
 
   private volatile Map<String, PlanEntitlement> cache = Map.of();
   private final WebClient billingClient;
@@ -300,13 +300,13 @@ Downstream services receive the request only if the plan check passes:
 public class RequiresPlanFeatureFilterFactory
     extends AbstractGatewayFilterFactory<RequiresPlanFeatureFilterFactory.Config> {
 
-  private final PlanCatalogCache planCatalogCache;
+  private final PlanResolver planResolver;
 
   @Override
   public GatewayFilter apply(final Config config) {
     return (exchange, chain) -> {
       final String planCode = exchange.getRequest().getHeaders().getFirst("X-Plan-Code");
-      if (!planCatalogCache.resolveEntitlement(planCode).has(config.getFeature())) {
+      if (!planResolver.resolveEntitlement(planCode).has(config.getFeature())) {
         exchange.getResponse().setStatusCode(HttpStatus.PAYMENT_REQUIRED);
         return exchange.getResponse().setComplete();
       }
@@ -341,10 +341,10 @@ spring:
 
 Quota checks (`maxUsers`, `maxProjects`) require current DB counts and cannot run at
 the gateway. The owning service checks at **write time only** using its local
-`PlanCatalogCache` — no synchronous call to billing on the hot path:
+`PlanResolver` — no synchronous call to billing on the hot path:
 
 ```java
-final PlanEntitlement planEntitlement = planCatalogCache.resolveEntitlement(
+final PlanEntitlement planEntitlement = planResolver.resolveEntitlement(
     request.getHeader("X-Plan-Code"));
 
 final int current = userRepository.countByTenantKey(tenantKey);
@@ -428,13 +428,13 @@ Delegates to `EntitlementEvaluator`. One `@RestController` class, no new service
 ### Phase 3 — Gateway Enforcement
 
 - [x] Update `JwtContextPropagationFilter` to propagate `X-Plan-Code` header.
-- [x] Add `PlanCatalogCache` with `@Scheduled` refresh in `foundation-gateway-service`.
+- [x] Add `PlanResolver` with `@Scheduled` refresh in `foundation-gateway-service`.
 - [x] Implement `RequiresPlanFeatureFilterFactory`.
 - [x] Add `RequiresPlanFeature` filter to applicable routes in gateway configuration.
 
 ### Phase 4 — Downstream Quota Checks (per service, incremental)
 
-- [x] For each service that manages a quota-bounded resource: add local `PlanCatalogCache`
+- [x] For each service that manages a quota-bounded resource: add local `PlanResolver`
       and enforce quota limits at resource creation.
 
 ## What Is Not Included
@@ -445,6 +445,6 @@ Delegates to `EntitlementEvaluator`. One `@RestController` class, no new service
   endpoint reflects the merged result transparently; consumers need no changes.
 - No real-time toggle without a cache refresh — a 10-minute TTL is acceptable since
   plan features change at deploy time, not at runtime.
-- No `foundation-billing-spi` shared library — `PlanCatalogCache` and the local
+- No `foundation-billing-spi` shared library — `PlanResolver` and the local
   `PlanEntitlement` record are small, per-service copies. Extract to a shared lib only
   if the pattern spreads to four or more services.

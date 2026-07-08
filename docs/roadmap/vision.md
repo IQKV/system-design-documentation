@@ -81,7 +81,7 @@ Goal: Implement fine-grained plan-based feature access control and add internati
 - [x] In-memory PlanFeatureRegistry for zero hot-path database calls
 - [x] JWT plan_code claim propagation
 - [x] Gateway X-Plan-Code header sanitization and propagation
-- [x] PlanCatalogCache with 10-minute refresh cycle
+- [x] PlanResolver with 10-minute refresh cycle
 - [x] RequiresPlanFeatureFilterFactory for route-level enforcement
 - [x] maxUsers quota enforcement (invitation acceptance, signup)
 - [x] User entitlements endpoint (`GET /api/v1/billing/entitlements/me`)
