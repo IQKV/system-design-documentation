@@ -52,7 +52,7 @@ All services inherit from the shared parent:
 <parent>
   <groupId>com.iqkv</groupId>
   <artifactId>boot-parent-pom</artifactId>
-  <version>0.25.0-SNAPSHOT</version>
+  <version>0.24.23</version>
 </parent>
 ```
 
@@ -109,39 +109,47 @@ Excluded from coverage (do not add coverage for these):
 ### Base Package
 
 ```
-com.iqkv.{service-name}
+com.iqkv.foundation.{service-name}
 ```
 
-Example: `com.iqkv.contactservice`
+Example: `com.iqkv.foundation.auditservice`, `com.iqkv.foundation.iamservice`
 
 ### Top-Level Package Layout
 
 ```
-com.iqkv.{service}/
+com.iqkv.foundation.{service}/
 ├── {DomainEntity}/               # Feature module (vertical slice)
-│   ├── {Entity}.java             # domain model (plain Java class)
-│   ├── {Entity}Repository.java   # Spring Data repository
+│   ├── {Entity}.java             # Domain model (plain Java class)
 │   ├── {Entity}Service.java      # Service interface
 │   ├── {Entity}ServiceImpl.java  # Service implementation
 │   ├── {Entity}RestResource.java # REST controller
 │   ├── {Entity}Status.java       # Enum (if applicable)
+│   ├── {Entity}Mapper.java       # MyBatis mapper interface
 │   └── dto/
 │       ├── {Entity}Dtos.java     # All DTOs as nested records
-│       └── {Entity}Mapper.java   # Manual mapper (static methods)
-├── config/                       # All @Configuration classes
-│   ├── SecurityConfig.java
-│   ├── RabbitMQConfig.java
-│   ├── OpenApiConfig.java
-│   ├── GlobalExceptionHandler.java
-│   ├── IqkvProperties.java
-│   └── ...
-├── event/                        # Event publishers
-├── security/                     # JWT filter, security utilities
-├── tenancy/                      # Multi-tenant infrastructure
+│       └── {Entity}DtoMapper.java # DTO mapper (static methods)
+├── infrastructure/               # Infrastructure concerns
+│   ├── config/                   # All @Configuration classes, properties, exception handler
+│   │   ├── SecurityConfig.java
+│   │   ├── RabbitMQConfig.java
+│   │   ├── OpenApiConfig.java
+│   │   ├── GlobalExceptionHandler.java
+│   │   ├── {Concern}ConfigurationProperties.java
+│   │   ├── MyBatisConfig.java
+│   │   ├── MessageSourceConfig.java
+│   │   └── ...
+│   ├── messaging/                # Message consumers, event publishers
+│   ├── persistence/              # MyBatis type handlers, etc.
+│   ├── security/                 # JWT claim names, security filters
+│   │   ├── JwtClaimNames.java
+│   │   ├── CorrelationIdFilter.java
+│   │   └── ...
+│   └── metrics/                  # Metrics configuration (if applicable)
+├── tenancy/                      # Multi-tenant infrastructure (e.g., TenantExtractionFilter)
 ├── shared/                       # Cross-cutting utilities
 │   ├── exception/                # Custom exceptions
-│   ├── {Service}Constants.java
-│   └── ...
+│   ├── domain/                   # Shared domain primitives
+│   └── util/                     # Utility classes
 └── {ServiceName}Application.java
 ```
 
@@ -199,7 +207,7 @@ com.iqkv.{service}/
 
 - File naming: `YYYYMMDDhhmmss-description.xml` — `20251110167000-create-contact-tables.xml`
 - Changeset ID: matches filename without extension — `20251110167000-create-contacts-table`
-- Author: `iqscaffold`
+- Author: `iqkv`
 
 ---
 
@@ -272,7 +280,7 @@ public interface ContactMapper {
 
 ```xml
 <!-- ContactMapper.xml -->
-<mapper namespace="com.iqkv.contactservice.contact.ContactMapper">
+<mapper namespace="com.iqkv.foundation.{service}.{domain}.ContactMapper">
 
   <resultMap id="ContactResultMap" type="Contact">
     <id property="id" column="id"/>
@@ -606,7 +614,7 @@ public class GlobalExceptionHandler {
 
 - All custom exceptions extend `RuntimeException` — no checked exceptions.
 - Place custom exceptions in `shared/exception/` package.
-- One `GlobalExceptionHandler` per service annotated with `@RestControllerAdvice`.
+- One `GlobalExceptionHandler` per service in `infrastructure/config/`, annotated with `@RestControllerAdvice`.
 - All error responses use Spring's `ProblemDetail` (RFC 7807 Problem Details).
 - Every `ProblemDetail` must set: `type` (URI), `title`, `detail`, `instance` (request URI).
 - Error type URIs follow the pattern: `https://api.iqkv.site/errors/{error-slug}`.
@@ -715,7 +723,7 @@ Refresh tokens carry only the minimum claims needed to issue a new access token.
 
 ### 10.3 Claim Reference
 
-All claim names are defined in `JwtClaimNames` (one copy per service in `security/JwtClaimNames.java`). Never use raw string literals to read or write claims.
+All claim names are defined in `JwtClaimNames` (one copy per service in `infrastructure/security/JwtClaimNames.java`). Never use raw string literals to read or write claims.
 
 | Constant           | Wire Key           | Type           | Access | Refresh | Notes                                                              |
 | ------------------ | ------------------ | -------------- | ------ | ------- | ------------------------------------------------------------------ |
@@ -837,7 +845,7 @@ Redis key conventions:
 Each service has its own `JwtClaimNames` in its `security/` package. All copies must be identical. This is a known duplication accepted until a shared library is introduced.
 
 ```java
-package com.iqkv.{service}.security;
+package com.iqkv.foundation.{service}.infrastructure.security;
 
 public final class JwtClaimNames {
   private JwtClaimNames() {
@@ -888,7 +896,7 @@ String userId = jwt.getClaimAsString("userId");
 
 ### 10.8 UserContext Record
 
-`UserContext` is the in-memory representation of the authenticated user, populated by `JwtAuthenticationFilter` from JWT claims. Each service has its own copy in `security/UserContext.java`.
+`UserContext` is the in-memory representation of the authenticated user, populated by `JwtAuthenticationFilter` from JWT claims. Each service has its own copy in `infrastructure/security/UserContext.java`.
 
 #### Standard structure (all services)
 
@@ -920,7 +928,7 @@ Rules:
 
 ### 10.9 JwtAuthenticationFilter — Standard Implementation
 
-Every service has a `JwtAuthenticationFilter extends OncePerRequestFilter` in its `security/` package. The implementation must follow this pattern exactly:
+Every service has a `JwtAuthenticationFilter extends OncePerRequestFilter` in its `infrastructure/security/` package. The implementation must follow this pattern exactly:
 
 ```java
 @Component
