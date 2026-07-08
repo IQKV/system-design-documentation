@@ -131,7 +131,7 @@
 | Feature                   | Detail                                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `plan_code` JWT claim     | Active plan code stamped into access tokens; updated via subscription lifecycle events                   |
-| `PlanResolver`        | Non-reactive `RestTemplate`-based cache; refreshes from billing service every 10 min                     |
+| `PlanResolver`            | Non-reactive `RestTemplate`-based cache; refreshes from billing service every 10 min                     |
 | `PlanFeatureGuard`        | Annotation for checking plan features on endpoints; throws `PlanFeatureNotAvailableException` → HTTP 402 |
 | `maxUsers` quota          | Checked at invitation acceptance and single-tenant signup; `PlanMemberQuotaException` → HTTP 402         |
 | `advanced_analytics` gate | `GET /admin/tenants/{key}/stats` and `GET /tenants/{key}/stats` gated behind plan feature                |
@@ -195,7 +195,7 @@
 
 | Feature                            | Detail                                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------------------------- |
-| `PlanResolver`                 | Reactive WebClient-based cache; refreshes from billing service every 10 min                 |
+| `PlanResolver`                     | Reactive WebClient-based cache; refreshes from billing service every 10 min                 |
 | `RequiresPlanFeatureFilterFactory` | Route-level declarative plan feature enforcement in Spring Cloud Gateway YAML               |
 | Plan code header                   | Extracts `plan_code` from JWT; propagates as `X-Plan-Code`; sanitizes client-supplied value |
 

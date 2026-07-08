@@ -31,8 +31,8 @@ the hot enforcement path.
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `foundation-billing-service` | Source of truth — typed `PlanEntitlement`, `PlanFeatureRegistry`, internal plans endpoint, entitlements endpoint |
 | `foundation-iam-service`     | Caches active `planCode` on tenant; stamps `plan_code` claim into JWT                                            |
-| `foundation-gateway-service` | Propagates `X-Plan-Code` header; `PlanResolver`; `RequiresPlanFeatureFilter`                                 |
-| Downstream services          | `PlanResolver` for quota checks at write time only                                                           |
+| `foundation-gateway-service` | Propagates `X-Plan-Code` header; `PlanResolver`; `RequiresPlanFeatureFilter`                                     |
+| Downstream services          | `PlanResolver` for quota checks at write time only                                                               |
 
 ### 2. High-Level Design
 
