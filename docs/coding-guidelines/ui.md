@@ -7,44 +7,43 @@
 
 ## Tech Stack
 
-| Category          | Library / Tool             | Version            |
-| ----------------- | -------------------------- | ------------------ |
-| Language          | TypeScript                 | ~5.9.3             |
-| Runtime           | React                      | ^19.2.4            |
-| Build             | Vite + SWC                 | ^7.3.1 / ^4.3.0    |
-| Package manager   | pnpm                       | 11.0.8             |
-| UI library        | Mantine                    | ^9.3.2             |
-| Routing           | TanStack Router            | ^1.166.7           |
-| Data fetching     | TanStack Query             | ^5.90.21           |
-| State management  | Zustand + Immer            | ^5.0.11 / ^11.1.4  |
-| Forms             | React Hook Form + Zod      | ^7.71.2 / ^3.25.76 |
-| i18n              | LinguiJS                   | ^5.9.2             |
-| Icons             | @tabler/icons-react        | ^3.40.0            |
-| HTTP client       | Axios                      | ^1.13.6            |
-| Date handling     | dayjs                      | ^1.11.19           |
-| Pattern matching  | ts-pattern                 | ^5.9.0             |
-| Drag & drop       | @dnd-kit                   | ^6.3.1             |
-| Charts            | Recharts + @mantine/charts | ^3.8.0             |
-| Rich text         | TipTap                     | ^3.20.1            |
-| Flow diagrams     | @xyflow/react              | ^12.10.1           |
-| Payments          | @stripe/react-stripe-js    | ^4.0.2             |
-| Animations        | lottie-web / react-lottie  | ^5.13.0            |
-| URL state         | nuqs                       | ^2.8.9             |
-| Collections       | collect.js                 | ^4.36.1            |
-| HTML sanitization | sanitize-html              | ^2.17.1            |
-| JWT               | jwt-decode                 | ^4.0.0             |
-| Cookies           | js-cookie                  | ^3.0.5             |
-| Linter            | oxlint (type-aware)        | ^1.55.0            |
-| Formatter         | oxfmt                      | ^0.37.0            |
-| CSS linter        | Stylelint                  | ^17.4.0            |
-| Dead code         | Knip                       | 5.86.0             |
-| Unit tests        | Vitest                     | 4.0.18             |
-| Component tests   | @testing-library/react     | ^16.3.2            |
-| API mocking       | MSW                        | ^2.12.10           |
-| E2E tests         | Playwright                 | 1.58.2             |
-| Git hooks         | Husky + lint-staged        | ^9.1.7             |
-| Releases          | release-it                 | ^19.2.4            |
-| Task runner       | Nx                         | ^22.5.4            |
+| Category          | Library / Tool            | Version           |
+| ----------------- | ------------------------- | ----------------- |
+| Language          | TypeScript                | ~6.0.3            |
+| Runtime           | React                     | ^19.2.7           |
+| Build             | Vite + SWC                | ^8.1.3 / ^4.3.1   |
+| Package manager   | pnpm                      | 10.33.2           |
+| UI library        | Mantine                   | ^9.4.1            |
+| Routing           | TanStack Router           | ^1.170.17         |
+| Data fetching     | TanStack Query            | ^5.101.2          |
+| State management  | Zustand                   | ^5.0.14           |
+| Forms             | @mantine/form + Zod       | ^9.4.1 / ^4.4.3   |
+| i18n              | LinguiJS                  | ^6.5.0            |
+| Icons             | @tabler/icons-react       | ^3.44.0           |
+| HTTP client       | Axios                     | ^1.18.1           |
+| Date handling     | dayjs                     | ^1.11.21          |
+| Pattern matching  | ts-pattern                | ^5.9.0            |
+| Charts            | @mantine/charts           | ^9.4.1            |
+| Rich text         | TipTap                    | ^3.27.3           |
+| Flow diagrams     | @xyflow/react             | ^12.11.2          |
+| Payments          | @stripe/react-stripe-js   | ^6.7.0            |
+| Animations        | lottie-web / react-lottie | ^5.13.0 / ^1.2.10 |
+| URL state         | nuqs                      | ^2.9.0            |
+| Collections       | collect.js                | ^4.36.1           |
+| HTML sanitization | sanitize-html             | ^2.17.5           |
+| JWT               | jwt-decode                | ^4.0.0            |
+| Cookies           | js-cookie                 | ^3.0.8            |
+| Linter            | oxlint (type-aware)       | ^1.73.0           |
+| Formatter         | oxfmt                     | ^0.58.0           |
+| CSS linter        | Stylelint                 | ^17.14.0          |
+| Dead code         | Knip                      | 6.25.0            |
+| Unit tests        | Vitest                    | 4.1.5             |
+| Component tests   | @testing-library/react    | ^16.3.2           |
+| API mocking       | MSW                       | ^2.15.0           |
+| E2E tests         | Playwright                | 1.61.1            |
+| Git hooks         | Husky + lint-staged       | ^9.1.7            |
+| Releases          | release-it                | ^19.2.4           |
+| Task runner       | NX                        | ^23.0.1           |
 
 ---
 
@@ -309,94 +308,78 @@ Rules:
 
 ---
 
-## State Management — Zustand + Immer
+## State Management — Zustand
 
 ```ts
 import { create } from "zustand";
-import { immer } from "zustand/middleware/immer";
 
 interface UserStore {
   user: User | null;
   setUser: (user: User) => void;
 }
 
-export const useUserStore = create<UserStore>()(
-  immer((set) => ({
-    user: null,
-    setUser: (user) =>
-      set((state) => {
-        state.user = user; // Immer allows direct mutation
-      }),
-  })),
-);
+export const useUserStore = create<UserStore>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+}));
 ```
 
 Rules:
 
-- Always use `immer` middleware — enables direct state mutation syntax.
-- Stores live in the `model/` segment of their slice.
+- Stores live in the `model/` segment of their slice or in `processes/` for cross-feature state.
 - Keep stores small and slice-scoped. Avoid a single global store.
 - Server state (API data) belongs in TanStack Query, not Zustand.
 - Zustand is for client-only UI state (modals open, selected items, wizard steps, etc.).
 
 ---
 
-## Forms — React Hook Form + Zod
+## Forms — @mantine/form + Zod
 
 ```ts
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@mantine/form";
 import { z } from "zod";
+import { t } from "@lingui/core/macro";
+import { validateWithZod } from "@/shared/lib/zod-form-validation";
 
-const schema = z.object({
-  email: z.string().email(),
-  name: z.string().min(2),
-});
+function buildSchema() {
+  return z.object({
+    email: z.string().email(),
+    name: z.string().min(2),
+  });
+}
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 export function UserForm() {
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: "", name: "" },
+    initialValues: { email: "", name: "" },
+    validate: (values) => validateWithZod(buildSchema(), values),
   });
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
+    <form onSubmit={form.onSubmit(onSubmit)}>
       {/* ... */}
     </form>
   );
 }
 ```
 
-For Mantine form components, use `mantine-form-zod-resolver`:
-
-```ts
-import { useForm } from "@mantine/form";
-import { zodResolver } from "mantine-form-zod-resolver";
-
-const form = useForm({
-  validate: zodResolver(schema),
-  initialValues: { email: "", name: "" },
-});
-```
-
 Rules:
 
-- Always define a Zod schema first — derive the TypeScript type from it with `z.infer<typeof schema>`.
-- Use `@hookform/resolvers/zod` for React Hook Form, `mantine-form-zod-resolver` for Mantine forms.
+- Always define a Zod schema in a factory function (for i18n support) — derive the TypeScript type from it with `z.infer<typeof buildSchema>`.
+- Use `validateWithZod` from `@/shared/lib/zod-form-validation` to integrate Zod with @mantine/form.
 - Schemas live in the `model/` segment of the feature.
 - Reuse schemas for API request/response validation where possible.
 
 ---
 
-## UI Components — Mantine v8
+## UI Components — Mantine v9
 
 Mantine is the primary component library. Do not introduce other component libraries.
 
 ### Theme & Design Tokens
 
-Design tokens are defined in `src/shared/lib/design-tokens` and mapped to the Mantine theme in `src/app/theme.ts`:
+Design tokens are defined in `src/shared/lib/design-tokens` (only in foundation-ui-platform-admin) and mapped to the Mantine theme in `src/app/theme.ts`:
 
 ```ts
 // src/app/theme.ts
@@ -460,14 +443,14 @@ notifications.show({ title: "Success", message: "Saved", color: "green" });
 
 ---
 
-## Internationalization — LinguiJS v5
+## Internationalization — LinguiJS v6
 
 Config: `lingui.config.ts`
 
-- Source locale: `en`
-- Supported locales: `en`, `ru` (app) / `en`, `ru`, `it` (auth)
-- Format: PO files in `locales/{locale}/`
-- Fallback: `en`
+- Source locale: `en-US`
+- Supported locales: `en-US`, `bg-BG`
+- Format: PO files in `locales/`
+- Fallback: `en-US`
 
 ### Usage
 
@@ -887,22 +870,22 @@ Uses `@release-it/conventional-changelog` to auto-generate `CHANGELOG.md` from c
 Base client and interceptors live in `src/shared/api/`.
 
 ```ts
-// src/shared/api/client.ts
+// src/shared/api/http-client.ts
 import axios from "axios";
 
-export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+export const httpClient = axios.create({
+  baseURL: import.meta.env.VITE_API_SERVER_URL,
   withCredentials: true,
 });
 
 // Add auth interceptor, error handling, etc.
-apiClient.interceptors.request.use(/* ... */);
-apiClient.interceptors.response.use(/* ... */);
+httpClient.interceptors.request.use(/* ... */);
+httpClient.interceptors.response.use(/* ... */);
 ```
 
 Rules:
 
-- Never import `axios` directly in features/entities — always use the shared `apiClient`.
+- Never import `axios` directly in features/entities — always use the shared `httpClient`.
 - API functions for a slice live in that slice's `api/` segment.
 - Export them through the slice's `index.ts`.
 
@@ -913,7 +896,7 @@ Rules:
 Vite exposes env vars prefixed with `VITE_`:
 
 ```ts
-import.meta.env.VITE_API_URL;
+import.meta.env.VITE_API_SERVER_URL;
 import.meta.env.VITE_STRIPE_KEY;
 ```
 
