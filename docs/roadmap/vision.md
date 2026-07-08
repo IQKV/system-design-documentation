@@ -155,7 +155,7 @@ Items deferred until the core platform is fully manageable:
 - Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain
 - Usage-based metered billing (`METERED` pricing model; per-seat flat pricing is complete)
-- IAM per-seat enforcement — enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; requires `activeSeatCount` column on tenants + `SubscriptionEventConsumer` update in IAM to cache `seatCount` alongside `planCode`
+- [x] IAM per-seat enforcement — enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; added `purchased_seat_count` column on tenants, updated `SubscriptionEvent` and `SubscriptionEventConsumer` to propagate and cache `seatCount` alongside `planCode`
 - Multi-region support
 - Managed hosting offering
 
@@ -222,7 +222,7 @@ Goal: deliver enterprise-ready identity federation and tenant-scoped SSO while k
 - [x] Platform Admin UI — subscription lifecycle mutations: cancel, pause, reactivate, update quantity
 - [ ] Platform Admin UI — subscription lifecycle mutations: change plan, apply discount
 - [ ] Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
-- [ ] IAM per-seat enforcement — enforce purchased `seatCount` at invite-accept and signup; `activeSeatCount` column on tenants; `SubscriptionEventConsumer` caches `seatCount` alongside `planCode`
+- [x] IAM per-seat enforcement — enforce purchased `seatCount` at invite-accept and signup; `purchased_seat_count` column on tenants; `SubscriptionEventConsumer` caches `seatCount` alongside `planCode`
 - [ ] Additional locales — RU, IT (infrastructure already in place)
 
 ---

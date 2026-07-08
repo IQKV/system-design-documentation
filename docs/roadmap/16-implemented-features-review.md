@@ -151,6 +151,7 @@
 | `PlanResolver`            | Non-reactive `RestTemplate`-based cache; refreshes from billing service every 10 min                     |
 | `PlanFeatureGuard`        | Annotation for checking plan features on endpoints; throws `PlanFeatureNotAvailableException` → HTTP 402 |
 | `maxUsers` quota          | Checked at invitation acceptance and single-tenant signup; `PlanMemberQuotaException` → HTTP 402         |
+| Per-seat `seatCount` quota| For PER_SEAT plans, enforces purchased seat count (if set) first, then falls back to plan `maxUsers`; checked at invite acceptance and tenant signup |
 | `advanced_analytics` gate | `GET /admin/tenants/{key}/stats` and `GET /tenants/{key}/stats` gated behind plan feature                |
 | Personal workspace access | Personal workspace always accessible even if tenant is suspended                                         |
 
