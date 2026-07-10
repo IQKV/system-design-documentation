@@ -303,6 +303,5 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 - SSO / SAML adapter
 - Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain
-- Usage-based metered billing (`METERED` pricing model; per-seat flat pricing is complete)
 - Multi-region support
 - Managed hosting offering

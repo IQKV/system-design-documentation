@@ -306,7 +306,6 @@ Astro + React + Tailwind CSS + DaisyUI + shadcn/ui landing page kit.
 | SSO / SAML                     | Extension — subscribes to the event bus, not core                                                                                       |
 | Rate limiting                  | Per-tenant and per-user (gateway)                                                                                                       |
 | Tenant resolution by subdomain | Resolve tenant from request subdomain                                                                                                   |
-| Usage-based billing metering   | Metered billing (`METERED` pricing model) on top of active gateway — per-seat flat pricing is implemented; metered aggregation deferred |
 | Platform operator actions      | Impersonation in `foundation-ui-platform-admin`                                                                                         |
 | System health dashboard        | Background job monitoring in `foundation-ui-platform-admin`                                                                             |
 | Multi-region                   | Cross-region deployment support                                                                                                         |
