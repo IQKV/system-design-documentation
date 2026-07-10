@@ -52,7 +52,7 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 - `PaymentGatewayPort` hexagonal abstraction — Stripe and Lemon Squeezy adapters implemented; swap gateways without business logic changes
 - Auto-provisions customer (Stripe/Lemon Squeezy) on `tenant.created` event (RabbitMQ)
 - Per-tenant `billing_settings`: billing email, tax ID/VAT, Customer Portal session
-- Plan catalog defined in YAML and synchronized with active gateway at startup; supports `FLAT` and `PER_SEAT` pricing models
+- **Plan catalog** defined in YAML and synchronized with active gateway at startup; supports `FLAT`, `PER_SEAT`, and `METERED` (usage-based) pricing models; METERED plans support optional metering config (metric name, external meter ID, aggregation type, tiers)
 - Subscription checkout and management (tenant owner); trial period support
 - **Per-seat pricing** — dedicated `PATCH .../seats` endpoint for mid-cycle seat adjustments with proration; seat-cap validation against `maxUsers`
 - Refunds API — initiate and list refunds per tenant; platform admin refund overview
@@ -162,7 +162,7 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 ### Plan & Entitlements System
 
 - YAML-defined plan catalog synchronized with Stripe
-- `FLAT` and `PER_SEAT` pricing models with trial support
+- `FLAT`, `PER_SEAT`, and `METERED` (usage-based) pricing models with trial support; METERED plans support optional metering config stored in a separate `plan_metering_config` table
 - `EntitlementsProvider` and `FeatureGate` in frontends
 - `PlanFeatureGuard` annotation in backends
 - `maxUsers` quota and feature flag enforcement
@@ -176,7 +176,7 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 
 - Complete user authentication and authorization: JWT RS256, magic link, token exchange, RBAC, email verification, password reset, brute-force lockout, member ban/unban, ownership transfer (IAM Service)
 - Multi-tenant and single-tenant data isolation with PostgreSQL schema-per-tenant (IAM and CMS)
-- **Multi-gateway subscription billing**: Stripe and Lemon Squeezy support, flat-rate and per-seat pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Customer Portal (Billing Service)
+- **Multi-gateway subscription billing**: Stripe and Lemon Squeezy support, flat-rate, per-seat, and usage-based (METERED) pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Customer Portal (Billing Service)
 - Centralized audit trail with passive event consumption, JSONB storage, and SPI-based extensibility (Audit Service)
 - Reactive API gateway: JWT validation, header sanitization, plan code propagation, audit context headers, per-tenant metrics (Gateway Service)
 - Identity federation: OAuth2/OIDC social login, tenant-scoped enterprise SSO, account linking / unlinking, admin unmerge remediation (IAM + tenant/admin UIs)

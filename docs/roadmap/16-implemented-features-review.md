@@ -742,7 +742,6 @@ Per `vision.md` deferred items:
 - Platform Admin UI — system health dashboard, background job monitoring
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
 - Tenant App — additional locales (RU, IT; infrastructure already in place)
-- Per-seat IAM enforcement — enforce purchased `seatCount` against `activeSeatCount` on tenant (not just plan `maxUsers`)
 - SSO / SAML adapter
 - Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain
