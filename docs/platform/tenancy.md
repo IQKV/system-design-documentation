@@ -366,7 +366,7 @@ iqkv:
     schema-prefix: t_ # Prefix for tenant schemas
     default-schema: public # Default schema for shared data
     provisioning-timeout: PT10M # Timeout for tenant provisioning
-    default-tenant-key: ${DEFAULT_TENANT_KEY:}
+    default-tenant-key: platform
     default-tenant-name: ${DEFAULT_TENANT_NAME:Acme Corp.}
   liquibase:
     system-change-log: db/changelog/system/db.changelog-master.xml
@@ -384,7 +384,7 @@ iqkv:
   platform:
     rollout-mode: ${ROLLOUT_MODE:MULTI_TENANT}
   tenancy:
-    default-tenant-key: ${DEFAULT_TENANT_KEY:}
+    default-tenant-key: platform
   iam:
     service-url: ${IAM_SERVICE_URL:http://foundation-iam-service:8080}
 ```
@@ -394,7 +394,7 @@ iqkv:
 - `ROLLOUT_MODE` is the single source of truth for platform behavior
 - Tenancy behavior (schema isolation, signup flow, UI) is derived from `ROLLOUT_MODE`
 - No separate "tenancy mode" configuration is needed
-- Configuration must be identical across IAM, Billing, and Gateway services
+- Configuration must be identical across IAM, Billing, CMS, and Gateway services
 
 ### Configuration Validation
 
