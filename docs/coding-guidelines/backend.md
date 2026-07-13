@@ -52,7 +52,7 @@ All services inherit from the shared parent:
 <parent>
   <groupId>com.iqkv</groupId>
   <artifactId>boot-parent-pom</artifactId>
-  <version>0.24.25</version>
+  <version>0.24.26</version>
 </parent>
 ```
 
