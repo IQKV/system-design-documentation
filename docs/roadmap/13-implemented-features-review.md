@@ -390,28 +390,28 @@ Custom metrics: `cms_pages_total`, `cms_pages_published_total`, `cms_events_publ
 
 #### Implemented Features
 
-| Area                      | Status         | Detail                                                                                                       |
-| ------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
-| Sign-in                   | Done           | Two-step: credentials → tenant discovery; multi-tenant users pick workspace; single-tenant signs in directly |
-| Sign-up                   | Done           | Self-service registration + tenant creation; polls provisioning status until `ACTIVE`                        |
-| Forgot / reset password   | Done           | Email flow + token-based reset                                                                               |
-| Email verification        | Done           | Token-based verification page (`/verify-email?token=…`)                                                      |
-| Accept invitation         | Done           | Works for new and existing users                                                                             |
-| Create organization       | Done           | `/create-organization` route for authenticated users                                                         |
-| Dashboard                 | Done (basic)   | Workspace name, welcome message, team member count                                                           |
-| Team — member list        | Done           | Searchable member list                                                                                       |
-| Team — invitations        | Done           | Send, list, revoke (TENANT_OWNER only)                                                                       |
-| Team — ban/unban          | Done           | Ban/unban members (TENANT_OWNER only)                                                                        |
-| Team — role editing       | Done           | Change member role (TENANT_OWNER only)                                                                       |
-| Transfer ownership        | Done           | Transfer ownership to another member (TENANT_OWNER only)                                                     |
-| Profile & change password | Done           | View/edit name, change password, organizations and roles                                                     |
-| Billing self-service      | Done           | Portal access, subscription view, plan catalog, billing info, refunds                                        |
-| Plan-based access control | Done           | `EntitlementsProvider`, `FeatureGate`, `useHasFeature`, `useQuota` hooks                                     |
-| Tenant settings           | Done           | Organization metadata editing                                                                                |
-| In-app notifications      | Done           | Notification bell, dropdown, WebSocket real-time push, notification center                                   |
-| Session security          | Done           | Access token in memory; refresh token + tenant key in `sessionStorage`; 30-min inactivity sign-out           |
-| Light/dark theme          | Done           | Persisted via Zustand                                                                                        |
-| i18n                      | Done (en + bg) | Lingui 6 PO catalogs; locale cookie; `Accept-Language` on API requests; Bulgarian (bg-BG) catalog included   |
+| Area                      | Status                   | Detail                                                                                                                                                       |
+| ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sign-in                   | Done                     | Two-step: credentials → tenant discovery; multi-tenant users pick workspace; single-tenant signs in directly                                                 |
+| Sign-up                   | Done                     | Self-service registration + tenant creation; polls provisioning status until `ACTIVE`                                                                        |
+| Forgot / reset password   | Done                     | Email flow + token-based reset                                                                                                                               |
+| Email verification        | Done                     | Token-based verification page (`/verify-email?token=…`)                                                                                                      |
+| Accept invitation         | Done                     | Works for new and existing users                                                                                                                             |
+| Create organization       | Done                     | `/create-organization` route for authenticated users                                                                                                         |
+| Dashboard                 | Done (basic)             | Workspace name, welcome message, team member count                                                                                                           |
+| Team — member list        | Done                     | Searchable member list                                                                                                                                       |
+| Team — invitations        | Done                     | Send, list, revoke (TENANT_OWNER only)                                                                                                                       |
+| Team — ban/unban          | Done                     | Ban/unban members (TENANT_OWNER only)                                                                                                                        |
+| Team — role editing       | Done                     | Change member role (TENANT_OWNER only)                                                                                                                       |
+| Transfer ownership        | Done                     | Transfer ownership to another member (TENANT_OWNER only)                                                                                                     |
+| Profile & change password | Done                     | View/edit name, change password, organizations and roles                                                                                                     |
+| Billing self-service      | Done                     | Portal access, subscription view, plan catalog, billing info, refunds                                                                                        |
+| Plan-based access control | Done                     | `EntitlementsProvider`, `FeatureGate`, `useHasFeature`, `useQuota` hooks                                                                                     |
+| Tenant settings           | Done                     | Organization metadata editing                                                                                                                                |
+| In-app notifications      | Done                     | Notification bell, dropdown, WebSocket real-time push, notification center                                                                                   |
+| Session security          | Done                     | Access token in memory; refresh token + tenant key in `sessionStorage`; 30-min inactivity sign-out                                                           |
+| Light/dark theme          | Done                     | Persisted via Zustand                                                                                                                                        |
+| i18n                      | Done (en + bg + de + fr) | Lingui 6 PO catalogs; locale cookie; `Accept-Language` on API requests; English (en-US), Bulgarian (bg-BG), German (de-DE), French (fr-FR) catalogs included |
 
 #### Billing & Entitlements Architecture
 
@@ -435,24 +435,24 @@ Custom metrics: `cms_pages_total`, `cms_pages_published_total`, `cms_events_publ
 
 #### Implemented Features
 
-| Area                        | Status         | Detail                                                                                  |
-| --------------------------- | -------------- | --------------------------------------------------------------------------------------- |
-| Sign-in & session           | Done           | `PLATFORM_ADMIN` credentials; access token in memory; refresh token in `sessionStorage` |
-| Dashboard                   | Done           | Parallel count cards: total users, organizations, active subscriptions                  |
-| User list & detail          | Done           | List + edit/set password; Overview + Organizations tabs; ban/unban/unlock               |
-| Organization list & detail  | Done           | List + Overview, Members, Billing, Subscriptions, Refunds tabs; edit metadata           |
-| Member authority management | Done           | Set TENANT_OWNER/ADMIN/MEMBER per tenant                                                |
-| Invitations                 | Done           | List with filters; propose, edit, revoke                                                |
-| Subscriptions               | Done           | Read-only global list + detail view                                                     |
-| Plan catalog                | Done           | Read-only list; plans are config-driven via YAML + deployment                           |
-| Announcements               | Done           | Create, edit, publish, delete with multi-lingual translation support                    |
-| Audit Logs                  | Done           | Global audit log view; filter by user, tenant, action, severity, date range             |
-| Notifications               | Done           | In-app + WebSocket real-time push; notification bell                                    |
-| Refunds                     | Done           | Global refund list + detail view                                                        |
-| Operator account            | Done           | View/edit profile; change password                                                      |
-| i18n                        | Done (en + bg) | Lingui; English and Bulgarian catalogs; locale switcher UI                              |
-| Runtime config              | Done           | Override `VITE_*` via `public/config.js` without rebuild                                |
-| Platform actions            | Partial        | Ban/unban/unlock done; impersonation planned                                            |
+| Area                        | Status                   | Detail                                                                                  |
+| --------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| Sign-in & session           | Done                     | `PLATFORM_ADMIN` credentials; access token in memory; refresh token in `sessionStorage` |
+| Dashboard                   | Done                     | Parallel count cards: total users, organizations, active subscriptions                  |
+| User list & detail          | Done                     | List + edit/set password; Overview + Organizations tabs; ban/unban/unlock               |
+| Organization list & detail  | Done                     | List + Overview, Members, Billing, Subscriptions, Refunds tabs; edit metadata           |
+| Member authority management | Done                     | Set TENANT_OWNER/ADMIN/MEMBER per tenant                                                |
+| Invitations                 | Done                     | List with filters; propose, edit, revoke                                                |
+| Subscriptions               | Done                     | Read-only global list + detail view                                                     |
+| Plan catalog                | Done                     | Read-only list; plans are config-driven via YAML + deployment                           |
+| Announcements               | Done                     | Create, edit, publish, delete with multi-lingual translation support                    |
+| Audit Logs                  | Done                     | Global audit log view; filter by user, tenant, action, severity, date range             |
+| Notifications               | Done                     | In-app + WebSocket real-time push; notification bell                                    |
+| Refunds                     | Done                     | Global refund list + detail view                                                        |
+| Operator account            | Done                     | View/edit profile; change password                                                      |
+| i18n                        | Done (en + bg + de + fr) | Lingui; English, Bulgarian, German, and French catalogs; locale switcher UI             |
+| Runtime config              | Done                     | Override `VITE_*` via `public/config.js` without rebuild                                |
+| Platform actions            | Partial                  | Ban/unban/unlock done; impersonation planned                                            |
 
 #### Not Yet Implemented
 

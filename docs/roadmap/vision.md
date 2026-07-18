@@ -91,7 +91,7 @@ Goal: Implement fine-grained plan-based feature access control and add internati
 
 **Internationalization**
 
-- [x] Bulgarian (bg-BG) i18n translations added
+- [x] Multi-lingual i18n: English (en-US), Bulgarian (bg-BG), German (de-DE), French (fr-FR) translations added
 - [x] Locale seed data for multi-lingual support
 - [x] Announcements with multi-lingual translation support
 

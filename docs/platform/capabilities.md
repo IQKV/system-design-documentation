@@ -54,7 +54,7 @@ Identity, access, and tenant lifecycle. All auth flows pass through this service
 | Personal workspace        | Personal workspace always accessible, even if tenant is suspended                                                                                                                                                                                                    | ✅     |
 | Avatar URL rewrite        | Presigned URLs rewritten to public endpoint for external clients to avoid mixed-content issues                                                                                                                                                                       | ✅     |
 | Common exception handlers | Shared Spring Web exception handlers for consistent error responses across services                                                                                                                                                                                  | ✅     |
-| Bulgarian i18n            | Bulgarian (bg-BG) translations added; locale seed data; announcements support multi-lingual content                                                                                                                                                                  | ✅     |
+| Multi-lingual i18n        | English (en-US), Bulgarian (bg-BG), German (de-DE), French (fr-FR) translations added; locale seed data; announcements support multi-lingual content                                                                                                                 | ✅     |
 | Magic link authentication | Passwordless sign-in: `POST /auth/magic-link/initiate`, `/resend`, `/exchange`; configurable TTL; rate-limited resend; always 204 on initiate/resend (prevents enumeration)                                                                                          | ✅     |
 | Create tenant endpoint    | `POST /tenants` — authenticated endpoint to create a new tenant after signup; calling user becomes `TENANT_OWNER`; returns `tenantKey`                                                                                                                               | ✅     |
 | User memberships list     | `GET /users/me/memberships` — lists current user's active tenant memberships for org-switcher UIs; no `X-Tenant-ID` required                                                                                                                                         | ✅     |
@@ -206,7 +206,7 @@ React 19 + Mantine SPA for workspace members. All requests go through the API Ga
 | Tenant SSO configuration    | TENANT_OWNER security panel for issuer URI, client ID / secret, scopes, enabled flag; write-only client secret                                                                                       | ✅     |
 | Notifications               | In-app notification list, unread badge, mark-as-read, delete; real-time WebSocket push (STOMP/SockJS)                                                                                                | ✅     |
 | Session security            | Access token in memory; refresh + tenant key in `sessionStorage`; silent refresh; 30min inactivity timeout                                                                                           | ✅     |
-| i18n & theme                | Lingui (English and Bulgarian catalogs); locale cookie; light/dark theme; unified dark sidebar layout                                                                                                | ✅     |
+| i18n & theme                | Lingui (English, Bulgarian, German, and French catalogs); locale cookie; light/dark theme; unified dark sidebar layout                                                                               | ✅     |
 | Member role editing         | Change member authorities beyond invitation default; transfer ownership (`TENANT_OWNER`)                                                                                                             | ✅     |
 | Plan-based feature access   | Integrates with billing entitlements API for plan-based feature visibility and access control                                                                                                        | ✅     |
 | Personal workspace handling | Hides personal workspace from org settings and nav; handles personal workspaces in entitlements & billing pages                                                                                      | ✅     |
@@ -236,7 +236,7 @@ Separate operator SPA (`PLATFORM_ADMIN` only). Platform-scoped JWT (`tenant_id` 
 | Operator account                  | View/edit operator profile; change password                                                                                               | ✅     |
 | OIDC admin remediation            | User-detail OIDC identities tab; forced unmerge flow for linked external identities                                                       | ✅     |
 | Session security                  | Access token in memory; refresh in `sessionStorage`; silent refresh; inactivity sign-out                                                  | ✅     |
-| i18n                              | Lingui with English and Bulgarian catalogs; locale switcher UI                                                                            | ✅     |
+| i18n                              | Lingui with English, Bulgarian, German, and French catalogs; locale switcher UI                                                           | ✅     |
 | Platform actions                  | Ban/unban/unlock (done), impersonation                                                                                                    | 🚧     |
 | System administration             | Health dashboard, background job monitoring                                                                                               | 📋     |
 | Advanced metrics                  | MRR/ARR, growth charts on dashboard                                                                                                       | 📋     |
@@ -301,12 +301,12 @@ Astro + React + Tailwind CSS + DaisyUI + shadcn/ui landing page kit.
 
 ### Later Milestones
 
-| Capability                     | Notes                                                                                                                                   |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| SSO / SAML                     | Extension — subscribes to the event bus, not core                                                                                       |
-| Rate limiting                  | Per-tenant and per-user (gateway)                                                                                                       |
-| Tenant resolution by subdomain | Resolve tenant from request subdomain                                                                                                   |
-| Platform operator actions      | Impersonation in `foundation-ui-platform-admin`                                                                                         |
-| System health dashboard        | Background job monitoring in `foundation-ui-platform-admin`                                                                             |
-| Multi-region                   | Cross-region deployment support                                                                                                         |
-| Managed hosting                | Hosted version of the platform                                                                                                          |
+| Capability                     | Notes                                                       |
+| ------------------------------ | ----------------------------------------------------------- |
+| SSO / SAML                     | Extension — subscribes to the event bus, not core           |
+| Rate limiting                  | Per-tenant and per-user (gateway)                           |
+| Tenant resolution by subdomain | Resolve tenant from request subdomain                       |
+| Platform operator actions      | Impersonation in `foundation-ui-platform-admin`             |
+| System health dashboard        | Background job monitoring in `foundation-ui-platform-admin` |
+| Multi-region                   | Cross-region deployment support                             |
+| Managed hosting                | Hosted version of the platform                              |

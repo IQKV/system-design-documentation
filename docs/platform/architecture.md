@@ -107,7 +107,7 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 - In-app notifications: `UserNotification` records + real-time WebSocket push (STOMP/SockJS) to `/user/{userId}/queue/notifications`
 - Site-wide announcements: multi-lingual; async fan-out in batches of 1000; WebSocket broadcast
 - Plan feature enforcement: `PlanFeatureGuard` annotation; `plan_code` JWT claim cached from billing; `maxUsers` quota checked at invite/signup
-- Bulgarian (bg-BG) i18n: locale seed data; per-user BCP 47 locale stored in `users.locale`
+- Multi-lingual i18n: English (en-US), Bulgarian (bg-BG), German (de-DE), French (fr-FR) translations; locale seed data; per-user BCP 47 locale stored in `users.locale`
 
 **Events Published:** `tenant.created`, `tenant.provisioned`, `tenant.suspended`, `tenant.deleted`, `tenant.provisioning_failed`, `user.created`, `user.updated`, `user.invited`, `user.removed`, `user.deleted`, `announcement.publish`, `notification.iam.email`
 

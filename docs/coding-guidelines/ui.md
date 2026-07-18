@@ -448,7 +448,7 @@ notifications.show({ title: "Success", message: "Saved", color: "green" });
 Config: `lingui.config.ts`
 
 - Source locale: `en-US`
-- Supported locales: `en-US`, `bg-BG`
+- Supported locales: `en-US`, `bg-BG`, `de-DE`, `fr-FR`
 - Format: PO files in `locales/`
 - Fallback: `en-US`
 
