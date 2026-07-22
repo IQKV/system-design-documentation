@@ -33,6 +33,7 @@ Key strengths already in place:
 We drew inspiration from the following existing solutions and best practices:
 
 ### 1. Plugin-Based Architecture (VS Code Style)
+
 - **Source**: [TecoFize Blog: Building a Plugin System in React (Like VS Code Extensions)](https://tecofize.com/blogs/55/building-plugin-system-react-like-vscode-extensions/)
 - **Key Takeaways**:
   - Core app should act as a stable host environment
@@ -41,6 +42,7 @@ We drew inspiration from the following existing solutions and best practices:
   - Independent plugin development and deployment
 
 ### 2. React Hook-Based Plugin Systems
+
 - **Source**: [CSDN Article: 如何设计一个‘插件化 React 系统’](https://blog.csdn.net/weixin_41455464/article/details/156160385)
 - **Key Takeaways**:
   - Use React Hooks to inject logic into core components
@@ -48,6 +50,7 @@ We drew inspiration from the following existing solutions and best practices:
   - Custom Hooks as plugin injection points
 
 ### 3. FSD Tooling
+
 - **[eslint-fsd-plugin](https://github.com/bzuev/eslint-fsd-plugin)**: Enforces FSD path conventions
 - **[fsd-forge](https://github.com/meybiz/fsd-forge)**: CLI for generating FSD structures (widgets, features, pages)
 
@@ -346,6 +349,7 @@ export async function loadAddons(): Promise<void> {
 ```
 
 ### 5. Hybrid Routing Setup
+
 - **Core routes**: Keep file-based (existing `src/pages/`)
 - **Addon pages**: Add catch-all route under `/addons/` for dynamic rendering:
 
@@ -370,7 +374,7 @@ export const AddonCatchAllRoute = Route.createRoute({
 function AddonRouteRenderer() {
   const location = useLocation();
   const addons = addonRegistry.getAllAddons();
-  
+
   // Match current path to addon routes
   const matchedRoute = addons
     .flatMap(p => p.routes || [])
@@ -394,6 +398,7 @@ function AddonRouteRenderer() {
 ```
 
 ### 6. Integration with App Bootstrap
+
 Modify main.tsx and app.tsx to initialize addons:
 
 ```typescript
@@ -445,6 +450,7 @@ export function App() {
 ```
 
 ### 7. Feature Inclusion/Exclusion via Entitlements (Existing System)
+
 Leverage the existing FeatureGate system for conditional rendering of addon features!
 
 ### 8. Addon Directory Structure
@@ -469,6 +475,7 @@ src/
 ```
 
 ### 9. Example Addon Implementation
+
 ```typescript
 // src/addons/project-management/index.ts
 import type { Addon } from "@/app/addons/types";
@@ -484,7 +491,7 @@ const addon: Addon = {
   routes: [
     {
       path: "/_app/addons/projects",
-      component: () => import("./pages/projects").then(m => m.ProjectsPage),
+      component: () => import("./pages/projects").then((m) => m.ProjectsPage),
       auth: true,
     },
   ],
@@ -522,18 +529,21 @@ VITE_ENABLED_ADDONS=
 ```
 
 ## Routing Strategy Decision: Approach 3 (Hybrid)
+
 We've chosen the hybrid approach for addon routing:
+
 - ✅ **Core routes** remain file-based (existing `src/pages/` structure)
 - ✅ **Addons** register navigation items and widgets via extension points
 - ✅ **Addon pages** use a catch-all route under `/addons/` for dynamic rendering
 - ✅ **Entitlements/FeatureGate** handle access control for addon features
 
 ## Next Steps (Implementation Plan)
+
 1. Create addon type definitions (src/app/addons/types.ts)
 2. Implement addon registry (src/app/addons/addon-registry.ts)
 3. Add addon config and loader
 4. Implement extension points (navigation, widgets)
-5. Add catch-all route for addon pages (src/pages/_app/addons.tsx)
+5. Add catch-all route for addon pages (src/pages/\_app/addons.tsx)
 6. Integrate addon initialization into app bootstrap
 7. Update AppNav and dashboard to use extension points
 8. Test with an example addon
@@ -542,11 +552,13 @@ We've chosen the hybrid approach for addon routing:
 ## Performance Considerations
 
 ### 1. Bundle Size
+
 - **Concern**: Including all addons in the main bundle could increase bundle size
 - **Mitigation**: Use **dynamic imports** for addons (as shown in the example) — only load addons that are enabled via configuration
 - **Tooling**: Use Vite's bundle analyzer to track addon bundle sizes
 
 ### 2. Initial Load Time
+
 - **Concern**: Loading addons on app initialization could delay first render
 - **Mitigation**:
   - Load addons **after** the core app is rendered and interactive
@@ -554,12 +566,14 @@ We've chosen the hybrid approach for addon routing:
   - Prioritize loading critical addons first, lazy-load non-critical addons later
 
 ### 3. Route Matching
+
 - **Concern**: Catch-all route matching could be slow with many addons
 - **Mitigation**:
   - Keep the route matching logic simple (current linear search is fast for reasonable addon counts)
   - For large numbers of addons, pre-process routes into a `Map` for O(1) lookups
 
 ### 4. Extension Point Registrations
+
 - **Concern**: Too many extension point registrations could cause delays
 - **Mitigation**:
   - Keep registration logic lightweight (just pushing to an array)
