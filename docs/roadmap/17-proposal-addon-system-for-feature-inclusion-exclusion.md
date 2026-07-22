@@ -315,7 +315,7 @@ export type AddonConfig = z.infer<typeof AddonConfigSchema>;
 
 export function getAddonConfig(): AddonConfig {
   // Read from environment or runtime config
-  const enabledAddons = import.meta.env.VITE_ENABLED_ADDONS?.split(",") ?? [];
+  const enabledAddons = import.meta.env.VITE_ENABLED_PLATFORM_ADDONS?.split(",") ?? [];
   return { enabled: enabledAddons };
 }
 ```
@@ -525,7 +525,7 @@ Add these to .env.example:
 
 ```env
 # Comma-separated list of enabled addon IDs
-VITE_ENABLED_ADDONS=
+VITE_ENABLED_PLATFORM_ADDONS =
 ```
 
 ## Routing Strategy Decision: Approach 3 (Hybrid)
