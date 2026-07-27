@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document proposes the design for a flexible, extensible audit logging system for the IQKV platform.
+This document proposes the design for a flexible, extensible audit logging system for the iQ Key Value Platform.
 
 The key principle is **"No Vendor Lock-in"** — consistent with the overall philosophy of the platform (inspired by Magento/Oro flexibility). The audit system should allow different implementations while providing a solid default.
 

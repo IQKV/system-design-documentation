@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document proposes a typed, config-driven plan feature system for the IQKV platform,
+This document proposes a typed, config-driven plan feature system for the iQ Key Value Platform,
 with enforcement at the gateway and minimal impact on downstream services.
 
 The key principle is **"Billing owns the feature contract"** — plan features are defined

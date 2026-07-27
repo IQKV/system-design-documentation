@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the design and implementation of the In-App Notification Center for the IQKV platform. It provides users with real-time updates and a persistent history of system events and multi-lingual announcements directly within the Admin and Tenant UIs.
+This document describes the design and implementation of the In-App Notification Center for the iQ Key Value Platform. It provides users with real-time updates and a persistent history of system events and multi-lingual announcements directly within the Admin and Tenant UIs.
 
 The notification logic is integrated into the `foundation-iam-service`, leveraging existing messaging infrastructure with added persistence, real-time delivery via WebSockets (STOMP), and full internationalization (i18n) support.
 
