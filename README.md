@@ -1,4 +1,4 @@
-# IQ Key Value Platform — Hybrid Tenancy SaaS Foundation
+# iQ Key Value Platform — Hybrid Tenancy SaaS Foundation
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)

@@ -56,9 +56,9 @@ While we inherit the _power_ of the past, we reject its _complexity_. IQKV is bu
 
 For the customer, this means a platform that feels as powerful and flexible as the classic enterprise tools they remember, but with the performance, ease of use, and future-readiness of a modern, AI-augmented world.
 
-## IQ Key Value Platform: Targeting & Vision Correlation
+## iQ Key Value Platform: Targeting & Vision Correlation
 
-The IQ Key Value (IQKV) Platform is specifically engineered to address the challenges of the current MicroSaaS landscape through its **Hybrid Tenancy Model**.
+The iQ Key Value (IQKV) Platform is specifically engineered to address the challenges of the current MicroSaaS landscape through its **Hybrid Tenancy Model**.
 
 ### 1. Hybrid Tenancy: The "One Codebase, Two Markets" Vision
 
