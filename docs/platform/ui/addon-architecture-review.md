@@ -1,6 +1,6 @@
 # Addon Architecture Review: foundation-ui-app
 
-**Project**: IQKV Foundation UI App (Multi-tenant SaaS React Application)  
+**Project**: iQKV Foundation UI App (Multi-tenant SaaS React Application)  
 **Architecture**: Feature-Sliced Design (FSD)  
 **Date**: 2026-07-22  
 **Purpose**: Architectural analysis for supporting addon functionality
