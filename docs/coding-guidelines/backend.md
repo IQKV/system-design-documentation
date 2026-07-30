@@ -756,10 +756,10 @@ Mixed casing is intentional and must not be "fixed":
 
 ### 10.4 Token Lifetimes
 
-| Token         | Default    | Config key                                 |
-| ------------- | ---------- | ------------------------------------------ |
-| Access token  | 15 minutes | `iqscaffold.auth.jwt.access-token-expiry`  |
-| Refresh token | 7 days     | `iqscaffold.auth.jwt.refresh-token-expiry` |
+| Token         | Default    | Config key                           |
+| ------------- | ---------- | ------------------------------------ |
+| Access token  | 15 minutes | `iqkv.auth.jwt.access-token-expiry`  |
+| Refresh token | 7 days     | `iqkv.auth.jwt.refresh-token-expiry` |
 
 Access tokens are short-lived by design. Do not increase the default without a documented security justification.
 
@@ -774,7 +774,7 @@ HS256 is not used. Symmetric signing requires every consumer service to hold the
 #### User Service (token issuer) — all environments
 
 ```yaml
-iqscaffold:
+iqkv:
   auth:
     jwt:
       algorithm: RS256
@@ -786,7 +786,7 @@ iqscaffold:
 #### Consumer Services (token validators) — all environments
 
 ```yaml
-iqscaffold:
+iqkv:
   crm:
     security:
       jwt:
@@ -1233,7 +1233,7 @@ src/main/resources/db/changelog/
 - Use XML format for all changesets — no SQL scripts, no YAML.
 - File naming: `YYYYMMDDhhmmss-description.xml` (timestamp + kebab-case description).
 - Changeset ID matches the filename without extension.
-- Author is always `iqscaffold`.
+- Author is always `iqkv`.
 - Every changeset **must** include a `<rollback>` section.
 - Treat destructive changes (e.g., `dropColumn`, `dropTable`) with extreme caution. In production, destructive changes should often have empty `<rollback>` blocks, or be performed in a multi-phase deployment (deprecate -> remove usage -> drop).
 - Every table must have: `id` (BIGSERIAL PK), `created_at`, `updated_at`, `created_by`, `updated_by`.
@@ -1278,11 +1278,11 @@ management:
 
 spring:
   application:
-    name: iqscaffold-{service}-service
+    name: iqkv-{service}-service
   datasource:
-    url: ${iqscaffold.database.url}
-    username: ${iqscaffold.database.username}
-    password: ${iqscaffold.database.password}
+    url: ${iqkv.database.url}
+    username: ${iqkv.database.username}
+    password: ${iqkv.database.password}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -1298,7 +1298,7 @@ spring:
         order_inserts: true
         order_updates: true
 
-iqscaffold:
+iqkv:
   tenant-id-header: X-Tenant-ID
 ```
 
@@ -1323,9 +1323,9 @@ iqscaffold:
 ```java
 public class RabbitMQConfig {
 
-  public static final String EXCHANGE_NAME = "iqscaffold.events"; // shared topic exchange
-  public static final String DLX_EXCHANGE = "iqscaffold.dlx";
-  public static final String DLQ = "iqscaffold.dlq";
+  public static final String EXCHANGE_NAME = "iqkv.events"; // shared topic exchange
+  public static final String DLX_EXCHANGE = "iqkv.dlx";
+  public static final String DLQ = "iqkv.dlq";
 
   // Routing keys: {entity}.{action}
   public static final String CONTACT_CREATED_ROUTING_KEY = "contact.created";
@@ -1363,7 +1363,7 @@ public class ContactEventPublisher {
 @Bean
 public Queue tenantEventsQueue() {
   return new Queue(
-    "iqscaffold.{service}.tenant.events",
+    "iqkv.{service}.tenant.events",
     true,
     false,
     false,
@@ -1379,9 +1379,9 @@ public Queue tenantEventsQueue() {
 
 ### Rules
 
-- One shared topic exchange: `iqscaffold.events`.
+- One shared topic exchange: `iqkv.events`.
 - Routing key pattern: `{entity}.{action}` — e.g., `contact.created`, `user.updated`, `tenant.deleted`.
-- Queue naming: `iqscaffold.{service}.{entity}.{purpose}` — e.g., `iqscaffold.contact.tenant.events`.
+- Queue naming: `iqkv.{service}.{entity}.{purpose}` — e.g., `iqkv.contact.tenant.events`.
 - All queues must configure a dead-letter exchange (`x-dead-letter-exchange`) and TTL.
 - Always use `Jackson2JsonMessageConverter` — never Java serialization.
 - Event publishing is **fire-and-forget** — catch all exceptions, log them, never rethrow.
@@ -1678,7 +1678,7 @@ rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.CONTA
 
 // Wrong — raw strings
 MDC.put("tenant_id", tenantId);
-rabbitTemplate.convertAndSend("iqscaffold.events", "contact.created", event);
+rabbitTemplate.convertAndSend("iqkv.events", "contact.created", event);
 ```
 
 ---
@@ -2011,7 +2011,7 @@ spring:
     encoding: UTF-8
     cache-duration: PT1H
 
-iqscaffold:
+iqkv:
   i18n:
     supported-locales: [en, es, fr]
     default-locale: en
@@ -2235,7 +2235,7 @@ context.setVariable("greeting", "Hello " + user.getFirstName());
 - `MessageService` is the only access point — never call `MessageSource` directly from business code.
 - Use `getMessage(code, user)` for async/email flows; `getMessage(code)` for request-scoped flows.
 - `preferred_locale` in the JWT eliminates the need for a DB lookup in consumer services.
-- Supported locales are configured in `iqscaffold.i18n.supported-locales` — adding a new language requires a new `messages_{lang}.properties` file and a config update.
+- Supported locales are configured in `iqkv.i18n.supported-locales` — adding a new language requires a new `messages_{lang}.properties` file and a config update.
 - Missing translations are bugs — `use-code-as-default-message: true` prevents crashes but does not excuse missing keys.
 
 ---
@@ -2250,7 +2250,7 @@ Use modern HTTP clients for synchronous inter-service calls instead of legacy op
 // Prefer Spring's RestClient (blocking, Spring Boot 4.2+) or WebClient (reactive)
 @Bean
 public RestClient {service}RestClient(RestClient.Builder builder) {
-    return builder.baseUrl("http://iqscaffold-{service}-service").build();
+    return builder.baseUrl("http://iqkv-{service}-service").build();
 }
 ```
 
@@ -2603,14 +2603,14 @@ public / protected / private → abstract → static → final → transient →
 
 ```java
 // Correct
-public static final String EXCHANGE_NAME = "iqscaffold.events";
+public static final String EXCHANGE_NAME = "iqkv.events";
 
 private static final Logger log = LoggerFactory.getLogger(ContactServiceImpl.class);
 
 // Wrong — wrong modifier order
-public static final String EXCHANGE_NAME = "iqscaffold.events";
+public static final String EXCHANGE_NAME = "iqkv.events";
 
-static final String EXCHANGE_NAME = "iqscaffold.events";
+static final String EXCHANGE_NAME = "iqkv.events";
 ```
 
 ---
