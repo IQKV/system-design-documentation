@@ -673,7 +673,7 @@ helm upgrade --install foundation-iam-service ./foundation-iam-service \
   --set secrets.rabbitmq.password=$RMQ_PASSWORD \
   --set secrets.jwt.privateKey=$JWT_PRIVATE_KEY \
   --namespace iqkv-prd \
-  --atomic --wait --timeout=10m
+  --rollback-on-failure --wait --timeout=10m
 ```
 
 **Configuration Management:**
@@ -690,7 +690,7 @@ helm upgrade --install foundation-iam-service ./foundation-iam-service \
 1. **VerifyCode:** `mvn clean verify` → SonarQube quality gate → PMD → SpotBugs
 2. **PublishArtifacts:** `mvn deploy` (SNAPSHOT on branches; release JAR on tags); GitHub Release via `release-it`
 3. **PublishDockerImage:** Multi-stage Docker build; tag strategy: branch name (`wip`), stripped feature name, or semver tag
-4. **DeployWorkInProgress:** `helm upgrade --install --atomic` to `iqkv-sit-env` on `wip` push
+4. **DeployWorkInProgress:** `helm upgrade --install --rollback-on-failure` to `iqkv-sit-env` on `wip` push
 5. **RollbackWorkInProgress / PromoteFeatureDeployment / RollbackFeatureDeployment:** Feature branch SIT lifecycle
 6. **PromoteDeployment / RollbackDeployment:** UAT/PRD deployment and rollback on semver tags
 7. **ReleasePackage:** Strip SNAPSHOT, create git tag, bump pom + package.json to next SNAPSHOT, update CHANGELOG

@@ -2437,7 +2437,7 @@ Microservices rely on common infrastructure deployed via the `foundation-infra` 
 
 ```bash
 # Example from Drone Pipeline
-helm upgrade --install --atomic --wait --timeout 5m ${DRONE_REPO_NAME} ./ \
+helm upgrade --install --rollback-on-failure --wait --timeout 5m ${DRONE_REPO_NAME} ./ \
   --values ./values.yaml \
   --values ./values-test.yaml \
   --set image.tag=${DRONE_BRANCH} \
