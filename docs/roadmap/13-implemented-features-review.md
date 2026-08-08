@@ -568,7 +568,7 @@ Infrastructure admin tools in demo stack: DbGate (unified DB/Redis/RabbitMQ/MinI
 | `VerifyCode`                | push/tag on dev/feature/\*/hotfix/\*/tags | `mvn clean verify` → SonarQube → PMD → SpotBugs                                      |
 | `PublishArtifacts`          | push to dev/prerelease/\*/tags            | `mvn deploy` SNAPSHOT to Nexus; release JAR on tags; GitHub Release via `release-it` |
 | `PublishDockerImage`        | push to wip/feature/\*/tags               | Package JAR; build Docker image; push to private registry                            |
-| `DeployWorkInProgress`      | push to wip                               | `helm upgrade --install --rollback-on-failure` to `iqkv-sit-env`                                  |
+| `DeployWorkInProgress`      | push to wip                               | `helm upgrade --install --rollback-on-failure` to `iqkv-sit-env`                     |
 | `RollbackWorkInProgress`    | rollback→sit on wip                       | `helm uninstall` from SIT                                                            |
 | `PromoteFeatureDeployment`  | promote→sit on feature/\*                 | Helm deploy to SIT with feature image                                                |
 | `RollbackFeatureDeployment` | rollback→sit on feature/\*                | `helm uninstall` from SIT                                                            |
