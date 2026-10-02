@@ -43,6 +43,7 @@ Format: `type(scope): subject`
   - ❌ `fix(architecture): update diagram`
 
 Examples:
+
 - `docs(architecture): add event sourcing decision record`
 - `feat(api): document new webhook payload format`
 - `chore(deps): update formatting tools`
