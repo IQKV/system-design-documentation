@@ -35,24 +35,29 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 ```
   Client ──────────────────▶ API Gateway (Spring Cloud Gateway)
                                   │
-                    ┌─────────────┴──────────────┐
-                    ▼                            ▼
-                   IAM                        Billing                     Audit                     CMS
-              (Spring Boot)              (Spring Boot)               (Spring Boot)               (Spring Boot)
-                    │                            │                           │                           │
-                    ▼                            ▼                           ▼                           ▼
-             PostgreSQL (iam)            PostgreSQL (billing)        PostgreSQL (audit)        PostgreSQL (cms)
-            (Schema-per-tenant)       (Multi-gateway billing)       (Centralized logs)       (Schema-per-tenant)
+          ┌───────────┬───────────┼───────────┬───────────┐
+          ▼           ▼           ▼           ▼           ▼
+         IAM       Billing      Audit        CMS      AI Chat
+    (Spring Boot) (Spring Boot)(Spring Boot)(Spring Boot)(Spring AI 2.0)
+          │           │           │           │           │
+          ▼           ▼           ▼           ▼           ▼
+     PostgreSQL   PostgreSQL  PostgreSQL  PostgreSQL  PostgreSQL
+        (iam)      (billing)    (audit)      (cms)     (aichat)
+   schema/tenant  multi-gw     audit logs  schema/tenant system schema
+                                                      │
+                                                      ▼
+                                                   Ollama
+                                              (LLM inference)
 
-                    └─────────────┬──────────────┴───────────────┬───────────────┘
+                    └─────────────┬──────────────┴───────────────┘
                                   ▼
                               RabbitMQ
                         (Async tenant provisioning,
                          audit events & lifecycle,
                          content events)
 
-  UI (React + Mantine) ──▶ API Gateway (all requests proxied)
-                          (JWT validation & context propagation)
+  Tenant App + Platform Admin (React + Mantine, incl. AI Chat addons)
+       ──▶ API Gateway (JWT validation & context propagation)
 ```
 
 ---
@@ -151,8 +156,9 @@ For details on the hybrid architecture, NanoID resolution, and bootstrapping, se
 
 **Routing & Security:**
 
-- Path-based routing to IAM, Billing, CMS, and Audit services
-- Configurable public paths (JWKS, auth, magic-link, OAuth2/OIDC auth, webhooks, health checks, Swagger UI, billing internal)
+- Path-based routing to IAM, Billing, CMS, Audit, and AI Chat services
+- AI Chat route (`/api/v1/aichat/**`) uses a 180s response timeout for LLM inference latency
+- Configurable public paths (JWKS, auth, magic-link, OAuth2/OIDC auth, webhooks, health checks, Swagger UI, billing internal, AI Chat ping / api-docs)
 - Global CORS configuration with configurable origins and methods
 - Response security headers: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`
 
@@ -282,6 +288,33 @@ iqkv:
 
 **Tech Stack:** Java 25, Spring Boot 4.x, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, Micrometer
 
+### AI Chat Service
+
+**LLM-backed conversational API (Spring AI 2.0 + Ollama)**
+
+**Core Capabilities:**
+
+- Spring AI `ChatClient` against Ollama (default model `llama3.1:8b`)
+- Chat session and message persistence in PostgreSQL system schema (not tenant-scoped)
+- Multi-tenant JWT resource server — validates IAM JWKS tokens; tenant context per request
+- Configurable prompt engineering: system prompt, max input chars, max output tokens, temperature (`iqkv.ai.*` / env vars)
+- Conversation history with roles `USER`, `ASSISTANT`, `SYSTEM`
+- Admin cross-user session visibility (`PLATFORM_ADMIN`)
+- LLM backend failures mapped to HTTP 502 `ProblemDetail` (`NonTransientAiException`)
+
+**Key Patterns:**
+
+- Flat bounded-context layout (`chat/`) aligned with CMS service packaging
+- Per-request `OllamaChatOptions` (model, temperature, `numPredict`) plus `.system()` prompt injection
+- FK cascade delete: removing a session deletes its messages
+- Gateway route `aichat-api` with 180s response timeout
+
+**REST (base `/api/v1/aichat`):** user chat + sessions; admin `GET /admin/sessions`; public `/ping`
+
+**Tech Stack:** Java 25, Spring Boot 4.1, Spring AI 2.0 (Ollama), MyBatis 3.x, PostgreSQL 17, Liquibase, Micrometer
+
+**UI integration:** Tenant App addon `platform-ai-chat`; Platform Admin addon `platform-ai-chat-sessions` (read-only oversight). See [v0.5 implementation summary](../roadmap/18-implemented-ai-chat-integration.md).
+
 ### Billing Settings
 
 Each tenant (multi-tenant mode) or user (single-tenant mode) has billing settings — the single source of truth for Stripe customer metadata:
@@ -389,13 +422,13 @@ The platform ships three production-ready frontends, all communicating exclusive
 
 **Architecture:** Feature-Sliced Design (`app → processes → pages → widgets → features → shared`); automated boundary tests via `pnpm test:arch`
 
-**Key features:** sign-in with tenant discovery, sign-up with provisioning polling, password reset, email verification, invitation acceptance, team management (invite/ban/unban/role-edit/transfer-ownership), billing self-service (Stripe portal, subscription view with trial status, plan catalog with per-seat labels, refunds), in-app notifications with real-time WebSocket push, plan-based `FeatureGate` component and `EntitlementsProvider`, organization settings, light/dark theme, Lingui i18n (English + Bulgarian).
+**Key features:** sign-in with tenant discovery, sign-up with provisioning polling, password reset, email verification, invitation acceptance, team management (invite/ban/unban/role-edit/transfer-ownership), billing self-service (Stripe portal, subscription view with trial status, plan catalog with per-seat labels, refunds), in-app notifications with real-time WebSocket push, plan-based `FeatureGate` component and `EntitlementsProvider`, organization settings, light/dark theme, Lingui i18n (English + Bulgarian), env-driven UI addons including `platform-ai-chat`.
 
 ### Platform Admin (`foundation-ui-platform-admin`)
 
 **Tech Stack:** React 19, TypeScript, Vite + SWC, Mantine UI 9, mantine-datatable, TanStack Router + Query, Zustand, Lingui, Zod + Mantine Form, Vitest + Playwright, OxLint/OxFmt
 
-**Key features:** PLATFORM_ADMIN-only access; global user/organization/invitation/subscription/plan/announcement/audit/refund/notification management; ban/unban/unlock users; member authority management; dashboard with count widgets, subscription breakdown, signup trend chart, audit feed, org health cards; enterprise dark theme; runtime `public/config.js` override.
+**Key features:** PLATFORM_ADMIN-only access; global user/organization/invitation/subscription/plan/announcement/audit/refund/notification management; ban/unban/unlock users; member authority management; dashboard with count widgets, subscription breakdown, signup trend chart, audit feed, org health cards; enterprise dark theme; runtime `public/config.js` override; addon `platform-ai-chat-sessions` for read-only AI chat session oversight.
 
 ### SaaS Landing Kit (`foundation-ui-saas-landing-kit`)
 
@@ -428,6 +461,7 @@ Each service owns its own PostgreSQL database with complete data isolation. No s
 | Billing | `foundation_billing` | Stripe customer refs, subscription cache, webhook logs, plans                               |
 | Audit   | `foundation_audit`   | Centralized audit logs, technical context, activity records                                 |
 | CMS     | `foundation_cms`     | Pages, page translations, hierarchical content (schema-per-tenant)                          |
+| AI Chat | `foundation_aichat`  | Chat sessions and messages (system schema; user-scoped, not tenant-schema isolated)         |
 
 ### Schema-Per-Tenant Architecture (IAM Database)
 
@@ -791,8 +825,8 @@ management:
 Core services publish to a versioned RabbitMQ exchange, enabling extensions without core code modifications:
 
 ```
-Core Services (IAM, Gateway, Billing, Audit, CMS)
-    ↓ (publishes events)
+Core Services (IAM, Gateway, Billing, Audit, CMS, AI Chat)
+    ↓ (publishes events — AI Chat is request/response in v0.5; no chat domain events yet)
 Platform Exchange (iqkv.events)
     ↓ (routes to)
 ├── Core Workers (tenant provisioning, billing sync, audit logging)
@@ -802,8 +836,8 @@ Platform Exchange (iqkv.events)
 **Extension Patterns:**
 
 - **Event Subscribers:** React to platform events without modifying core services
-- **API Extensions:** Additional REST endpoints via separate services
-- **UI Extensions:** Micro-frontend architecture for additional features
+- **API Extensions:** Additional REST endpoints via separate services (e.g. AI Chat)
+- **UI Extensions:** Addon system in Tenant App / Platform Admin (`VITE_ENABLED_UI_ADDONS`) — first concrete addons are `platform-ai-chat` and `platform-ai-chat-sessions`
 - **Webhook Extensions:** External system integrations via webhook consumers
 
 **Versioning Strategy:**

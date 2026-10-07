@@ -4,10 +4,10 @@
 
 The platform supports two deployment modes, configured at deploy time via Helm values — no code changes required.
 
-| Mode          | Configuration                                      | Use case                                                |
-| ------------- | -------------------------------------------------- | ------------------------------------------------------- |
-| Multi-tenant  | `tenancy.mode: multi` (default)                    | Standard B2B SaaS — each customer gets their own schema |
-| Single-tenant | `tenancy.mode: single` + `tenancy.defaultTenant.*` | Internal tools, dedicated deployments, white-label      |
+| Mode          | Configuration                                                          | Use case                                                |
+| ------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| Multi-tenant  | `iqkv.platform.rollout-mode: MULTI_TENANT` (default)                   | Standard B2B SaaS — each customer gets their own schema |
+| Single-tenant | `iqkv.platform.rollout-mode: SINGLE_TENANT` + default tenant bootstrap | Internal tools, dedicated deployments, white-label      |
 
 In single-tenant mode, IAM provisions one default tenant at startup. The schema isolation model is identical — the platform simply operates with one tenant instead of many. Switching from single to multi-tenant later requires no schema or code changes.
 
@@ -15,7 +15,9 @@ In single-tenant mode, IAM provisions one default tenant at startup. The schema 
 
 ## Schema-Per-Tenant
 
-Each tenant has a dedicated PostgreSQL schema within the IAM database (`foundation_iam`). The schema boundary is enforced at the database engine level, not in application code.
+Each tenant has a dedicated PostgreSQL schema within the IAM database (`foundation_iam`) and, where applicable, the CMS database (`foundation_cms`). The schema boundary is enforced at the database engine level, not in application code.
+
+**Exception (AI Chat):** `foundation-ai-chat-service` stores sessions and messages in a **system schema** (user-scoped), not `t_{tenantKey}`. Operator oversight and ownership checks are application-enforced. Teams with strict per-tenant chat isolation requirements should treat tenant-schema chat storage as a follow-up (see roadmap v0.5 deferred items).
 
 Practical implications:
 
@@ -58,13 +60,13 @@ This is a reference, not a certification. Actual compliance requires audit and l
 
 ## Access Control
 
-Every request passes through the API Gateway, which validates the JWT and resolves tenant context before forwarding. No request reaches IAM, Billing, or Audit without passing this layer.
+Every request passes through the API Gateway, which validates the JWT and resolves tenant context before forwarding. No request reaches IAM, Billing, Audit, CMS, or AI Chat without passing this layer.
 
 The Gateway enforces:
 
-- **Header sanitization** — strips all `X-User-*`, `X-Tenant-ID`, and `X-Audit-*` headers from incoming client requests before JWT processing; clients cannot inject identity or audit context
+- **Header sanitization** — strips all `X-User-*`, `X-Tenant-ID`, `X-Audit-*`, and `X-Plan-Code` headers from incoming client requests before JWT processing; clients cannot inject identity, plan, or audit context
 - **JWT RS256 validation** — tokens validated against the IAM JWKS endpoint; expired, revoked (JTI denylist), or globally signed-out tokens are rejected
-- **Context propagation** — after validation, the Gateway sets `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`, `X-Correlation-ID`, `X-Audit-IP`, and `X-Audit-UA` for downstream services
+- **Context propagation** — after validation, the Gateway sets `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`, `X-Plan-Code`, `X-Correlation-ID`, `X-Audit-IP`, and `X-Audit-UA` for downstream services
 
 IAM enforces:
 

@@ -253,3 +253,33 @@ Goal: add modern external identity support without changing the downstream trust
 - [ ] JWK-backed `id_token` validation hardening beyond current nonce / claim checks
 - [ ] Focused automated tests for OIDC state handling, provisioning, and authorization flows
 - [ ] Admin audit-history endpoints for identity-link / unmerge operations
+
+---
+
+## v0.5 — AI Chat Integration (COMPLETED)
+
+Goal: ship a production-shaped LLM microservice (Spring AI 2.0 + Ollama) with session persistence, gateway routing suited to inference latency, and UI addons for tenant chat plus platform-admin oversight. See [proposal](18-proposal-ai-chat-integration.md) and [implementation summary](18-implemented-ai-chat-integration.md).
+
+**Backend**
+
+- [x] `foundation-ai-chat-service` — Spring AI 2.0 + Ollama (`llama3.1:8b` default)
+- [x] Chat session + message persistence in PostgreSQL system schema (`chat_sessions`, `chat_messages`, FK cascade delete)
+- [x] JWKS JWT resource server; tenant context per request
+- [x] Prompt engineering via `iqkv.ai.*` / env (`AI_SYSTEM_PROMPT`, `AI_MAX_INPUT_CHARS`, `AI_MAX_OUTPUT_TOKENS`, `AI_TEMPERATURE`)
+- [x] User APIs: send message, list sessions, message history, delete session (`/api/v1/aichat/**`)
+- [x] Admin API: cross-user session list (`PLATFORM_ADMIN`)
+- [x] LLM failure mapping → HTTP 502 `ProblemDetail`
+- [x] Gateway route `aichat-api` with 180s response timeout; OpenAPI aggregation; public `/ping` + `/api-docs`
+- [x] Helm chart + Drone CI wiring for AI Chat service
+
+**UI**
+
+- [x] Tenant App addon `platform-ai-chat` — conversational UI at `/addons/platform-ai-chat`
+- [x] Platform Admin addon `platform-ai-chat-sessions` — read-only global session oversight at `/admin/addons/ai-chat-sessions`
+
+**Still Open / Deferred**
+
+- [ ] Streaming responses, RAG / tools / agents
+- [ ] Tenant-schema isolation for chat history
+- [ ] Plan-feature gating for AI Chat
+- [ ] Admin session mutations; audit events per chat turn

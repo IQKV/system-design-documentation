@@ -2,7 +2,7 @@
 
 Status key: ✅ implemented · 🚧 partial · 📋 planned
 
-Repositories: `foundation-iam-service`, `foundation-gateway-service`, `foundation-billing-service`, `foundation-audit-service`, `foundation-audit-spi`, `foundation-audit-model`, `foundation-ui-app` (tenant), `foundation-ui-platform-admin` (operator), `foundation-microservice-project-layout` (service template).
+Repositories: `foundation-iam-service`, `foundation-gateway-service`, `foundation-billing-service`, `foundation-audit-service`, `foundation-audit-spi`, `foundation-audit-model`, `foundation-cms-service`, `foundation-ai-chat-service`, `foundation-ui-app` (tenant), `foundation-ui-platform-admin` (operator), `foundation-microservice-project-layout` (service template).
 
 ---
 
@@ -67,7 +67,7 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 
 | Capability                | Notes                                                                                                                                           | Status |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Routing                   | Path-based routing to IAM, Billing, and Audit; Spring Cloud Gateway with WebFlux; Stripe webhooks on public path                                | ✅     |
+| Routing                   | Path-based routing to IAM, Billing, Audit, CMS, and AI Chat; Spring Cloud Gateway with WebFlux; Stripe/LS webhooks on public path               | ✅     |
 | JWT validation            | Validates RS256 tokens against IAM JWKS endpoint; extracts authorities from JWT claims                                                          | ✅     |
 | Header sanitization       | Strips client-supplied `X-User-*`, `X-Tenant-ID`, `X-Organization-ID`, and `X-Audit-*` before JWT processing — prevents identity spoofing       | ✅     |
 | Context propagation       | Extracts user context from JWT and forwards: `X-User-ID`, `X-Username`, `X-User-Email`, `X-User-Authorities`, `X-Tenant-ID`, `X-Correlation-ID` | ✅     |
@@ -89,6 +89,8 @@ Entry point for all client traffic. No request reaches IAM or Billing without pa
 | WebSocket X-Tenant-ID     | Allows `X-Tenant-ID` header passthrough on WebSocket paths                                                                                      | ✅     |
 | Magic link authentication | Passwordless sign-in: `POST /auth/magic-link/initiate`, `/resend`, `/exchange`; configurable TTL and rate limiting                              | ✅     |
 | Create tenant endpoint    | `POST /tenants` — authenticated endpoint for creating new tenant after signup (owner is caller)                                                 | ✅     |
+| AI Chat route             | `/api/v1/aichat/**` → AI Chat Service; `response-timeout` 180s for LLM inference; public `/ping` and `/api-docs`                                | ✅     |
+| AI Chat OpenAPI           | Aggregates AI Chat SpringDoc spec into unified Swagger UI                                                                                       | ✅     |
 
 ---
 
@@ -185,6 +187,25 @@ Content management service for static pages, multi-language support, and hierarc
 
 ---
 
+## AI Chat
+
+LLM-backed conversational microservice. Sessions stored in the AI Chat database system schema (user-scoped; not tenant-schema isolated). See [v0.5 implementation summary](../roadmap/18-implemented-ai-chat-integration.md).
+
+| Capability             | Notes                                                                                                 | Status |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
+| Spring AI + Ollama     | Spring AI 2.0 `ChatClient` with per-request Ollama options; default model `llama3.1:8b`               | ✅     |
+| Session persistence    | `chat_sessions` + `chat_messages` in PostgreSQL; FK cascade delete on session removal                 | ✅     |
+| JWT resource server    | Validates IAM RS256 JWTs via JWKS; tenant context from Gateway headers / claims                       | ✅     |
+| Prompt controls        | Env-tunable system prompt, max input chars (4000), max output tokens (1024), temperature (0.7)        | ✅     |
+| User chat API          | `POST /api/v1/aichat/chat` — send message; optional `sessionId` to continue                           | ✅     |
+| Session list / history | `GET /chat/sessions`, `GET /chat/sessions/{id}/messages`, `DELETE /chat/sessions/{id}` — owner-scoped | ✅     |
+| Admin oversight API    | `GET /api/v1/aichat/admin/sessions` — cross-user list; `PLATFORM_ADMIN` only                          | ✅     |
+| Reachability probes    | Public `/ping`; tenant `/tenant/ping`; admin `/admin/ping`                                            | ✅     |
+| LLM error mapping      | `NonTransientAiException` → HTTP 502 RFC 7807 `ProblemDetail` with backend detail                     | ✅     |
+| Helm / CI              | Dedicated chart and Drone pipelines; requires PostgreSQL + reachable Ollama                           | ✅     |
+
+---
+
 ## UI — Tenant app (`foundation-ui-app`)
 
 React 19 + Mantine SPA for workspace members. All requests go through the API Gateway with tenant-scoped JWTs and `X-Tenant-ID`. Static build (Nginx or CDN).
@@ -213,6 +234,8 @@ React 19 + Mantine SPA for workspace members. All requests go through the API Ga
 | Demo credentials hint       | Shows demo credentials hint when VITE_DEMO_MODE is enabled                                                                                                                                           | ✅     |
 | Billing setup form          | Shows setup form instead of error when billing settings not found                                                                                                                                    | ✅     |
 | E2E testing                 | Restructured E2E test suite for scalability; added data-testid attributes to all key components; centralized test utilities                                                                          | ✅     |
+| Addon system                | Env-driven UI addons (`VITE_ENABLED_UI_ADDONS`); nav + route extension points; see [addon implementation](../roadmap/17-implemented-addon-system-for-feature-inclusion-exclusion.md)                 | ✅     |
+| AI Chat addon               | `platform-ai-chat` — session list + chat UI at `/addons/platform-ai-chat`; calls AI Chat service via Gateway                                                                                         | ✅     |
 
 ---
 
@@ -247,6 +270,8 @@ Separate operator SPA (`PLATFORM_ADMIN` only). Platform-scoped JWT (`tenant_id` 
 | Dashboard widgets                 | Dashboard with subscription breakdown, audit feed, and org health cards; server-side severity and status filters                          | ✅     |
 | Manage-platform-authority feature | Added manage-platform-authority feature                                                                                                   | ✅     |
 | E2E testing                       | Reorganized E2E tests to FSD-aligned structure; added data-testid attributes to all key components; updated test selectors                | ✅     |
+| Addon system                      | Same addon loader pattern as Tenant App; env-driven enablement                                                                            | ✅     |
+| AI Chat Sessions addon            | `platform-ai-chat-sessions` — read-only global session oversight at `/admin/addons/ai-chat-sessions`; `PLATFORM_ADMIN` only               | ✅     |
 
 ---
 
@@ -285,19 +310,21 @@ Astro + React + Tailwind CSS + DaisyUI + shadcn/ui landing page kit.
 
 ---
 
-## Planned (Post-v0.4)
+## Planned (Post-v0.5)
 
 ### Current Open Items
 
-| Capability                              | Notes                                                                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Platform Admin — subscription mutations | Change plan and apply discount from admin UI; cancel / pause / reactivate / quantity update are already implemented       |
-| Platform Admin — advanced metrics       | MRR/ARR, growth charts, trends on dashboard                                                                               |
-| Per-seat IAM enforcement                | Enforce purchased `seatCount` (not just plan `maxUsers`) at invite-accept and signup; `activeSeatCount` column on tenants |
-| Additional locales                      | RU, IT (infrastructure already in place)                                                                                  |
-| OIDC admin audit history                | Admin history / audit endpoints for identity-link and unmerge operations                                                  |
-| OIDC token hardening                    | JWK-backed `id_token` validation beyond current nonce / claim checks                                                      |
-| OIDC focused tests                      | Automated coverage for provisioning, state JWT, Redis PKCE store, and callback flows                                      |
+| Capability                              | Notes                                                                                                               |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Platform Admin — subscription mutations | Change plan and apply discount from admin UI; cancel / pause / reactivate / quantity update are already implemented |
+| Platform Admin — advanced metrics       | MRR/ARR, growth charts, trends on dashboard                                                                         |
+| Additional locales                      | RU, IT (infrastructure already in place)                                                                            |
+| OIDC admin audit history                | Admin history / audit endpoints for identity-link and unmerge operations                                            |
+| OIDC token hardening                    | JWK-backed `id_token` validation beyond current nonce / claim checks                                                |
+| OIDC focused tests                      | Automated coverage for provisioning, state JWT, Redis PKCE store, and callback flows                                |
+| AI Chat — streaming / RAG / tools       | Token streaming, retrieval-augmented generation, tool calling                                                       |
+| AI Chat — tenant-schema isolation       | Move chat history into `t_{tenantKey}` (today: system schema, user-scoped)                                          |
+| AI Chat — plan feature gating           | Entitlement / Gateway `RequiresPlanFeature` for chat access                                                         |
 
 ### Later Milestones
 

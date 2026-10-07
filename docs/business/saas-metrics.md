@@ -36,3 +36,9 @@ This document provides a brief overview of key performance indicators (KPIs) ess
 
 - **LTV > CPA:** A healthy SaaS business should aim for an LTV that is significantly higher than the CPA (typically a 3:1 ratio is considered good).
 - **Payback Period:** The time it takes to earn back the CPA from a customer's MRR.
+
+---
+
+## Platform instrumentation
+
+The foundation Billing Service and Grafana dashboards expose operational signals that feed these KPIs (active subscriptions, revenue-oriented counters, webhook health, seat adjustments). Platform Admin surfaces subscription and organization counts for day-to-day operator visibility. Advanced MRR/ARR trend charts in the admin UI remain a post-v0.5 hardening item — teams can still compute MRR/LTV externally from Billing subscription state and webhook history.

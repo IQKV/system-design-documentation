@@ -50,7 +50,7 @@ While we inherit the _power_ of the past, we reject its _complexity_. IQKV is bu
 
 - **Superior Developer Experience (DX):** Replacing the steep learning curves of legacy platforms with a clean, modern Java 25 / Spring Boot 4 / React 19 stack.
 - **Cloud-Native & Modern:** Kubernetes-native from day one, with a focus on speed, observability, and modularity.
-- **AI-Ready Foundation:** The platform is designed to be an orchestrator for the AI era. Leveraging **Spring AI**, it provides a standardized way to integrate LLMs and vector databases. With clean data isolation (schema-per-tenant) and structured event-driven architecture, it provides the perfect environment for feeding RAG (Retrieval-Augmented Generation) systems or deploying AI agents that act on behalf of specific tenants.
+- **AI-Ready Foundation:** v0.5 ships a production **AI Chat microservice** (`foundation-ai-chat-service`) on **Spring AI 2.0 + Ollama**, with session persistence, Gateway routing (180s timeout), and UI addons for tenant chat plus platform-admin oversight. The same database-per-service, JWT, and event-driven patterns leave room to grow into RAG, vector stores, and tenant-scoped agents without rewriting the core.
 
 ### 3. Customer Perspective: Familiar Power, Effortless Execution
 
@@ -82,10 +82,10 @@ In a saturated market, the ability to iterate quickly is vital. IQKV’s **Kuber
 
 To succeed in this environment, the platform's vision remains focused on:
 
-- **Accelerating Time-to-Market:** Handling all "boring" plumbing (IAM, Billing, Gateway) so founders can launch in days, not months.
+- **Accelerating Time-to-Market:** Handling all "boring" plumbing (IAM, Billing, Gateway, Audit, CMS) so founders can launch in days, not months — and ship AI chat as an optional addon rather than a greenfield project.
 - **Enabling Flexibility:** The Hybrid Tenancy model ensures that as market trends shift between B2B and B2C, the underlying technology remains an asset, not a bottleneck.
 - **Enterprise Standards:** Bringing "Enterprise Java without the overhead" to MicroSaaS builders, ensuring that even small tools have the reliability and scalability of major platforms.
 
 ---
 
-_Review updated: May 2026_
+_Review updated: October 2026_

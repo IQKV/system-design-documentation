@@ -1,14 +1,24 @@
 # Implemented: Addon System for Feature Inclusion/Exclusion
 
-> **Status**: Infrastructure complete, no addon implementations yet  
+> **Status**: Infrastructure complete; first concrete addons shipped in v0.5 (AI Chat)  
 > **Proposal ref**: `17-proposal-addon-system-for-feature-inclusion-exclusion.md`  
-> **Codebase**: `foundation-ui-app`
+> **Codebase**: `foundation-ui-app`, `foundation-ui-platform-admin`  
+> **First addons**: see [18-implemented-ai-chat-integration.md](18-implemented-ai-chat-integration.md)
 
 ---
 
 ## Summary
 
-The addon system described in the proposal has been fully implemented in `foundation-ui-app`. All core infrastructure — types, registry, loader, extension points, routing, and bootstrap integration — is in place and working. The `src/addons/` slot directory exists but contains only a `.gitkeep`; no concrete addons have been written yet.
+The addon system described in the proposal has been fully implemented in `foundation-ui-app` (and mirrored in `foundation-ui-platform-admin`). All core infrastructure — types, registry, loader, extension points, routing, and bootstrap integration — is in place and working.
+
+**v0.5 concrete addons:**
+
+| Addon id                    | App            | Purpose                                                               |
+| --------------------------- | -------------- | --------------------------------------------------------------------- |
+| `platform-ai-chat`          | Tenant App     | Conversational UI → `/addons/platform-ai-chat`                        |
+| `platform-ai-chat-sessions` | Platform Admin | Read-only global session oversight → `/admin/addons/ai-chat-sessions` |
+
+Enablement remains env-driven (`VITE_ENABLED_UI_ADDONS`). Details of the AI Chat addons and backend are in doc 18.
 
 ---
 
@@ -18,7 +28,7 @@ The addon system described in the proposal has been fully implemented in `founda
 
 ```
 src/
-├── addons/                              ← Addon slot (empty — only .gitkeep)
+├── addons/                              ← Addon slot (e.g. platform-ai-chat/)
 ├── app/
 │   ├── addons/                          ← Addon system core
 │   │   ├── types.ts

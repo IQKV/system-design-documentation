@@ -10,7 +10,7 @@ Existing solutions either provide only UI scaffolding (leaving infrastructure un
 
 ## What We Built
 
-A complete SaaS infrastructure platform consisting of five microservices, three production React/Astro applications, and one documentation site.
+A complete SaaS infrastructure platform consisting of six microservices, three production React/Astro applications, and one documentation site.
 
 ### IAM Service (`foundation-iam-service`)
 
@@ -52,7 +52,7 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 - `PaymentGatewayPort` hexagonal abstraction — Stripe and Lemon Squeezy adapters implemented; swap gateways without business logic changes
 - Auto-provisions customer (Stripe/Lemon Squeezy) on `tenant.created` event (RabbitMQ)
 - Per-tenant `billing_settings`: billing email, tax ID/VAT, Customer Portal session
-- **Plan catalog** defined in YAML and synchronized with active gateway at startup; supports `FLAT`, `PER_SEAT`, and `METERED` (usage-based) pricing models; METERED plans support optional metering config (metric name, external meter ID, aggregation type, tiers)
+- **Plan catalog** defined in YAML and synchronized with active gateway at startup; supports `FLAT` and `PER_SEAT` pricing models (`METERED` usage-based pricing is deferred)
 - Subscription checkout and management (tenant owner); trial period support
 - **Per-seat pricing** — dedicated `PATCH .../seats` endpoint for mid-cycle seat adjustments with proration; seat-cap validation against `maxUsers`
 - Refunds API — initiate and list refunds per tenant; platform admin refund overview
@@ -83,6 +83,17 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 - Public read-only API for fetching published pages
 - Platform admin CRUD API for managing content
 
+### AI Chat Service (`foundation-ai-chat-service`)
+
+- LLM-backed conversational API via Spring AI 2.0 and Ollama (default model `llama3.1:8b`)
+- Chat session and message persistence in PostgreSQL (system schema, user-scoped)
+- JWT resource server validating IAM JWKS — same trust model as Billing and CMS
+- Configurable prompt engineering via env: system prompt, max input chars, max output tokens, temperature
+- User APIs: send message, list sessions, message history, delete session (`/api/v1/aichat`)
+- Admin API: cross-user session list for `PLATFORM_ADMIN` oversight
+- Gateway route with 180s response timeout for LLM inference latency
+- First concrete consumers of the UI addon system (Tenant App chat + Platform Admin oversight)
+
 ### Tenant App (`foundation-ui-app`)
 
 - React 19 + TypeScript + Mantine UI SPA for workspace members (Feature-Sliced Design architecture)
@@ -95,6 +106,7 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 - Security settings — tenant OIDC / SSO provider configuration for TENANT_OWNER
 - In-app notifications with WebSocket support; notification bell UI and notification center
 - Plan-based access control: `EntitlementsProvider`, `FeatureGate`, `useHasFeature`, `useQuota` hooks
+- Env-driven UI addons — including `platform-ai-chat` conversational UI
 - Silent token refresh, 30-minute inactivity sign-out, light/dark theme, Lingui i18n
 
 ### Platform Admin (`foundation-ui-platform-admin`)
@@ -108,6 +120,7 @@ A complete SaaS infrastructure platform consisting of five microservices, three 
 - Plan catalog — read-only list (plans are config-driven via YAML + deployment); announcements with multi-lingual translation support
 - Audit logs — global audit log view across all tenants
 - In-app notifications with WebSocket support; operator account and password
+- Addon `platform-ai-chat-sessions` — read-only global AI chat session oversight
 - Runtime config via `public/config.js` without rebuild
 
 ### SaaS Landing Kit (`foundation-ui-saas-landing-kit`)
@@ -161,8 +174,8 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 
 ### Plan & Entitlements System
 
-- YAML-defined plan catalog synchronized with Stripe
-- `FLAT`, `PER_SEAT`, and `METERED` (usage-based) pricing models with trial support; METERED plans support optional metering config stored in a separate `plan_metering_config` table
+- YAML-defined plan catalog synchronized with the active payment gateway (Stripe or Lemon Squeezy)
+- `FLAT` and `PER_SEAT` pricing models with trial support (`METERED` deferred)
 - `EntitlementsProvider` and `FeatureGate` in frontends
 - `PlanFeatureGuard` annotation in backends
 - `maxUsers` quota and feature flag enforcement
@@ -172,17 +185,24 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 
 ## Current Status
 
-**v0.4 complete — identity federation, enterprise SSO, and multi-gateway billing:**
+**v0.5 complete — AI Chat integration (Spring AI 2.0 + Ollama):**
+
+- Sixth microservice: `foundation-ai-chat-service` — LLM chat API, session persistence, prompt controls, admin oversight API
+- Gateway route `/api/v1/aichat/**` with 180s timeout; OpenAPI aggregation
+- Tenant App addon `platform-ai-chat`; Platform Admin addon `platform-ai-chat-sessions` (read-only)
+- Builds on completed v0.4 (identity federation, enterprise SSO, multi-gateway billing) and the UI addon system
+
+**Also complete through v0.4:**
 
 - Complete user authentication and authorization: JWT RS256, magic link, token exchange, RBAC, email verification, password reset, brute-force lockout, member ban/unban, ownership transfer (IAM Service)
 - Multi-tenant and single-tenant data isolation with PostgreSQL schema-per-tenant (IAM and CMS)
-- **Multi-gateway subscription billing**: Stripe and Lemon Squeezy support, flat-rate, per-seat, and usage-based (METERED) pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Customer Portal (Billing Service)
+- **Multi-gateway subscription billing**: Stripe and Lemon Squeezy, flat-rate and per-seat pricing, trial periods, seat-cap validation, mid-cycle seat adjustment, refunds, Customer Portal (Billing Service)
 - Centralized audit trail with passive event consumption, JSONB storage, and SPI-based extensibility (Audit Service)
 - Reactive API gateway: JWT validation, header sanitization, plan code propagation, audit context headers, per-tenant metrics (Gateway Service)
 - Identity federation: OAuth2/OIDC social login, tenant-scoped enterprise SSO, account linking / unlinking, admin unmerge remediation (IAM + tenant/admin UIs)
 - Content management system: static pages, multi-language support, hierarchical content, SEO metadata, tenant isolation (CMS Service)
-- Tenant-facing React SPA: auth flows, social login, enterprise SSO, connected accounts, billing self-service, in-app notifications, plan-based feature access (foundation-ui-app)
-- Platform admin React SPA: user/org/subscription/refund/announcement/audit log management, platform-authority tab, OIDC identities tab with forced unmerge, enterprise theme, dashboard widgets, member signup trend chart, read-only plan catalog (foundation-ui-platform-admin)
+- Tenant-facing React SPA: auth flows, social login, enterprise SSO, connected accounts, billing self-service, in-app notifications, plan-based feature access, AI Chat addon (foundation-ui-app)
+- Platform admin React SPA: user/org/subscription/refund/announcement/audit log management, platform-authority tab, OIDC identities tab, AI Chat session oversight addon (foundation-ui-platform-admin)
 - SaaS marketing landing kit with auth integration and plan selector (foundation-ui-saas-landing-kit)
 - VitePress documentation website (foundation-docs-website)
 - Kubernetes deployment with Helm charts across SIT / UAT / PRD environments; HPA configured
@@ -195,41 +215,25 @@ Mode is controlled by `ROLLOUT_MODE` configuration — no code changes required.
 - Structured JSON logging with correlation IDs propagated across all services
 - Service template (`foundation-microservice-project-layout`) for adding new microservices
 
-Core v0.4 workstreams complete:
+**Post-v0.5 items (platform hardening & AI follow-ups):**
 
-- OAuth2/OIDC social login in IAM with Google, GitHub, and Microsoft providers
-- Tenant-scoped enterprise SSO with custom OIDC provider configuration
-- Account linking / unlinking plus platform-admin linked-identity remediation
-- Tenant-app OAuth callback handling, connected accounts UI, and enterprise SSO entry point
-- Platform-admin OIDC identities tab and force-unmerge flow
-- `LemonSqueezyGatewayAdapter` implementing the existing `PaymentGatewayPort` — all 11 gateway-agnostic methods
-- `@ConditionalOnGateway` meta-annotation for clean `STRIPE` / `LEMON_SQUEEZY` bean wiring
-- Gateway-neutral plan catalog configuration (`iqkv.billing.plan-catalog`); `externalVariantId` field for pre-configured LS variant IDs
-- `LemonSqueezyWebhookRestResource` with HMAC-SHA256 signature verification (`X-Signature` header)
-- Normalized webhook event mapping: LS event names → existing `GatewayWebhookEvent` sealed hierarchy
-- `gateway_type` column on `billing_settings`, `subscriptions`, and `plan_catalog` for observability and future migrations
-- `external_order_id` on `subscriptions` to support LS order-level refunds
-- `BillingSeedRunner` hardening: LS adapter performs read-only variant verification instead of programmatic product creation
-
-This release should be understood primarily as the identity-federation and enterprise-SSO release; Lemon Squeezy support is the parallel billing simplification track that completed at the same time.
-
-**Post-v0.4 items (platform hardening):**
-
-- Platform Admin UI — subscription lifecycle mutations (change plan, cancel, reactivate, apply discount)
+- Platform Admin UI — subscription lifecycle mutations (change plan, apply discount); cancel / pause / reactivate / quantity update already shipped
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts)
-- Per-seat IAM enforcement — enforce purchased `seatCount` at invite-accept and signup
 - Additional locales (RU, IT; infrastructure already in place)
+- OIDC audit history and automated test hardening
+- AI Chat — streaming, RAG/tools, tenant-schema isolation, plan-feature gating
 
-**Platform Numbers (June 2026):**
+**Platform Numbers (October 2026):**
 
-- 5 core microservices: IAM, Gateway, Billing, Audit, CMS
+- 6 core microservices: IAM, Gateway, Billing, Audit, CMS, AI Chat
 - 3 frontend applications: Tenant App, Platform Admin, SaaS Landing Kit
 - 1 documentation website
-- 4 PostgreSQL databases (IAM, Billing, Audit, CMS) — schema-per-tenant in IAM and CMS
+- 5 PostgreSQL databases (IAM, Billing, Audit, CMS, AI Chat) — schema-per-tenant in IAM and CMS; AI Chat uses system schema
 - 100+ REST endpoints across all services
 - 20+ domain event types on RabbitMQ
-- 60+ UI routes across Tenant App and Platform Admin
+- 60+ UI routes across Tenant App and Platform Admin (plus addon routes)
 - 2 pricing models (`FLAT` and `PER_SEAT`) × 2 billing periods (MONTHLY/ANNUAL) + optional trial period per plan
+- 2 payment gateways: Stripe and Lemon Squeezy (config-selectable)
 - 2 deployment modes: MULTI_TENANT (SaaS) and SINGLE_TENANT (managed); zero-migration switch between them
 
 ---
@@ -255,7 +259,7 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 
 **Potential Revenue Streams:**
 
-- Premium extensions (SAML/SSO, advanced analytics, compliance tools, usage metering)
+- Premium extensions (SAML SSO, advanced analytics, compliance tools, usage metering, deeper AI/RAG addons)
 - Managed hosting for teams without Kubernetes expertise
 - Enterprise support and custom development services (via iqkv.com)
 
@@ -265,10 +269,10 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 
 ### Technology Stack
 
-- **Backend**: Java 25, Spring Boot 4.1, MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, MinIO, Redis, ShedLock
-- **Frontend**: React 19, TypeScript 6, Mantine UI 9, TanStack Router + Query, Vite 8 + SWC, Zustand, Lingui 6, Zod, Vitest, Playwright, Astro, Tailwind CSS, shadcn/ui, VitePress
-- **Infrastructure**: Kubernetes, Helm, Docker, Nginx, Drone CI, Nexus, SonarQube
-- **Security**: JJWT 0.13 (RS256), Spring Security OAuth2 Resource Server, BCrypt strength 12
+- **Backend**: Java 25, Spring Boot 4.1, Spring AI 2.0 (Ollama), MyBatis 3.x, PostgreSQL 17, Liquibase, RabbitMQ, MinIO, Redis, ShedLock
+- **Frontend**: React 19, TypeScript 6, Mantine UI 9, TanStack Router + Query, Vite 8 + SWC, Zustand, Lingui 6, Zod, Vitest, Playwright, Astro, Tailwind CSS, shadcn/ui, VitePress, env-driven UI addons
+- **Infrastructure**: Kubernetes, Helm, Docker, Nginx, Drone CI, Nexus, SonarQube, Ollama (LLM inference)
+- **Security**: JJWT 0.13 (RS256), Spring Security OAuth2 Resource Server / Client, BCrypt strength 12
 - **Monitoring**: Micrometer, Prometheus, Grafana, Loki, Promtail, structured JSON logging
 
 ### Scalability
@@ -288,19 +292,20 @@ Works for both multi-customer SaaS platforms and single-tenant enterprise deploy
 
 ---
 
-## What's Next (Post-v0.4 Hardening)
+## What's Next (Post-v0.5)
 
 - Platform Admin UI — change plan and apply discount from the admin subscriptions surface
 - Platform Admin UI — advanced dashboard metrics (MRR/ARR, growth charts, trends)
-- Per-seat IAM enforcement — enforce purchased `seatCount` against `activeSeatCount` on tenant
 - Additional locales (RU, IT; infrastructure already in place)
 - OIDC audit history and automated test hardening
+- AI Chat — streaming responses, RAG / tools / agents, tenant-schema chat isolation, plan-feature gating
 
 **Later milestones:**
 
 - Platform Admin UI — system health dashboard, background job monitoring
 - Platform Admin UI — impersonation
 - SSO / SAML adapter
+- Usage-based metered billing (`METERED` pricing model)
 - Rate limiting (per-tenant and per-user, at Gateway)
 - Tenant resolution by subdomain
 - Multi-region support
