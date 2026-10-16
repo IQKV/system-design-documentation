@@ -72,6 +72,33 @@ Never cut: validation at trust boundaries, error handling that prevents data los
 - Keep documents factual, concise, and technically accurate.
 - Do not duplicate content — link between docs instead.
 
+## Evaluation
+
+How we judge whether an agent task in this repository is actually done. Evaluation is evidence-based — a claim without a result is not a pass.
+
+> This section starts minimal and grows with the repository. Add a gate only when a change type repeatedly slips through without it.
+
+### Definition of done
+
+A task is evaluated as done only when all of the following hold:
+
+- Every gate required by the change type below is satisfied.
+- The final report names what was done and what was checked — per AI Agent Guidelines.
+- Nothing required was skipped silently. Something that could not be checked is reported as a gap, never as a pass.
+
+### Required gates by change type
+
+| Change type | Required gates |
+| --- | --- |
+| Any change | No build or test gate — formatting is enforced by the pre-commit hook |
+| New document | Placed under `docs/` and linked from the relevant index; content is not duplicated from another document |
+| Cross-reference change | Both ends updated in the same change — fix the drift at the source |
+| Wording-only edit | No gate |
+
+### Ordering
+
+Check the narrowest relevant item first, then the rest for the change type. On a problem, stop and report it rather than continuing on an unverified base (see Execution Discipline).
+
 ## Commit Standards
 
 Format: `type(scope): subject`
