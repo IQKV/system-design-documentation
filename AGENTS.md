@@ -88,12 +88,12 @@ A task is evaluated as done only when all of the following hold:
 
 ### Required gates by change type
 
-| Change type | Required gates |
-| --- | --- |
-| Any change | No build or test gate — formatting is enforced by the pre-commit hook |
-| New document | Placed under `docs/` and linked from the relevant index; content is not duplicated from another document |
-| Cross-reference change | Both ends updated in the same change — fix the drift at the source |
-| Wording-only edit | No gate |
+| Change type            | Required gates                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| Any change             | No build or test gate — formatting is enforced by the pre-commit hook                                    |
+| New document           | Placed under `docs/` and linked from the relevant index; content is not duplicated from another document |
+| Cross-reference change | Both ends updated in the same change — fix the drift at the source                                       |
+| Wording-only edit      | No gate                                                                                                  |
 
 ### Ordering
 
